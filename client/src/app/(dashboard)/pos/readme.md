@@ -1,0 +1,1 @@
+# POS interfeysi (satış ekranı)
