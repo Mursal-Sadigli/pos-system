@@ -1,19 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useCartStore } from '@/store/cartStore';
+import { useState } from 'react';
 import { ProductGrid } from './ProductGrid';
 import { CartDrawer } from './CartDrawer';
-import { PosToolbar } from './PosToolbar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Barcode, X } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export function PosScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const { items, total, clearCart } = useCartStore();
 
   return (
     <div className="flex h-full gap-4">
@@ -44,7 +41,7 @@ export function PosScreen() {
         </div>
 
         {/* Categories */}
-        <Tabs defaultValue="all" className="mb-4">
+        <Tabs defaultValue="all" className="mb-4" onValueChange={setSelectedCategory}>
           <TabsList>
             <TabsTrigger value="all">All</TabsTrigger>
             <TabsTrigger value="electronics">Electronics</TabsTrigger>

@@ -8,7 +8,6 @@ import { Separator } from '@/components/ui/separator';
 import { Trash2, Plus, Minus, ShoppingBag } from 'lucide-react';
 import { PaymentModal } from './PaymentModal';
 import { useState } from 'react';
-import { cn } from '@/lib/utils';
 
 export function CartDrawer() {
   const { items, total, subtotal, tax, discount, removeItem, updateQuantity, clearCart } = useCartStore();
@@ -124,7 +123,7 @@ export function CartDrawer() {
         </div>
       </Card>
 
-      {showPayment && <PaymentModal open={showPayment} onOpenChange={setShowPayment} />}
+      <PaymentModal open={showPayment} onOpenChange={setShowPayment} />
     </>
   );
 }
