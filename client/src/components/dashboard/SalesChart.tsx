@@ -25,7 +25,7 @@ export function SalesChart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Weekly Sales</CardTitle>
+        <CardTitle>Həftəlik Satışlar</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="h-[300px]">

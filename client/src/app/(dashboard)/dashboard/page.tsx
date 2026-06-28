@@ -12,9 +12,9 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+          <h2 className="text-3xl font-bold tracking-tight">İdarə paneli</h2>
           <p className="text-muted-foreground">
-            Welcome back! Here&apos;s what&apos;s happening with your store today.
+            Xoş gəlmisiniz! Bu gün mağazanızda baş verənlər.
           </p>
         </div>
         <QuickActions />

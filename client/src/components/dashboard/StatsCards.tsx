@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 
 const stats = [
   {
-    title: 'Today\'s Sales',
+    title: 'Günün Satışları',
     value: '$1,234.50',
     icon: DollarSign,
     change: '+12.5%',
@@ -14,7 +14,7 @@ const stats = [
     color: 'text-primary',
   },
   {
-    title: 'Orders',
+    title: 'Sifarişlər',
     value: '45',
     icon: ShoppingBag,
     change: '+8.2%',
@@ -22,7 +22,7 @@ const stats = [
     color: 'text-green-500',
   },
   {
-    title: 'Customers',
+    title: 'Müştərilər',
     value: '128',
     icon: Users,
     change: '+3.1%',
@@ -30,7 +30,7 @@ const stats = [
     color: 'text-blue-500',
   },
   {
-    title: 'Products',
+    title: 'Məhsullar',
     value: '342',
     icon: Package,
     change: '-2.4%',
@@ -61,7 +61,7 @@ export function StatsCards() {
               >
                 {stat.change}
               </span>{' '}
-              from last week
+              keçən həftədən
             </p>
           </CardContent>
         </Card>

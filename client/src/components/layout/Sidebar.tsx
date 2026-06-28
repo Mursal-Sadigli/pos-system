@@ -23,14 +23,14 @@ import { useUIStore } from '@/store/uiStore';
 import { useAuth } from '@/hooks/useAuth';
 
 const navigation = [
-  { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'İdarə paneli', href: '/dashboard', icon: LayoutDashboard },
   { name: 'POS', href: '/pos', icon: ShoppingCart },
-  { name: 'Products', href: '/products', icon: Package },
-  { name: 'Categories', href: '/categories', icon: Tag },
-  { name: 'Orders', href: '/orders', icon: FileText },
-  { name: 'Customers', href: '/customers', icon: Users },
-  { name: 'Reports', href: '/reports', icon: BarChart3 },
-  { name: 'Settings', href: '/settings', icon: Settings },
+  { name: 'Məhsullar', href: '/products', icon: Package },
+  { name: 'Kateqoriyalar', href: '/categories', icon: Tag },
+  { name: 'Sifarişlər', href: '/orders', icon: FileText },
+  { name: 'Müştərilər', href: '/customers', icon: Users },
+  { name: 'Hesabatlar', href: '/reports', icon: BarChart3 },
+  { name: 'Ayarlar', href: '/settings', icon: Settings },
 ];
 
 export function Sidebar() {
@@ -94,7 +94,7 @@ export function Sidebar() {
           onClick={logout}
         >
           <LogOut className={cn('h-5 w-5', !isCollapsed && 'mr-3')} />
-          {!isCollapsed && 'Logout'}
+          {!isCollapsed && 'Çıxış'}
         </Button>
       </div>
     </div>

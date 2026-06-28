@@ -5,9 +5,9 @@ import { ShoppingCart, Package, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const actions = [
-  { label: 'New Sale', href: '/pos', icon: ShoppingCart },
-  { label: 'Add Product', href: '/products/new', icon: Package },
-  { label: 'View Orders', href: '/orders', icon: FileText },
+  { label: 'Yeni Satılır', href: '/pos', icon: ShoppingCart },
+  { label: 'Məhsul əlavə edin', href: '/products/new', icon: Package },
+  { label: 'Sifarişlərə Baxın', href: '/orders', icon: FileText },
 ];
 
 export function QuickActions() {

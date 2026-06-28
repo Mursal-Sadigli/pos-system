@@ -22,7 +22,7 @@ export function CartDrawer() {
         <div className="flex items-center justify-between border-b p-4">
           <div className="flex items-center gap-2">
             <ShoppingBag className="h-5 w-5" />
-            <h3 className="font-semibold">Cart</h3>
+            <h3 className="font-semibold">Səbət</h3>
             <span className="text-sm text-muted-foreground">({items.length} items)</span>
           </div>
           {!isEmpty && (
@@ -42,8 +42,8 @@ export function CartDrawer() {
           {isEmpty ? (
             <div className="flex h-full flex-col items-center justify-center text-center">
               <ShoppingBag className="h-12 w-12 text-muted-foreground/50" />
-              <p className="mt-4 text-muted-foreground">Your cart is empty</p>
-              <p className="text-sm text-muted-foreground/70">Add products to get started</p>
+              <p className="mt-4 text-muted-foreground">Səbətiniz boşdur</p>
+              <p className="text-sm text-muted-foreground/70">Başlamaq üçün məhsullar əlavə edin</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -99,16 +99,16 @@ export function CartDrawer() {
               <span>${subtotal.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Tax (10%)</span>
+              <span className="text-muted-foreground">Vergi (10%)</span>
               <span>${tax.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Discount</span>
+              <span className="text-muted-foreground">Endirim</span>
               <span className="text-green-500">-${discount.toFixed(2)}</span>
             </div>
             <Separator />
             <div className="flex justify-between text-lg font-bold">
-              <span>Total</span>
+              <span>Cəmi</span>
               <span className="text-primary">${total.toFixed(2)}</span>
             </div>
           </div>
@@ -118,7 +118,7 @@ export function CartDrawer() {
             disabled={isEmpty}
             onClick={() => setShowPayment(true)}
           >
-            Proceed to Payment
+           Ödənişə keçin
           </Button>
         </div>
       </Card>

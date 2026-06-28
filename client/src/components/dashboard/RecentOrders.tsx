@@ -36,17 +36,17 @@ const orders = [
 ];
 
 const statusMap = {
-  pending: { label: 'Pending', variant: 'warning' },
-  processing: { label: 'Processing', variant: 'info' },
-  completed: { label: 'Completed', variant: 'success' },
-  cancelled: { label: 'Cancelled', variant: 'destructive' },
+  pending: { label: 'Gözlənir', variant: 'warning' },
+  processing: { label: 'Emal edilir', variant: 'info' },
+  completed: { label: 'Tamamlandı', variant: 'success' },
+  cancelled: { label: 'Ləğv edildi', variant: 'destructive' },
 } as const;
 
 export function RecentOrders() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Recent Orders</CardTitle>
+        <CardTitle>Son Sifarişlər</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">

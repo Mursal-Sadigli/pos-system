@@ -13,7 +13,7 @@ export function ActivityLog() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Activity Log</CardTitle>
+        <CardTitle>Fəaliyyət jurnalı</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
