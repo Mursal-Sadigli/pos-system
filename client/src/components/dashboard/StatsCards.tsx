@@ -6,8 +6,8 @@ import { cn } from '@/lib/utils';
 
 const stats = [
   {
-    title: 'Günün Satışları',
-    value: '$1,234.50',
+    title: 'Bugünkü satış',
+    value: '₼1,250',
     icon: DollarSign,
     change: '+12.5%',
     trend: 'up',
@@ -22,7 +22,7 @@ const stats = [
     color: 'text-green-500',
   },
   {
-    title: 'Müştərilər',
+    title: 'Aktiv müştərilər',
     value: '128',
     icon: Users,
     change: '+3.1%',
@@ -30,7 +30,7 @@ const stats = [
     color: 'text-blue-500',
   },
   {
-    title: 'Məhsullar',
+    title: 'Stokdakı məhsullar',
     value: '342',
     icon: Package,
     change: '-2.4%',
@@ -41,13 +41,11 @@ const stats = [
 
 export function StatsCards() {
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
       {stats.map((stat) => (
         <Card key={stat.title}>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              {stat.title}
-            </CardTitle>
+            <CardTitle className="text-sm font-medium">{stat.title}</CardTitle>
             <stat.icon className={cn('h-4 w-4', stat.color)} />
           </CardHeader>
           <CardContent>

@@ -2,52 +2,51 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  LineChart,
-  Line,
+  ResponsiveContainer,
+  ComposedChart,
+  CartesianGrid,
   XAxis,
   YAxis,
-  CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
+  Legend,
+  Bar,
+  Line,
 } from 'recharts';
 
 const data = [
-  { name: 'Mon', sales: 1200 },
-  { name: 'Tue', sales: 1800 },
-  { name: 'Wed', sales: 1500 },
-  { name: 'Thu', sales: 2100 },
-  { name: 'Fri', sales: 2400 },
-  { name: 'Sat', sales: 2800 },
-  { name: 'Sun', sales: 1900 },
+  { name: 'B', sales: 1200, target: 1500 },
+  { name: 'Ç', sales: 1800, target: 1700 },
+  { name: 'Ç', sales: 1500, target: 1600 },
+  { name: 'C', sales: 2100, target: 1900 },
+  { name: 'C', sales: 2400, target: 2200 },
+  { name: 'Ş', sales: 2800, target: 2500 },
+  { name: 'B', sales: 1900, target: 2100 },
 ];
 
 export function SalesChart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Həftəlik Satışlar</CardTitle>
+        <CardTitle>Satış qrafiki</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="h-[300px]">
+        <div className="h-[320px]">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={data}>
+            <ComposedChart data={data}>
               <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
               <XAxis dataKey="name" className="text-xs" />
               <YAxis className="text-xs" />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: 'hsl(var(--background))',
-                  border: '1px solid hsl(var(--border))',
-                }}
-              />
+              <Tooltip />
+              <Legend />
+              <Bar dataKey="sales" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
               <Line
                 type="monotone"
-                dataKey="sales"
-                stroke="hsl(var(--primary))"
+                dataKey="target"
+                stroke="hsl(var(--muted-foreground))"
                 strokeWidth={2}
                 dot={false}
               />
-            </LineChart>
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
       </CardContent>

@@ -2,76 +2,44 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 const orders = [
-  {
-    id: '#ORD-001',
-    customer: 'John Doe',
-    amount: '$234.50',
-    status: 'completed',
-    avatar: 'JD',
-  },
-  {
-    id: '#ORD-002',
-    customer: 'Jane Smith',
-    amount: '$123.00',
-    status: 'processing',
-    avatar: 'JS',
-  },
-  {
-    id: '#ORD-003',
-    customer: 'Bob Johnson',
-    amount: '$456.75',
-    status: 'pending',
-    avatar: 'BJ',
-  },
-  {
-    id: '#ORD-004',
-    customer: 'Alice Brown',
-    amount: '$89.99',
-    status: 'completed',
-    avatar: 'AB',
-  },
+  { id: '#ORD-001', customer: 'Nərmin Əliyeva', amount: '₼234.50', status: 'Tamamlandı' },
+  { id: '#ORD-002', customer: 'Rəşad Hacıyev', amount: '₼123.00', status: 'Hazırlanır' },
+  { id: '#ORD-003', customer: 'Aysel Quliyeva', amount: '₼456.75', status: 'Gözlənir' },
+  { id: '#ORD-004', customer: 'Elvin Məmmədov', amount: '₼89.99', status: 'Tamamlandı' },
 ];
-
-const statusMap = {
-  pending: { label: 'Gözlənir', variant: 'warning' },
-  processing: { label: 'Emal edilir', variant: 'info' },
-  completed: { label: 'Tamamlandı', variant: 'success' },
-  cancelled: { label: 'Ləğv edildi', variant: 'destructive' },
-} as const;
 
 export function RecentOrders() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Son Sifarişlər</CardTitle>
+        <CardTitle>Son sifarişlər</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {orders.map((order) => (
-            <div
-              key={order.id}
-              className="flex items-center justify-between border-b pb-3 last:border-0"
-            >
-              <div className="flex items-center space-x-3">
-                <Avatar>
-                  <AvatarFallback>{order.avatar}</AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="font-medium">{order.customer}</p>
-                  <p className="text-sm text-muted-foreground">{order.id}</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-3">
-                <Badge variant={statusMap[order.status].variant as any}>
-                  {statusMap[order.status].label}
-                </Badge>
-                <span className="font-medium">{order.amount}</span>
-              </div>
-            </div>
-          ))}
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b text-left text-muted-foreground">
+                <th className="py-2">Sifariş №</th>
+                <th className="py-2">Müştəri</th>
+                <th className="py-2">Məbləğ</th>
+                <th className="py-2">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {orders.map((order) => (
+                <tr key={order.id} className="border-b last:border-0">
+                  <td className="py-3">{order.id}</td>
+                  <td className="py-3">{order.customer}</td>
+                  <td className="py-3 font-medium">{order.amount}</td>
+                  <td className="py-3">
+                    <Badge variant="outline">{order.status}</Badge>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </CardContent>
     </Card>

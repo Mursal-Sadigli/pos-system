@@ -1,13 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { ShoppingCart, Package, FileText } from 'lucide-react';
+import { ShoppingCart, PackagePlus, UserPlus, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const actions = [
-  { label: 'Yeni Satılır', href: '/pos', icon: ShoppingCart },
-  { label: 'Məhsul əlavə edin', href: '/products/new', icon: Package },
-  { label: 'Sifarişlərə Baxın', href: '/orders', icon: FileText },
+  { label: 'Yeni satış', href: '/pos', icon: ShoppingCart },
+  { label: 'Yeni məhsul', href: '/products', icon: PackagePlus },
+  { label: 'Yeni müştəri', href: '/customers', icon: UserPlus },
+  { label: 'Hesabat çap', href: '/reports', icon: FileText },
 ];
 
 export function QuickActions() {

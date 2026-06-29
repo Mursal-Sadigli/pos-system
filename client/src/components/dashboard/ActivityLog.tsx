@@ -3,17 +3,17 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const activities = [
-  { time: '2 min ago', text: 'New order #ORD-005 created' },
-  { time: '15 min ago', text: 'Product "Espresso" stock updated' },
-  { time: '1 hour ago', text: 'Customer John Doe registered' },
-  { time: '3 hours ago', text: 'Daily report generated' },
+  { time: '2 dəq əvvəl', text: 'Yeni sifariş yaradıldı: #ORD-005' },
+  { time: '15 dəq əvvəl', text: 'Espresso məhsulunun stok dəyəri yeniləndi' },
+  { time: '1 saat əvvəl', text: 'Yeni müştəri qeydiyyatdan keçdi' },
+  { time: '3 saat əvvəl', text: 'Gündəlik hesabat yaradıldı' },
 ];
 
 export function ActivityLog() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Fəaliyyət jurnalı</CardTitle>
+        <CardTitle>Son aktivliklər</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
