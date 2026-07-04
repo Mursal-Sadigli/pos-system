@@ -3,7 +3,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const emailFrom = process.env.EMAIL_FROM || `no-reply@${process.env.FRONTEND_URL?.replace(/^https?:\/\//, '') || 'localhost'}`;
+const emailFrom = process.env.EMAIL_FROM || process.env.SMTP_USER || `no-reply@${process.env.FRONTEND_URL?.replace(/^https?:\/\//, '') || 'localhost'}`;
 const useSmtp = Boolean(process.env.SMTP_HOST);
 const smtpPort = parseInt(process.env.SMTP_PORT || '587');
 const transporter = useSmtp
