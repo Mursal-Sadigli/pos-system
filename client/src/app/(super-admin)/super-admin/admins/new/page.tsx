@@ -73,8 +73,10 @@ export default function NewAdminPage() {
         router.push('/super-admin/admins');
       }
     } catch (err: any) {
-      console.error('Invite failed', err?.response?.data ?? err);
-      toast({ title: 'Xəta', description: 'Admin dəvətnaməsi göndərilə bilmədi', variant: 'destructive' });
+      const errorData = err?.response?.data ?? err;
+      console.error('Invite failed', errorData);
+      const errorMessage = errorData?.message || errorData?.error || 'Admin dəvətnaməsi göndərilə bilmədi';
+      toast({ title: 'Xəta', description: errorMessage, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
