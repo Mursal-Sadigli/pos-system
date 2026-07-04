@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "nodemon src/server.ts",
-    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && npx --yes -p typescript@5.7.2 tsc",
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc",
     "start": "node dist/server.js"
   },
   "dependencies": {
@@ -18,14 +18,14 @@
     "bcryptjs": "^2.4.3",
     "zod": "^3.24.1",
     "nodemailer": "^6.9.16",
-    "typescript": "5.7.2"
+    "typescript": "5.7.2",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.2"
   },
   "engines": {
     "node": "20.x"
   },
   "devDependencies": {
-    "@types/express": "^4.17.21",
-    "@types/node": "^22.10.2",
     "nodemon": "^3.1.9",
     "ts-node": "^10.9.2"
   }
