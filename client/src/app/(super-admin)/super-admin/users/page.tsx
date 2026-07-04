@@ -62,8 +62,8 @@ export default function SuperAdminUsersPage() {
     try {
       const newStatus = user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
       const resp = await userApi.updateUser(user.id, { status: newStatus, is_active: newStatus === 'ACTIVE' });
-      const updated = resp.data ?? resp.data?.user ?? resp.data?.users ?? null;
-      setUsers(users.map((u) => (u.id === user.id ? { ...u, status: newStatus } : u)));
+      const updatedStatus = newStatus.toLowerCase();
+      setUsers(users.map((u) => (u.id === user.id ? { ...u, status: updatedStatus } : u)));
       toast({ title: `İstifadəçi ${newStatus === 'ACTIVE' ? 'aktiv' : 'deaktiv'} edildi` });
     } catch (err: any) {
       console.error(err);

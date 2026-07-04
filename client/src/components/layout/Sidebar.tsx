@@ -36,7 +36,7 @@ const navigation = [
 export function Sidebar() {
   const pathname = usePathname();
   const { isCollapsed, toggleSidebar } = useUIStore();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
 
   return (
     <div
@@ -49,7 +49,14 @@ export function Sidebar() {
         {!isCollapsed && (
           <Link href="/dashboard" className="flex items-center space-x-2">
             <Store className="h-6 w-6 text-primary" />
-            <span className="font-semibold">POS System</span>
+            <div className="flex flex-col leading-tight">
+              <span className="font-semibold text-sm">
+                {(user?.store_name || user?.storeName) ? (user.store_name || user.storeName) : 'POS System'}
+              </span>
+              {(user?.store_name || user?.storeName) && (
+                <span className="text-[10px] text-muted-foreground">POS System</span>
+              )}
+            </div>
           </Link>
         )}
 

@@ -73,7 +73,10 @@ export class UserModel {
 
   static async findById(id: string): Promise<User | null> {
     const result = await query(
-      `SELECT * FROM ${schemaQualified}.users WHERE id = $1`,
+      `SELECT u.*, s.name as store_name
+       FROM ${schemaQualified}.users u
+       LEFT JOIN public.stores s ON u.store_id = s.id
+       WHERE u.id = $1`,
       [id]
     );
     return result.rows[0] || null;

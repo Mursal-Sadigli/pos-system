@@ -151,6 +151,12 @@ export function Navbar() {
                 <div className="mb-2 rounded-lg bg-muted p-3">
                   <p className="text-sm font-semibold">{user?.name ?? 'İstifadəçi'}</p>
                   <p className="text-xs text-muted-foreground">{user?.email ?? ''}</p>
+                  {(user?.store_name || user?.storeName) && (
+                    <p className="mt-1 text-xs font-medium text-primary flex items-center gap-1">
+                      <Store className="h-3 w-3" />
+                      {user.store_name || user.storeName}
+                    </p>
+                  )}
                 </div>
                 <Link
                   href="/settings/profile"

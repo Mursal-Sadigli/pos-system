@@ -10,6 +10,9 @@ interface User {
   email: string;
   role: string;
   storeId: string | null;
+  store_id?: string | null;
+  storeName?: string | null;
+  store_name?: string | null;
   permissions?: string[];
   mustChangePassword?: boolean;
   must_change_password?: boolean;
