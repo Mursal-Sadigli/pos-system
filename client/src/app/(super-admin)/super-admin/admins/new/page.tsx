@@ -57,10 +57,13 @@ export default function NewAdminPage() {
       const payload: any = { name: form.name, email: form.email, role: 'ADMIN' };
       if (form.storeId) payload.storeId = form.storeId;
       const res = await authApi.inviteUser(payload);
-      const data = res.data ?? res;
-      // If backend returns generated password, show it
-      const password = data?.password ?? data?.generatedPassword ?? null;
-      const acceptLink = data?.acceptLink ?? null;
+      const responseData = res.data ?? res;
+      // Backend qaytarır: { success: true, data: { password, acceptLink, invitation } }
+      const actualData = responseData?.data ?? responseData;
+      
+      const password = actualData?.password ?? actualData?.generatedPassword ?? null;
+      const acceptLink = actualData?.acceptLink ?? null;
+      
       toast({ title: 'Uğur', description: 'Dəvətnamə göndərildi' });
       if (password) {
         setGeneratedPassword(password);
