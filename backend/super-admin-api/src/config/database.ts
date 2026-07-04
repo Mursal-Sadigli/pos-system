@@ -18,6 +18,41 @@ const sanitizeUrl = (url: string | undefined): string | undefined => {
   }
   
   sanitized = sanitized.replace(/[\s\u200b\u200c\u200d\ufeff]/g, '');
+  
+  try {
+    const protocolEndIndex = sanitized.indexOf('://');
+    const lastAtIndex = sanitized.lastIndexOf('@');
+    if (protocolEndIndex !== -1 && lastAtIndex > protocolEndIndex) {
+      const protocol = sanitized.substring(0, protocolEndIndex);
+      const userinfo = sanitized.substring(protocolEndIndex + 3, lastAtIndex);
+      const hostAndDb = sanitized.substring(lastAtIndex + 1);
+      
+      const colonIndex = userinfo.indexOf(':');
+      let username = userinfo;
+      let password = '';
+      if (colonIndex !== -1) {
+        username = userinfo.substring(0, colonIndex);
+        password = userinfo.substring(colonIndex + 1);
+      }
+      
+      let encodedUser = '';
+      let encodedPass = '';
+      try {
+        const decodedUser = decodeURIComponent(username);
+        const decodedPass = decodeURIComponent(password);
+        encodedUser = encodeURIComponent(decodedUser);
+        encodedPass = encodeURIComponent(decodedPass);
+      } catch (err) {
+        encodedUser = encodeURIComponent(username);
+        encodedPass = encodeURIComponent(password);
+      }
+      
+      sanitized = `${protocol}://${encodedUser}:${encodedPass}@${hostAndDb}`;
+    }
+  } catch (e) {
+    // Ignore and return sanitized string
+  }
+  
   return sanitized;
 };
 
