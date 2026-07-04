@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -25,8 +25,17 @@ type LoginFormData=z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
     const router=useRouter();
-    const {login, isLoading}=useAuth();
+    const {login, isLoading, user}=useAuth();
     const [showPassword, setShowPassword]=useState(false);
+
+    // Artıq daxil olmuş istifadəçini yönləndir
+    useEffect(() => {
+      if (user) {
+        if (user.role === 'SUPER_ADMIN') router.replace('/super-admin');
+        else if (user.role === 'ADMIN') router.replace('/admin');
+        else router.replace('/dashboard');
+      }
+    }, [user, router]);
 
     const {register, handleSubmit, formState: {errors}, }=useForm<LoginFormData>({
         resolver: zodResolver(loginSchema),
@@ -51,8 +60,9 @@ export default function LoginPage() {
             } else {
               router.push('/dashboard');
             }
-        }catch(error){
-            toast.error('Daxil olma uğursuz oldu. Zəhmət olmasa yenidən cəhd edin.');
+        }catch(error: any){
+            console.error('Login xətası:', error);
+            toast.error(error?.message || 'Daxil olma uğursuz oldu. Zəhmət olmasa yenidən cəhd edin.');
         }
     };
 

@@ -91,6 +91,8 @@ export const useAuthStore = create<AuthStore>()(
           return;
         }
 
+        set({ isLoading: true });
+
         try {
           const response = await authApi.getMe();
           if (response?.data?.success) {
@@ -103,12 +105,31 @@ export const useAuthStore = create<AuthStore>()(
             set({ isLoading: false });
           }
         } catch (error: any) {
-          const status = error?.status || error?.response?.status || error?.statusCode;
+          // Yalnız 401 və ya 403 aldıqda logout et
+          // Digər xətalarda (şəbəkə xətası, 404 və s.) user-i saxla
+          const status =
+            error?.status ||
+            error?.statusCode ||
+            error?.code;
           if (status === 401 || status === 403) {
+            // refresh token cəhd et
+            const refreshToken = localStorage.getItem('refreshToken');
+            if (refreshToken) {
+              try {
+                const refreshResp = await authApi.refreshToken(refreshToken);
+                if (refreshResp?.data?.success) {
+                  const { token: newToken, user: updatedUser } = refreshResp.data.data;
+                  localStorage.setItem('token', newToken);
+                  set({ user: updatedUser, token: newToken, isLoading: false });
+                  return;
+                }
+              } catch {
+                // refresh da uğursuz oldu - logout et
+              }
+            }
             get().logout();
-          } else {
-            set({ isLoading: false });
           }
+          set({ isLoading: false });
         }
       },
 

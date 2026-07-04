@@ -1,24 +1,30 @@
 import { useAuthStore } from '@/store/authStore';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 export function useAuth() {
   const router = useRouter();
-  const { 
-    user, 
-    token, 
-    isLoading, 
-    login, 
+  const hasChecked = useRef(false);
+  const {
+    user,
+    token,
+    isLoading,
+    login,
     register,
-    logout, 
-    setUser, 
+    logout,
+    setUser,
     setToken,
-    checkAuth 
+    checkAuth
   } = useAuthStore();
 
-  // Check auth on mount
+  // Yalnız bir dəfə yoxla, artıq user varsa checkAuth çağırma
   useEffect(() => {
-    checkAuth();
+    if (!hasChecked.current) {
+      hasChecked.current = true;
+      if (!user) {
+        checkAuth();
+      }
+    }
   }, []);
 
   return {

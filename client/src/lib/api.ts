@@ -35,13 +35,15 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // 401 - Unauthorized -> logout et
+    // 401 halında localStorage-i təmizlə, amma redirect etmə
+    // Redirect authStore.checkAuth tərəfindən idarə olunur
     if (error.response?.status === 401 && isBrowser) {
-      const win = (globalThis as typeof globalThis & { window?: { localStorage?: { removeItem: (key: string) => void }; location?: { assign: (url: string) => void } } }).window;
+      const win = (globalThis as typeof globalThis & { window?: { localStorage?: { removeItem: (key: string) => void } } }).window;
       win?.localStorage?.removeItem('token');
       win?.localStorage?.removeItem('refreshToken');
       win?.localStorage?.removeItem('user');
-      win?.location?.assign('/login');
+      // location.assign('/login') - BU SƏTRI SİLDİK
+      // Çünki tam page reload olur və state itirilir
     }
     return Promise.reject(error?.response?.data ?? error);
   }
