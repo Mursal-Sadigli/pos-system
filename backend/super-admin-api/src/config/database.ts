@@ -6,17 +6,58 @@ dotenv.config();
 
 const sanitizeUrl = (url: string | undefined): string | undefined => {
   if (!url) return url;
-  let sanitized = url.trim();
+  
+  // Remove all whitespace characters, zero-width spaces, and BOM
+  let sanitized = url.replace(/[\s\u200b\u200c\u200d\ufeff]/g, '');
+  
   if (sanitized.startsWith('"') && sanitized.endsWith('"')) {
-    sanitized = sanitized.slice(1, -1).trim();
+    sanitized = sanitized.slice(1, -1);
   }
   if (sanitized.startsWith("'") && sanitized.endsWith("'")) {
-    sanitized = sanitized.slice(1, -1).trim();
+    sanitized = sanitized.slice(1, -1);
   }
+  
+  sanitized = sanitized.replace(/[\s\u200b\u200c\u200d\ufeff]/g, '');
   return sanitized;
 };
 
+const runUrlDiagnostics = (url: string) => {
+  try {
+    new URL(url);
+    logger.info('DATABASE_URL has a valid URL format');
+  } catch (err: any) {
+    const hasProtocol = url.startsWith('postgres://') || url.startsWith('postgresql://');
+    const hasAt = url.includes('@');
+    const parts = url.split('@');
+    const beforeAt = parts[0] || '';
+    const afterAt = parts.slice(1).join('@');
+    
+    // Check for unusual or invisible characters
+    const unusualChars: string[] = [];
+    for (let i = 0; i < url.length; i++) {
+      const code = url.charCodeAt(i);
+      if (code < 32 || code > 126) {
+        unusualChars.push(`char[${i}]=code:${code}`);
+      }
+    }
+    
+    logger.error(`DATABASE_URL diagnostic: 
+      length=${url.length}
+      hasProtocol=${hasProtocol}
+      hasAt=${hasAt}
+      unusualChars=[${unusualChars.join(', ')}]
+      beforeAtLength=${beforeAt.length}
+      afterAtLength=${afterAt.length}
+      errorMessage="${err?.message}"
+    `);
+  }
+};
+
 const databaseUrl = sanitizeUrl(process.env.DATABASE_URL);
+
+if (databaseUrl) {
+  runUrlDiagnostics(databaseUrl);
+}
 
 const poolConfig: any = {
   connectionString: databaseUrl,
