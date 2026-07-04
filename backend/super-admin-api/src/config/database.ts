@@ -174,8 +174,11 @@ if (dbSchema && dbSchema !== 'public') {
   poolConfig.options = `-c search_path='${dbSchema}',public`;
 }
 
-// Only enable SSL when explicitly requested via environment variable.
-if (process.env.DB_SSL && process.env.DB_SSL.toLowerCase() === 'true') {
+// Enable SSL when requested, or if sslmode=require/neon.tech is in the connection URL
+if (
+  (process.env.DB_SSL && process.env.DB_SSL.toLowerCase() === 'true') ||
+  (databaseUrl && (databaseUrl.includes('sslmode=require') || databaseUrl.includes('ssl=true') || databaseUrl.includes('neon.tech')))
+) {
   poolConfig.ssl = { rejectUnauthorized: false };
 }
 
