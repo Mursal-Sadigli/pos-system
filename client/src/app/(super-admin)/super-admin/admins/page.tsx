@@ -74,9 +74,9 @@ export default function SuperAdminAdminsPage() {
     const loadAdmins = async () => {
       try {
         const res = await userApi.getUsers({ role: 'ADMIN' });
-        // Support multiple response shapes: { users: [] } | [] | { rows: [] } | single object
-        const raw = res.data?.users ?? res.data ?? [];
-        const list = Array.isArray(raw) ? raw : (raw?.rows && Array.isArray(raw.rows) ? raw.rows : []);
+        const payload = res.data?.data;
+        const raw = payload?.users ?? payload ?? [];
+        const list = Array.isArray(raw) ? raw : [];
         // normalize status to lowercase for UI
         const normalized = list.map((u: any) => ({
           id: u.id,

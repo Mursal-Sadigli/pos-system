@@ -76,7 +76,9 @@ export default function UsersPage() {
       setLoading(true);
       try {
         const resp = await userApi.getUsers();
-        const data = resp.data?.users ?? resp.data ?? [];
+        const payload = resp.data?.data;
+        const raw = payload?.users ?? payload ?? [];
+        const data = Array.isArray(raw) ? raw : [];
         setUsers(data.map((u: any) => ({ ...u, status: u.status || (u.is_active ? 'ACTIVE' : 'INACTIVE') })));
       } catch (err: any) {
         console.error('Failed to load users', err);
