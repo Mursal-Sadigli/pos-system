@@ -11,6 +11,8 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { useToast } from '@/hooks/useToast';
 import { userApi } from '@/lib/api';
 
+import { useSearchParams } from 'next/navigation';
+
 const roleLabels: Record<string, string> = {
   SUPER_ADMIN: 'Super Admin',
   ADMIN: 'Admin',
@@ -21,6 +23,8 @@ const roleLabels: Record<string, string> = {
 
 export default function SuperAdminUsersPage() {
   const { toast } = useToast();
+  const searchParams = useSearchParams();
+  const statusFilter = searchParams.get('status');
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -102,7 +106,9 @@ export default function SuperAdminUsersPage() {
                 </tr>
               </thead>
               <tbody>
-                {users.map((user) => (
+                {users
+                  .filter((user) => !statusFilter || user.status.toLowerCase() === statusFilter.toLowerCase())
+                  .map((user) => (
                   <tr key={user.id} className="border-b hover:bg-muted/50">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
