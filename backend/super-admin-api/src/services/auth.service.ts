@@ -6,26 +6,29 @@ import { EmailService } from './email.service';
 
 export class AuthService {
   static async login(email: string, password: string) {
-    const user = await UserModel.findByEmail(email);
-    if (!user) {
+    const userByEmail = await UserModel.findByEmail(email);
+    if (!userByEmail) {
       throw new Error('E-poçt və ya şifrə yanlışdır');
     }
 
-    const valid = await comparePassword(password, user.password);
+    const valid = await comparePassword(password, userByEmail.password);
     if (!valid) {
       throw new Error('E-poçt və ya şifrə yanlışdır');
     }
 
     const token = generateToken({
-      id: user.id,
-      email: user.email,
-      role: user.role,
-      storeId: user.store_id || undefined,
+      id: userByEmail.id,
+      email: userByEmail.email,
+      role: userByEmail.role,
+      storeId: userByEmail.store_id || undefined,
     });
-    const refreshToken = generateRefreshToken({ id: user.id });
+    const refreshToken = generateRefreshToken({ id: userByEmail.id });
 
-    await UserModel.updateRefreshToken(user.id, refreshToken);
-    await UserModel.updateLastLogin(user.id);
+    await UserModel.updateRefreshToken(userByEmail.id, refreshToken);
+    await UserModel.updateLastLogin(userByEmail.id);
+
+    // findById ilə yenidən gətir — store_name JOIN ilə gəlir
+    const user = await UserModel.findById(userByEmail.id) ?? userByEmail;
 
     return { user, token, refreshToken };
   }
@@ -36,6 +39,7 @@ export class AuthService {
       throw new Error('Invalid refresh token');
     }
 
+    // findById artıq store_name JOIN ilə gəlir
     const user = await UserModel.findById(payload.id);
     if (!user) {
       throw new Error('User not found');
@@ -48,7 +52,7 @@ export class AuthService {
       storeId: user.store_id || undefined,
     });
 
-    return { token };
+    return { token, user };
   }
 
   static async logout(userId: string) {

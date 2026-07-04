@@ -136,7 +136,10 @@ export default function AdminDashboard() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground">
-            Xoş gəldiniz, {user?.name}! Bugün mağazanızın vəziyyəti
+            Xoş gəldiniz, {user?.name}!{' '}
+            {(user as any)?.store_name || (user as any)?.storeName
+              ? <>Mağaza: <span className="font-semibold text-indigo-600">{(user as any).store_name || (user as any).storeName}</span></>
+              : 'Bugün mağazanızın vəziyyəti'}
           </p>
         </div>
         <div className="flex items-center gap-2">

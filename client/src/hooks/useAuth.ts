@@ -17,13 +17,12 @@ export function useAuth() {
     checkAuth
   } = useAuthStore();
 
-  // Yalnız bir dəfə yoxla, artıq user varsa checkAuth çağırma
+  // Hər mount-da bir dəfə checkAuth çağır - user localStorage-dən gəlsə belə
+  // store_name kimi məlumatların aktuallığını təmin edir
   useEffect(() => {
     if (!hasChecked.current) {
       hasChecked.current = true;
-      if (!user) {
-        checkAuth();
-      }
+      checkAuth(); // həmişə yoxla — user varsa belə fon rejimdə yenilə
     }
   }, []);
 

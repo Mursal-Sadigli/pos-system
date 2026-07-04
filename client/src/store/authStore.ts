@@ -95,7 +95,11 @@ export const useAuthStore = create<AuthStore>()(
           return;
         }
 
-        set({ isLoading: true });
+        // Mövcud user varsa yükləmə ekranı göstərmə — fon rejimdə yenilə
+        const currentUser = get().user;
+        if (!currentUser) {
+          set({ isLoading: true });
+        }
 
         try {
           const response = await authApi.getMe();
