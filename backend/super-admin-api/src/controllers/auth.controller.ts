@@ -107,6 +107,26 @@ export class AuthController {
     }
   }
 
+  static async forgotPassword(req: Request, res: Response) {
+    try {
+      const { email } = req.body;
+      await AuthService.forgotPassword(email);
+      return successResponse(res, null, 'Şifrəni sıfırlamaq üçün keçid e-poçt ünvanınıza göndərildi.');
+    } catch (error: any) {
+      return errorResponse(res, error.message || 'Şifrə sıfırlama keçidi göndərilə bilmədi.', 400);
+    }
+  }
+
+  static async resetPassword(req: Request, res: Response) {
+    try {
+      const { token, newPassword } = req.body;
+      await AuthService.resetPassword(token, newPassword);
+      return successResponse(res, null, 'Şifrə uğurla yeniləndi.');
+    } catch (error: any) {
+      return errorResponse(res, error.message || 'Şifrə yenilənə bilmədi.', 400);
+    }
+  }
+
   static async getMe(req: AuthRequest, res: Response) {
     try {
       if (!req.user) {

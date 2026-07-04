@@ -1,4 +1,4 @@
-﻿import dotenv from "dotenv";
+import dotenv from "dotenv";
 dotenv.config();
 
 const resendApiKey = process.env.RESEND_API_KEY || "";
@@ -101,6 +101,37 @@ export class EmailService {
       return;
     }
     return sendViaResend(data.to, "Xos Gelmisiniz - POS Sistemi", html);
+  }
+
+  static async sendPasswordResetEmail(email: string, name: string, token: string) {
+    const frontendUrl = (process.env.FRONTEND_URL || "http://localhost:3000").replace(/\/$/, "");
+    const resetLink = `${frontendUrl}/reset-password?token=${token}`;
+
+    const html = `<!DOCTYPE html>
+<html>
+<body style="font-family:Arial,sans-serif;background:#f9fafb;margin:0;padding:20px;">
+  <div style="max-width:600px;margin:40px auto;background:white;border-radius:12px;overflow:hidden;box-shadow:0 4px 6px rgba(0,0,0,0.07);">
+    <div style="background:#4F46E5;color:white;padding:32px 24px;text-align:center;">
+      <h1 style="margin:0;">Şifrə Sıfırlama</h1>
+    </div>
+    <div style="padding:32px 24px;">
+      <p>Salam <strong>${name}</strong>,</p>
+      <p>Şifrənizi sıfırlamaq üçün aşağıdakı düyməyə klikləyin:</p>
+      <p style="text-align:center">
+        <a href="${resetLink}" style="display:inline-block;background:#4F46E5;color:white;padding:14px 32px;text-decoration:none;border-radius:8px;font-weight:bold;margin:20px 0;">Şifrəni Yenilə</a>
+      </p>
+      <p style="font-size:13px;color:#6b7280;">Əgər bu tələbi siz etməmisinizsə, bu mesajı nəzərə almayın.</p>
+    </div>
+    <div style="text-align:center;padding:20px;color:#9ca3af;font-size:13px;">POS System &copy; ${new Date().getFullYear()}</div>
+  </div>
+</body>
+</html>`;
+
+    if (!resendApiKey) {
+      console.warn("RESEND_API_KEY yoxdur - reset email gonderilmir:", email);
+      return;
+    }
+    return sendViaResend(email, "Şifrə Sıfırlama - POS Sistemi", html);
   }
 }
 

@@ -1,7 +1,8 @@
 import { UserModel } from '../models/User.mode';
 import { comparePassword } from '../utils/bcrypt';
-import { generateToken, generateRefreshToken, verifyRefreshToken } from '../utils/jwt';
+import { generateToken, generateRefreshToken, verifyRefreshToken, verifyToken } from '../utils/jwt';
 import { InvitationService } from './invitation.service';
+import { EmailService } from './email.service';
 
 export class AuthService {
   static async login(email: string, password: string) {
@@ -92,5 +93,30 @@ export class AuthService {
 
   static async resendInvite(email: string, invitedBy: string) {
     return InvitationService.resendInvite({ email, invitedBy });
+  }
+
+  static async forgotPassword(email: string) {
+    const user = await UserModel.findByEmail(email);
+    if (!user) {
+      throw new Error('Bu e-poçt ünvanı ilə istifadəçi tapılmadı');
+    }
+    const resetToken = generateToken({ id: user.id, email: user.email, role: user.role });
+    await EmailService.sendPasswordResetEmail(user.email, user.name, resetToken);
+  }
+
+  static async resetPassword(token: string, newPassword: string) {
+    const decoded = verifyToken(token);
+    if (!decoded) {
+      throw new Error('Şifrə sıfırlama tokeni etibarsızdır və ya müddəti bitib.');
+    }
+    const user = await UserModel.findById(decoded.id);
+    if (!user) {
+      throw new Error('İstifadəçi tapılmadı');
+    }
+    await UserModel.updatePassword(user.id, newPassword);
+    if (user.status === 'PENDING' || user.must_change_password) {
+      await UserModel.update(user.id, { status: 'ACTIVE' });
+    }
+    await UserModel.updateRefreshToken(user.id, null);
   }
 }
