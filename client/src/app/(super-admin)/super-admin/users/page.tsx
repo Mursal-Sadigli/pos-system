@@ -133,8 +133,10 @@ export default function SuperAdminUsersPage() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuLabel>Əməliyyatlar</DropdownMenuLabel>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="gap-2">
-                            <Edit className="h-4 w-4" /> Redaktə et
+                          <DropdownMenuItem className="gap-2" asChild>
+                            <Link href={`/super-admin/users/${user.id}/edit`}>
+                              <Edit className="h-4 w-4" /> Redaktə et
+                            </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem className="gap-2" onClick={() => toggleStatus(user)}>
                             {user.status === 'ACTIVE' ? (

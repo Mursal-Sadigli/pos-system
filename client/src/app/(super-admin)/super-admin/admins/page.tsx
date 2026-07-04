@@ -299,9 +299,11 @@ export default function SuperAdminAdminsPage() {
                               <Eye className="h-4 w-4" />
                               Bax
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="gap-2">
-                              <Edit className="h-4 w-4" />
-                              Redaktə et
+                            <DropdownMenuItem className="gap-2" asChild>
+                              <Link href={`/super-admin/users/${admin.id}/edit`}>
+                                <Edit className="h-4 w-4" />
+                                Redaktə et
+                              </Link>
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
