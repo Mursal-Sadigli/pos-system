@@ -12,6 +12,7 @@ interface User {
   storeId: string | null;
   permissions?: string[];
   mustChangePassword?: boolean;
+  must_change_password?: boolean;
 }
 
 interface LoginResponse {

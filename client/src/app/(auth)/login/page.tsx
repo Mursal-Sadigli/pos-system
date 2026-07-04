@@ -31,7 +31,7 @@ export default function LoginPage() {
     // Artıq daxil olmuş istifadəçini yönləndir
     useEffect(() => {
       if (user) {
-        if ((user as any).must_change_password || user.mustChangePassword) {
+        if (user.must_change_password || user.mustChangePassword) {
           router.replace('/change-password');
         } else if (user.role === 'SUPER_ADMIN') {
           router.replace('/super-admin');
@@ -58,7 +58,7 @@ export default function LoginPage() {
             toast.success('Uğurla daxil oldunuz!');
             const user = response?.user;
             const role = user?.role;
-            if (user?.must_change_password || (user as any)?.mustChangePassword) {
+            if (user?.must_change_password || user?.mustChangePassword) {
               router.push('/change-password');
             } else if (role === 'SUPER_ADMIN') {
               router.push('/super-admin');
