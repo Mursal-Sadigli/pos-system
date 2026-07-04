@@ -295,6 +295,9 @@ const ensureInvitationTable = async () => {
 
 export const connectDB = async () => {
   try {
+    if (poolConfig.host === 'host') {
+      logger.warn('⚠️ DATABASE_URL contains placeholder host "host". Please replace it with your actual database URL in the Render Environment Variables!');
+    }
     await pool.query('SELECT 1');
     await ensureInvitationTable();
     logger.info('✅ Database connection successful');
