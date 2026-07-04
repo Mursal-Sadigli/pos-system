@@ -6,18 +6,16 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import { corsOptions } from './config/cors';
 import { logger } from './utils/logger';
-import { AuthController } from './controllers/auth.controller';
 import routes from './routes';
 
 
-import { errorHandler } from './middleware/error.middleware';
 import { rateLimiter } from './middleware/rateLimit.middleware';
-import { authenticate } from './middleware/auth.middleware';
+import { errorHandler } from './middleware/error.middleware';
 
 dotenv.config();
 
 const app = express();
-app.post('/login', AuthController.login);
+
 
 // Security middleware
 app.use(helmet());
