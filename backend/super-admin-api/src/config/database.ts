@@ -88,6 +88,53 @@ const runUrlDiagnostics = (url: string) => {
   }
 };
 
+const parseConnectionString = (url: string) => {
+  const protocolEndIndex = url.indexOf('://');
+  if (protocolEndIndex === -1) return null;
+  
+  const protocol = url.substring(0, protocolEndIndex);
+  if (protocol !== 'postgres' && protocol !== 'postgresql') return null;
+  
+  const lastAtIndex = url.lastIndexOf('@');
+  if (lastAtIndex === -1 || lastAtIndex < protocolEndIndex) return null;
+  
+  const userinfo = url.substring(protocolEndIndex + 3, lastAtIndex);
+  const hostPortDbQuery = url.substring(lastAtIndex + 1);
+  
+  const slashIndex = hostPortDbQuery.indexOf('/');
+  if (slashIndex === -1) return null;
+  
+  const hostPort = hostPortDbQuery.substring(0, slashIndex);
+  const dbQuery = hostPortDbQuery.substring(slashIndex + 1);
+  
+  const questionIndex = dbQuery.indexOf('?');
+  const database = questionIndex === -1 ? dbQuery : dbQuery.substring(0, questionIndex);
+  
+  const colonIndex = userinfo.indexOf(':');
+  let user = userinfo;
+  let password = '';
+  if (colonIndex !== -1) {
+    user = userinfo.substring(0, colonIndex);
+    password = userinfo.substring(colonIndex + 1);
+  }
+  
+  const hostColonIndex = hostPort.lastIndexOf(':');
+  let host = hostPort;
+  let port = '5432';
+  if (hostColonIndex !== -1) {
+    host = hostPort.substring(0, hostColonIndex);
+    port = hostPort.substring(hostColonIndex + 1);
+  }
+  
+  return {
+    user: decodeURIComponent(user),
+    password: decodeURIComponent(password),
+    host: host,
+    port: parseInt(port) || 5432,
+    database: decodeURIComponent(database)
+  };
+};
+
 const databaseUrl = sanitizeUrl(process.env.DATABASE_URL);
 
 if (databaseUrl) {
@@ -95,12 +142,24 @@ if (databaseUrl) {
 }
 
 const poolConfig: any = {
-  connectionString: databaseUrl,
   max: parseInt(process.env.DB_POOL_MAX || '10'),
   min: parseInt(process.env.DB_POOL_MIN || '2'),
   idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT || '30000'),
   connectionTimeoutMillis: parseInt(process.env.DB_CONNECTION_TIMEOUT || '2000'),
 };
+
+if (databaseUrl) {
+  const parsed = parseConnectionString(databaseUrl);
+  if (parsed) {
+    poolConfig.user = parsed.user;
+    poolConfig.password = parsed.password;
+    poolConfig.host = parsed.host;
+    poolConfig.port = parsed.port;
+    poolConfig.database = parsed.database;
+  } else {
+    poolConfig.connectionString = databaseUrl;
+  }
+}
 
 export const dbSchema = (() => {
   if (!databaseUrl) return 'public';
