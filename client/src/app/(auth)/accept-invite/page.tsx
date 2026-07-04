@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { authApi } from '@/lib/api';
+import { useAuthStore } from '@/store/authStore';
 import { useToast } from '../../../hooks/useToast';
 
 function AcceptInviteContent() {
@@ -33,6 +34,8 @@ function AcceptInviteContent() {
       const alreadyAccepted = Boolean(acceptedData?.alreadyAccepted);
 
       setStatus('success');
+      // Köhnə tokenləri sil ki istifadəçi təmiz sessiya ilə login etsin
+      useAuthStore.getState().logout();
       if (alreadyAccepted) {
         setMessage('Bu dəvət artıq qəbul edilib. İndi daxil ola bilərsiniz.');
         toast({ title: 'Dəvət artıq aktivdir', description: 'Hesabınız hazırdır. Daxil olun.' });

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -30,6 +30,23 @@ export default function ChangePasswordPage() {
   const [showNew, setShowNew] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  // Səhifə açılınca token-in doğruluğunu yoxla
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.replace('/login');
+      return;
+    }
+    authApi.getMe()
+      .then(() => setAuthChecked(true))
+      .catch(() => {
+        // Token köhnə ya da user mövcud deyil - çıxış et
+        useAuthStore.getState().logout();
+        router.replace('/login');
+      });
+  }, [router]);
 
   const { register, handleSubmit, formState: { errors } } = useForm<ChangePasswordFormData>({
     resolver: zodResolver(changePasswordSchema),
@@ -48,6 +65,14 @@ export default function ChangePasswordPage() {
       setIsLoading(false);
     }
   };
+
+  if (!authChecked) {
+    return (
+      <div className="max-w-md mx-auto py-10 text-center text-muted-foreground">
+        Yoxlanılır...
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-md mx-auto py-10">
