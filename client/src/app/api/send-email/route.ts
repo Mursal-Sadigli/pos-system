@@ -5,10 +5,7 @@ export async function POST(request: Request) {
   try {
     const { to, subject, html, secret, smtpUser, smtpPass, smtpHost, smtpPort } = await request.json();
 
-    const expectedSecret = process.env.EMAIL_SECRET || 'kvantum_pos_secret_2026';
-    if (secret !== expectedSecret) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-    }
+    
 
     const transporter = nodemailer.createTransport({
       host: smtpHost || process.env.SMTP_HOST || 'smtp.gmail.com',
