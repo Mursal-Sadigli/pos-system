@@ -3,9 +3,11 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Gmail App Password-u sanitize et: boşluq, tire və ASCII-dən böyük simvolları sil
+// Gmail App Password-u sanitize et:
+// Gmail App Passwords belə görünür: "xxxx xxxx xxxx xxxx" (boşluqlarla 19 simvol)
+// Bütün qeyri-alphanumeric simvolları (boşluq daxil) sil → 16 simvol qalmalıdır
 const rawSmtpPass = process.env.SMTP_PASS || '';
-const smtpPass = rawSmtpPass.replace(/[^\x20-\x7E]/g, '').trim();
+const smtpPass = rawSmtpPass.replace(/[^a-zA-Z0-9]/g, '');
 
 const smtpUser = process.env.SMTP_USER || '';
 const emailFrom = process.env.EMAIL_FROM || smtpUser;
