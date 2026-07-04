@@ -8,12 +8,12 @@ const redisClient = {
   // Methods used elsewhere are defined as async no‑ops.
   connect: async () => {},
   quit: async () => {},
-  get: async (_key: string) => null,
-  set: async (_key: string, _value: string) => {},
-  setex: async (_key: string, _ttl: number, _value: string) => {},
-  del: async (_key: string) => {},
-  exists: async (_key: string) => false,
-  keys: async (_pattern: string) => [],
+  get: async (_key: string): Promise<string | null> => null,
+  set: async (_key: string, _value: string): Promise<void> => {},
+  setex: async (_key: string, _ttl: number, _value: string): Promise<void> => {},
+  del: async (...keys: string[]): Promise<void> => {},
+  exists: async (_key: string): Promise<boolean> => false,
+  keys: async (_pattern: string): Promise<string[]> => [],
 };
 
 export const cache = {
@@ -26,7 +26,7 @@ export const cache = {
   exists: async (key: string) => await redisClient.exists(key),
   clearPattern: async (pattern: string) => {
     const keys = await redisClient.keys(pattern);
-    if (keys.length) await redisClient.del(keys);
+    if (keys.length) await redisClient.del(...keys);
   },
 };
 
