@@ -212,7 +212,7 @@ export class UserModel {
     const result = await query(
       `SELECT u.*, s.name as store_name 
        FROM ${schemaQualified}.users u
-       LEFT JOIN ${schemaQualified}.stores s ON u.store_id = s.id
+       LEFT JOIN public.stores s ON u.store_id = s.id
        ${whereClause}
        ORDER BY u.created_at DESC
        LIMIT $${params.length - 1} OFFSET $${params.length}`,

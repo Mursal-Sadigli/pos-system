@@ -35,7 +35,7 @@ export interface CreateStoreData {
 export class StoreModel {
   static async create(data: CreateStoreData): Promise<Store> {
     const result = await query(
-      `INSERT INTO ${schemaQualified}.stores (
+      `INSERT INTO public.stores (
         name, email, phone, address, tax_number, registration_number,
         timezone, currency, language, business_type, website
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
@@ -60,7 +60,7 @@ export class StoreModel {
 
   static async findById(id: string): Promise<Store | null> {
     const result = await query(
-      `SELECT * FROM ${schemaQualified}.stores WHERE id = $1`,
+      `SELECT * FROM public.stores WHERE id = $1`,
       [id]
     );
     return result.rows[0] || null;
@@ -96,7 +96,7 @@ export class StoreModel {
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const countResult = await query(
-      `SELECT COUNT(*) FROM ${schemaQualified}.stores ${whereClause}`,
+      `SELECT COUNT(*) FROM public.stores ${whereClause}`,
       params
     );
     const total = parseInt(countResult.rows[0].count);
@@ -105,7 +105,7 @@ export class StoreModel {
     const result = await query(
       `SELECT s.*, 
         CAST((SELECT COUNT(*) FROM ${schemaQualified}.users u WHERE u.store_id = s.id) AS INTEGER) as users_count 
-       FROM ${schemaQualified}.stores s
+       FROM public.stores s
        ${whereClause}
        ORDER BY s.created_at DESC
        LIMIT $${params.length - 1} OFFSET $${params.length}`,
@@ -154,7 +154,7 @@ export class StoreModel {
 
     values.push(id);
     const result = await query(
-      `UPDATE ${schemaQualified}.stores SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP 
+      `UPDATE public.stores SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP 
        WHERE id = $${paramIndex} RETURNING *`,
       values
     );
@@ -164,7 +164,7 @@ export class StoreModel {
 
   static async delete(id: string): Promise<boolean> {
     const result = await query(
-      `DELETE FROM ${schemaQualified}.stores WHERE id = $1 RETURNING id`,
+      `DELETE FROM public.stores WHERE id = $1 RETURNING id`,
       [id]
     );
     return result.rowCount !== null && result.rowCount > 0;
