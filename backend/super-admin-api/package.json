@@ -4,7 +4,7 @@
   "scripts": {
     "dev": "nodemon src/server.ts",
     "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc",
-    "start": "node dist/server.js",
+    "start": "npm run seed:prod && node dist/server.js",
     "seed": "ts-node src/scripts/seed-super-admin.ts",
     "seed:prod": "node dist/scripts/seed-super-admin.js"
   },

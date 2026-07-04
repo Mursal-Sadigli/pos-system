@@ -1,4 +1,4 @@
-import { query } from '../config/database';
+import { query, schemaQualified } from '../config/database';
 import { hashPassword } from '../utils/bcrypt';
 import dotenv from 'dotenv';
 
@@ -18,7 +18,7 @@ async function seedSuperAdmin() {
 
     // 1. Email ilə istifadəçini yoxla
     const check = await query(
-      'SELECT id, name, email, role FROM users WHERE email = $1',
+      `SELECT id, name, email, role FROM ${schemaQualified}.users WHERE email = $1`,
       [superAdmin.email]
     );
 
@@ -35,9 +35,9 @@ async function seedSuperAdmin() {
       if (check.rows[0].role !== 'SUPER_ADMIN') {
         console.log('⚠️  Updating role to SUPER_ADMIN...');
         await query(
-          `UPDATE users 
+          `UPDATE ${schemaQualified}.users 
            SET role = 'SUPER_ADMIN', 
-               permissions = '{}'::TEXT[],
+               permissions = '{}'::JSONB,
                updated_at = CURRENT_TIMESTAMP
            WHERE email = $1`,
           [superAdmin.email]
@@ -51,7 +51,7 @@ async function seedSuperAdmin() {
     const hashedPassword = await hashPassword(superAdmin.password);
     
     const result = await query(
-      `INSERT INTO users (
+      `INSERT INTO ${schemaQualified}.users (
         name,
         email,
         password,
@@ -68,7 +68,7 @@ async function seedSuperAdmin() {
         superAdmin.email,
         hashedPassword,
         superAdmin.role,
-        [], // permissions
+        JSON.stringify([]), // permissions
         true, // is_active
         'ACTIVE',
         false, // must_change_password
