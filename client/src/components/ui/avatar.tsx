@@ -26,4 +26,13 @@ function AvatarFallback({ className, ...props }: React.ComponentProps<'div'>) {
   );
 }
 
-export { Avatar, AvatarFallback };
+function AvatarImage({ className, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) {
+  return (
+    <img
+      className={cn('h-full w-full object-cover', className)}
+      {...props}
+    />
+  );
+}
+
+export { Avatar, AvatarFallback, AvatarImage };

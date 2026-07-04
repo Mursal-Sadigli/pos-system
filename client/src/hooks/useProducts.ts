@@ -20,7 +20,7 @@ export function useCreateProduct(){
             return response.data;
         },
         onSuccess: () => {
-            queryClient.invalidateQueries(['products']);
+            queryClient.invalidateQueries({ queryKey: ['products'] });
         },
     });
 }

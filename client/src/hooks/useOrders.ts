@@ -20,7 +20,7 @@ export function useCreateOrder() {
       return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['orders']);
+      queryClient.invalidateQueries({ queryKey: ['orders'] });
     },
   });
 }

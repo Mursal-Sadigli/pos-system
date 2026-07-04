@@ -6,14 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Plus } from 'lucide-react';
 
-// Mock data - will be replaced with API call
 const mockProducts = [
-  { id: '1', name: 'iPhone 15 Pro', price: 1299, stock: 5, category: 'electronics', image: '📱' },
-  { id: '2', name: 'Samsung Galaxy S24', price: 999, stock: 3, category: 'electronics', image: '📱' },
-  { id: '3', name: 'Apple AirPods Pro', price: 249, stock: 10, category: 'electronics', image: '🎧' },
-  { id: '4', name: 'MacBook Pro 14"', price: 1999, stock: 2, category: 'electronics', image: '💻' },
-  { id: '5', name: 'Pizza Margherita', price: 15, stock: 20, category: 'food', image: '🍕' },
-  { id: '6', name: 'Sushi Set', price: 45, stock: 8, category: 'food', image: '🍣' },
+  { id: '1', name: 'Espresso', price: 5, stock: 24, category: 'coffee', image: '☕' },
+  { id: '2', name: 'Cappuccino', price: 6, stock: 18, category: 'coffee', image: '☕' },
+  { id: '3', name: 'Latte', price: 7, stock: 12, category: 'coffee', image: '☕' },
+  { id: '4', name: 'Croissant', price: 3, stock: 32, category: 'food', image: '🥐' },
+  { id: '5', name: 'Sandviç', price: 4, stock: 20, category: 'food', image: '🥪' },
+  { id: '6', name: 'Su', price: 1, stock: 50, category: 'drinks', image: '💧' },
 ];
 
 interface ProductGridProps {
@@ -31,7 +30,7 @@ export function ProductGrid({ searchQuery, category }: ProductGridProps) {
   });
 
   return (
-    <div className="grid grid-cols-3 gap-3">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
       {filteredProducts.map((product) => (
         <Card
           key={product.id}
@@ -41,7 +40,7 @@ export function ProductGrid({ searchQuery, category }: ProductGridProps) {
           <div className="flex flex-col items-center text-center">
             <div className="text-4xl mb-2">{product.image}</div>
             <h3 className="font-medium text-sm line-clamp-1">{product.name}</h3>
-            <p className="text-lg font-bold text-primary">${product.price}</p>
+            <p className="text-lg font-bold text-primary">₼{product.price.toFixed(2)}</p>
             <Badge variant="secondary" className="mt-1 text-xs">
               Stock: {product.stock}
             </Badge>
@@ -54,7 +53,7 @@ export function ProductGrid({ searchQuery, category }: ProductGridProps) {
               }}
             >
               <Plus className="mr-1 h-3 w-3" />
-              Add
+              Əlavə et
             </Button>
           </div>
         </Card>

@@ -1,42 +1,31 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 
 export default function RegisterPage() {
   return (
-    <div className="space-y-6 max-w-md mx-auto">
+    <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-semibold">Qeydiyyat</h1>
+        <h1 className="text-3xl font-semibold">Qeydiyyat deaktivdir</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Yeni hesab yaratmaq üçün aşağıdakı formu doldurun.
+          Yeni istifadəçi hesabı yaratmaq üçün əvvəlcə administrator tərəfindən dəvət almalısınız.
         </p>
       </div>
 
-      <div className="space-y-4">
-        <div>
-          <Label htmlFor="name">Ad</Label>
-          <Input id="name" placeholder="Adınızı daxil edin" className="h-10 rounded-xl" />
-        </div>
-        <div>
-          <Label htmlFor="email">Email</Label>
-          <Input id="email" type="email" placeholder="example@mail.com" className="h-10 rounded-xl" />
-        </div>
-        <div>
-          <Label htmlFor="password">Şifrə</Label>
-          <Input id="password" type="password" placeholder="Şifrənizi daxil edin" className="h-10 rounded-xl" />
-        </div>
+      <div className="rounded-3xl border border-muted p-8 bg-muted/20">
+        <p className="text-base leading-7 text-foreground">
+          Açıq qeydiyyat deaktiv edilib. Daxil olmaq üçün dəvət linkini gözləyin və ya administrator ilə əlaqə saxlayın.
+        </p>
       </div>
 
-      <Button className="w-full">Qeydiyyatdan keç</Button>
-      <p className="text-center text-sm text-muted-foreground">
-        Hesabın var?{' '}
-        <Link href="/login" className="text-primary hover:underline">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Link href="/login" className="rounded-xl bg-primary px-4 py-3 text-center text-white hover:bg-primary/90">
           Daxil ol
         </Link>
-      </p>
+        <Link href="/forgot-password" className="rounded-xl border border-border px-4 py-3 text-center hover:bg-muted">
+          Şifrəni bərpa et
+        </Link>
+      </div>
     </div>
   );
 }

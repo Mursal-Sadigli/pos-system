@@ -25,7 +25,9 @@ export function PosScreen() {
         <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
           <div>
             <h1 className="text-2xl font-semibold">🛒 POS - Mağaza Adı</h1>
-            <p className="text-sm text-muted-foreground">Buradan sürətli satışları və ödənişləri idarə edə bilərsiniz.</p>
+            <p className="text-sm text-muted-foreground">
+              Buradan sürətli satışları və ödənişləri idarə edə bilərsiniz.
+            </p>
           </div>
 
           <div className="grid w-full gap-2 sm:grid-cols-[1fr_auto_auto] xl:w-auto xl:grid-cols-[minmax(320px,_420px)_auto_auto]">
@@ -47,9 +49,11 @@ export function PosScreen() {
                 </button>
               )}
             </div>
+
             <Button variant="outline" className="min-w-[44px]">
               <Barcode className="h-4 w-4" />
             </Button>
+
             <Button variant="secondary" className="min-w-[90px]">
               <CreditCard className="mr-2 h-4 w-4" />
               Kart

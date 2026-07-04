@@ -39,9 +39,18 @@ export default function LoginPage() {
 
     const onSubmit=async(data: LoginFormData) => {
         try{
-            await login(data.email, data.password);
-            toast.success('uğurla daxil oldu!');
-            router.push('/dashboard');
+            const response = await login(data.email, data.password);
+            toast.success('Uğurla daxil oldunuz!');
+            const role = response?.user?.role;
+            if (response?.user?.mustChangePassword) {
+              router.push('/change-password');
+            } else if (role === 'SUPER_ADMIN') {
+              router.push('/super-admin');
+            } else if (role === 'ADMIN') {
+              router.push('/admin');
+            } else {
+              router.push('/dashboard');
+            }
         }catch(error){
             toast.error('Daxil olma uğursuz oldu. Zəhmət olmasa yenidən cəhd edin.');
         }
@@ -123,7 +132,7 @@ export default function LoginPage() {
       <p className="text-center text-sm text-muted-foreground">
         Hesabınız yoxdur?{' '}
         <Link href="/register" className="text-primary hover:underline">
-          Sign up
+          Qeydiyyatdan keç
         </Link>
       </p>
     </form>

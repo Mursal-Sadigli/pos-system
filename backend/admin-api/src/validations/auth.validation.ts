@@ -1,0 +1,29 @@
+import { z } from 'zod';
+
+export const loginSchema = z.object({
+  body: z.object({
+    email: z.string().email('Düzgün email daxil edin'),
+    password: z.string().min(6, 'Şifrə ən az 6 simvol olmalıdır'),
+  }),
+});
+
+export const inviteSchema = z.object({
+  body: z.object({
+    name: z.string().min(2, 'Ad ən az 2 simvol olmalıdır'),
+    email: z.string().email('Düzgün email daxil edin'),
+    role: z.enum(['MANAGER', 'CASHIER', 'VIEWER']),
+    storeId: z.string().optional(),
+  }),
+});
+
+export const acceptInviteSchema = z.object({
+  body: z.object({
+    token: z.string().min(1, 'Dəvət tokeni tələb olunur'),
+  }),
+});
+
+export const refreshTokenSchema = z.object({
+  body: z.object({
+    refreshToken: z.string().min(1, 'Refresh token tələb olunur'),
+  }),
+});

@@ -2,10 +2,11 @@ export interface User {
   id: string;
   name: string;
   email: string;
-  role: 'admin' | 'manager' | 'cashier' | 'viewer';
+  role: 'admin' | 'manager' | 'cashier' | 'viewer' | 'super_admin';
   storeId: string;
   permissions: string[];
   isActive: boolean;
+  mustChangePassword?: boolean;
   lastLogin?: Date;
   createdAt: Date;
   updatedAt: Date;
