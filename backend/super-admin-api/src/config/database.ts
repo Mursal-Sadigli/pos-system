@@ -170,9 +170,7 @@ export const dbSchema = (() => {
 export const schemaQualified = `"${dbSchema.replace(/"/g, '""')}"`;
 export const schemaIdentifier = dbSchema ? `"${dbSchema.replace(/"/g, '""')}"` : '"public"';
 
-if (dbSchema && dbSchema !== 'public') {
-  poolConfig.options = `-c search_path='${dbSchema}',public`;
-}
+// search_path option removed for Neon compatibility
 
 // Enable SSL when requested, or if sslmode=require/neon.tech is in the connection URL
 if (
@@ -192,13 +190,7 @@ pool.on('error', (err) => {
   logger.error('❌ Database error:', err);
 });
 
-pool.on('connect', (client) => {
-  if (dbSchema && dbSchema !== 'public') {
-    client.query(`SET search_path TO ${schemaIdentifier},public`).catch((err) => {
-      logger.error('❌ Failed to set search_path:', err);
-    });
-  }
-});
+// search_path setting removed – Neon does not support it
 
 export const query = async (text: string, params?: any[]) => {
   const start = Date.now();
