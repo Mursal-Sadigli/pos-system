@@ -4,8 +4,22 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+const sanitizeUrl = (url: string | undefined): string | undefined => {
+  if (!url) return url;
+  let sanitized = url.trim();
+  if (sanitized.startsWith('"') && sanitized.endsWith('"')) {
+    sanitized = sanitized.slice(1, -1).trim();
+  }
+  if (sanitized.startsWith("'") && sanitized.endsWith("'")) {
+    sanitized = sanitized.slice(1, -1).trim();
+  }
+  return sanitized;
+};
+
+const databaseUrl = sanitizeUrl(process.env.DATABASE_URL);
+
 const poolConfig: any = {
-  connectionString: process.env.DATABASE_URL,
+  connectionString: databaseUrl,
   max: parseInt(process.env.DB_POOL_MAX || '10'),
   min: parseInt(process.env.DB_POOL_MIN || '2'),
   idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT || '30000'),
@@ -13,9 +27,8 @@ const poolConfig: any = {
 };
 
 export const dbSchema = (() => {
-  const url = process.env.DATABASE_URL;
-  if (!url) return 'public';
-  const match = url.match(/[?&]schema=([^&]+)/);
+  if (!databaseUrl) return 'public';
+  const match = databaseUrl.match(/[?&]schema=([^&]+)/);
   return match ? decodeURIComponent(match[1]) : 'public';
 })();
 
