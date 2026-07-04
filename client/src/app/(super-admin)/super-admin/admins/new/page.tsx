@@ -64,8 +64,9 @@ export default function NewAdminPage() {
       if (password) {
         setGeneratedPassword(password);
         setPwModalOpen(true);
+      } else {
+        router.push('/super-admin/admins');
       }
-      router.push('/super-admin/admins');
     } catch (err: any) {
       console.error('Invite failed', err?.response?.data ?? err);
       toast({ title: 'Xəta', description: 'Admin dəvətnaməsi göndərilə bilmədi', variant: 'destructive' });
@@ -127,7 +128,10 @@ export default function NewAdminPage() {
             <p className="text-sm text-muted-foreground mt-2">Bu şifrəni istifadəçiyə paylaşın və ya istifadəçi qəbul etmə saytında yenidən yaradın.</p>
           </div>
           <DialogFooter>
-            <Button onClick={() => setPwModalOpen(false)}>Bağla</Button>
+            <Button onClick={() => {
+              setPwModalOpen(false);
+              router.push('/super-admin/admins');
+            }}>Bağla</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

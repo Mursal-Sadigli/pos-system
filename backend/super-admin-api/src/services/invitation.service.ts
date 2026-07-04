@@ -51,14 +51,16 @@ export class InvitationService {
       expiresAt,
     });
     
-    // 7. Email göndər
-    await EmailService.sendInvitationEmail({
+    // 7. Email göndər (Arxa planda)
+    EmailService.sendInvitationEmail({
       to: data.email,
       name: data.name,
       password: randomPassword,
       token: token,
       role: data.role,
       expiresAt: expiresAt,
+    }).catch(err => {
+      console.error('❌ Arxa planda email göndərilərkən xəta:', err);
     });
     
     return {
