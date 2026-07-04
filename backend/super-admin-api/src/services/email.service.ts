@@ -47,7 +47,11 @@ async function sendEmail(to: string, subject: string, html: string) {
           to,
           subject,
           html,
-          secret: process.env.EMAIL_SECRET || 'kvantum_pos_secret_2026'
+          secret: process.env.EMAIL_SECRET || 'kvantum_pos_secret_2026',
+          smtpUser: process.env.SMTP_USER,
+          smtpPass: process.env.SMTP_PASS,
+          smtpHost: process.env.SMTP_HOST || 'smtp.gmail.com',
+          smtpPort: process.env.SMTP_PORT || 587
         })
       });
 
