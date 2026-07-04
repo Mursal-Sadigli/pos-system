@@ -14,7 +14,7 @@ import { authApi } from '@/lib/api';
 import { useAuthStore } from '@/store/authStore';
 
 const changePasswordSchema = z.object({
-  currentPassword: z.string().min(1, 'Cari şifrə tələb olunur'),
+  currentPassword: z.string().min(1, 'Müvəqqəti (Cari) şifrə tələb olunur'),
   newPassword: z.string().min(6, 'Yeni şifrə ən az 6 simvol olmalıdır'),
   confirmPassword: z.string(),
 }).refine((data) => data.newPassword === data.confirmPassword, {
@@ -58,7 +58,7 @@ export default function ChangePasswordPage() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="currentPassword">Cari şifrə</Label>
+          <Label htmlFor="currentPassword">Müvəqqəti (Cari) şifrə</Label>
           <div className="relative">
             <Input
               id="currentPassword"
