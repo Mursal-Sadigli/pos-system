@@ -3,23 +3,38 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const emailFrom = process.env.EMAIL_FROM || process.env.SMTP_USER || `no-reply@${process.env.FRONTEND_URL?.replace(/^https?:\/\//, '') || 'localhost'}`;
-const useSmtp = Boolean(process.env.SMTP_HOST);
-const smtpPort = parseInt(process.env.SMTP_PORT || '587');
+// Gmail App Password-u sanitize et: boşluq, tire və ASCII-dən böyük simvolları sil
+const rawSmtpPass = process.env.SMTP_PASS || '';
+const smtpPass = rawSmtpPass.replace(/[^\x20-\x7E]/g, '').trim();
+
+const smtpUser = process.env.SMTP_USER || '';
+const emailFrom = process.env.EMAIL_FROM || smtpUser;
+const useSmtp = Boolean(smtpUser && smtpPass);
+
+if (!useSmtp) {
+  console.warn('SMTP_USER veya SMTP_PASS yoxdur - emailler gonderilmeyecek');
+} else {
+  console.info('SMTP konfigurasyonu tapildi, istifadeci:', smtpUser, 'pass uzunlugu:', smtpPass.length);
+}
+
+// Gmail ucun service:'gmail' shortcut - TLS/STARTTLS avtomatik idarə edilir
 const transporter = useSmtp
   ? nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: smtpPort,
-      secure: smtpPort === 465, // Gmail port 465 üçün true olmalıdır
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
+      service: 'gmail',
+      auth: { user: smtpUser, pass: smtpPass },
     })
   : nodemailer.createTransport({ jsonTransport: true });
 
-// Support Resend: prefer explicit RESEND_API_KEY, otherwise accept SMTP_PASS if it starts with 're_'
-const resendApiKey = process.env.RESEND_API_KEY || (process.env.SMTP_PASS && process.env.SMTP_PASS.startsWith('re_') ? process.env.SMTP_PASS : undefined);
+if (useSmtp) {
+  transporter.verify((error) => {
+    if (error) {
+      console.error('SMTP verification failed:', JSON.stringify(error));
+    } else {
+      console.info('SMTP transporter verified - Gmail vasitesile email gondermeyə hazirdir');
+    }
+  });
+}
+
 
 export class EmailService {
   static async sendInvitationEmail(data: {
@@ -66,73 +81,21 @@ export class EmailService {
 </body>
 </html>`;
 
+    if (!useSmtp) {
+      console.warn('SMTP konfiqurasiyasi yoxdur - invite email gonderilmir:', data.to);
+      return;
+    }
     try {
-      // Prefer Resend HTTP API when API key is available, but gracefully fall back
-      if (resendApiKey) {
-        try {
-          const resp = await fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              Authorization: `Bearer ${resendApiKey}`,
-            },
-            body: JSON.stringify({ from: emailFrom, to: data.to, subject: '🎉 POS Sisteminə Dəvət', html }),
-          });
-          const info = await resp.json().catch(() => ({}));
-          if (!resp.ok) {
-            console.error('❌ Resend API error:', info);
-            // If domain is not verified, prefer Ethereal preview instead of attempting SMTP
-            if (info?.name === 'validation_error' && typeof info?.message === 'string' && info.message.includes('domain')) {
-              console.warn('⚠️ Resend reports unverified domain — using Ethereal preview instead of SMTP.');
-              // fall through to Ethereal fallback below
-            } else {
-              // For other errors, fall back to SMTP/Ethereal
-            }
-          } else {
-            console.info('📨 Sent via Resend API, id:', info?.id || '(no id)');
-            return info;
-          }
-        } catch (errFetch: any) {
-          console.warn('⚠️ Resend HTTP request failed, falling back to SMTP/Ethereal:', errFetch?.message || errFetch);
-          // continue to fallback
-        }
-      }
-
-      // Nodemailer / Ethereal fallback
-      if (!useSmtp) {
-        const testAccount = await nodemailer.createTestAccount();
-        const ethTransport = nodemailer.createTransport({
-          host: testAccount.smtp.host,
-          port: testAccount.smtp.port,
-          secure: testAccount.smtp.secure,
-          auth: { user: testAccount.user, pass: testAccount.pass },
-        });
-        const info = await ethTransport.sendMail({ from: emailFrom, to: data.to, subject: '🎉 POS Sisteminə Dəvət', html });
-        const preview = nodemailer.getTestMessageUrl(info);
-        console.info('📨 Invite preview URL:', preview);
-        return info;
-      }
-
-      try {
-        const info = await transporter.sendMail({ from: emailFrom, to: data.to, subject: '🎉 POS Sisteminə Dəvət', html });
-        return info;
-      } catch (smtpErr: any) {
-        console.warn('⚠️ SMTP send failed, attempting Ethereal preview fallback:', smtpErr?.message || smtpErr);
-        // Attempt Ethereal fallback
-        const testAccount = await nodemailer.createTestAccount();
-        const ethTransport = nodemailer.createTransport({
-          host: testAccount.smtp.host,
-          port: testAccount.smtp.port,
-          secure: testAccount.smtp.secure,
-          auth: { user: testAccount.user, pass: testAccount.pass },
-        });
-        const info = await ethTransport.sendMail({ from: emailFrom, to: data.to, subject: '🎉 POS Sisteminə Dəvət', html });
-        const preview = nodemailer.getTestMessageUrl(info);
-        console.info('📨 Invite preview URL (fallback):', preview);
-        return info;
-      }
+      const info = await transporter.sendMail({
+        from: emailFrom,
+        to: data.to,
+        subject: 'POS Sistemine Devat',
+        html,
+      });
+      console.info('Invite email gonderildi:', info.messageId, '->', data.to);
+      return info;
     } catch (err: any) {
-      console.error('❌ Failed to send invitation email:', err);
+      console.error('Invite email gonderilmedi ->', data.to, ':', err?.message || err);
       throw err;
     }
   }
@@ -163,62 +126,21 @@ export class EmailService {
 </body>
 </html>`;
 
+    if (!useSmtp) {
+      console.warn('SMTP konfigurasiyasi yoxdur - welcome email gonderilmir:', data.to);
+      return;
+    }
     try {
-      if (resendApiKey) {
-        try {
-          const resp = await fetch('https://api.resend.com/emails', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${resendApiKey}` },
-            body: JSON.stringify({ from: emailFrom, to: data.to, subject: '🎉 Xoş gəlmisiniz - POS Sistemi', html }),
-          });
-          const info = await resp.json().catch(() => ({}));
-          if (!resp.ok) {
-            console.error('❌ Resend API error:', info);
-            if (info?.name === 'validation_error' && typeof info?.message === 'string' && info.message.includes('domain')) {
-              console.warn('⚠️ Resend reports unverified domain — using Ethereal preview instead of SMTP.');
-            }
-          } else {
-            console.info('📨 Welcome sent via Resend API, id:', info?.id || '(no id)');
-            return info;
-          }
-        } catch (errFetch: any) {
-          console.warn('⚠️ Resend HTTP request failed, falling back to SMTP/Ethereal:', errFetch?.message || errFetch);
-        }
-      }
-
-      if (!useSmtp) {
-        const testAccount = await nodemailer.createTestAccount();
-        const ethTransport = nodemailer.createTransport({
-          host: testAccount.smtp.host,
-          port: testAccount.smtp.port,
-          secure: testAccount.smtp.secure,
-          auth: { user: testAccount.user, pass: testAccount.pass },
-        });
-        const info = await ethTransport.sendMail({ from: emailFrom, to: data.to, subject: '🎉 Xoş gəlmisiniz - POS Sistemi', html });
-        const preview = nodemailer.getTestMessageUrl(info);
-        console.info('📨 Welcome preview URL:', preview);
-        return info;
-      }
-
-      try {
-        const info = await transporter.sendMail({ from: emailFrom, to: data.to, subject: '🎉 Xoş gəlmisiniz - POS Sistemi', html });
-        return info;
-      } catch (smtpErr: any) {
-        console.warn('⚠️ SMTP send failed, attempting Ethereal preview fallback:', smtpErr?.message || smtpErr);
-        const testAccount = await nodemailer.createTestAccount();
-        const ethTransport = nodemailer.createTransport({
-          host: testAccount.smtp.host,
-          port: testAccount.smtp.port,
-          secure: testAccount.smtp.secure,
-          auth: { user: testAccount.user, pass: testAccount.pass },
-        });
-        const info = await ethTransport.sendMail({ from: emailFrom, to: data.to, subject: '🎉 Xoş gəlmisiniz - POS Sistemi', html });
-        const preview = nodemailer.getTestMessageUrl(info);
-        console.info('📨 Welcome preview URL (fallback):', preview);
-        return info;
-      }
+      const info = await transporter.sendMail({
+        from: emailFrom,
+        to: data.to,
+        subject: 'Xos Gelmisiniz - POS Sistemi',
+        html,
+      });
+      console.info('Welcome email gonderildi:', info.messageId, '->', data.to);
+      return info;
     } catch (err: any) {
-      console.error('❌ Failed to send welcome email:', err);
+      console.error('Welcome email gonderilmedi ->', data.to, ':', err?.message || err);
       throw err;
     }
   }
