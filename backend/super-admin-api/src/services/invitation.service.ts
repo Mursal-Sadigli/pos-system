@@ -73,6 +73,7 @@ export class InvitationService {
         expiresAt: invitation.expiresAt,
       },
       password: randomPassword,
+      acceptLink: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/api/auth/accept-invite?token=${token}`,
     };
   }
 
@@ -191,6 +192,7 @@ export class InvitationService {
         expiresAt: updated.expiresAt,
       },
       password: randomPassword,
+      acceptLink: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/api/auth/accept-invite?token=${token}`,
     };
   }
 }

@@ -60,9 +60,11 @@ export default function NewAdminPage() {
       const data = res.data ?? res;
       // If backend returns generated password, show it
       const password = data?.password ?? data?.generatedPassword ?? null;
+      const acceptLink = data?.acceptLink ?? null;
       toast({ title: 'Uğur', description: 'Dəvətnamə göndərildi' });
       if (password) {
         setGeneratedPassword(password);
+        if (acceptLink) (window as any)._acceptLink = acceptLink;
         setPwModalOpen(true);
       } else {
         router.push('/super-admin/admins');
@@ -121,11 +123,26 @@ export default function NewAdminPage() {
       <Dialog open={pwModalOpen} onOpenChange={setPwModalOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Yaradılan Şifrə</DialogTitle>
+            <DialogTitle>Yaradılan Şifrə və Link</DialogTitle>
           </DialogHeader>
-          <div className="p-4">
-            <p className="font-mono bg-muted/10 p-3 rounded">{generatedPassword}</p>
-            <p className="text-sm text-muted-foreground mt-2">Bu şifrəni istifadəçiyə paylaşın və ya istifadəçi qəbul etmə saytında yenidən yaradın.</p>
+          <div className="p-4 space-y-4">
+            <div>
+              <Label className="text-muted-foreground text-xs uppercase mb-1">Müvəqqəti Şifrə</Label>
+              <p className="font-mono bg-muted/10 p-3 rounded">{generatedPassword}</p>
+            </div>
+            {typeof window !== 'undefined' && (window as any)._acceptLink && (
+              <div>
+                <Label className="text-muted-foreground text-xs uppercase mb-1">Qəbul Linki (Email getməsə bunu göndərin)</Label>
+                <div className="flex gap-2">
+                  <Input readOnly value={(window as any)._acceptLink} className="font-mono text-sm" />
+                  <Button type="button" variant="outline" onClick={() => {
+                    navigator.clipboard.writeText((window as any)._acceptLink);
+                    toast({ title: 'Kopyalandı', description: 'Link yaddaşa kopyalandı' });
+                  }}>Kopyala</Button>
+                </div>
+              </div>
+            )}
+            <p className="text-sm text-muted-foreground mt-2">Bu şifrəni və linki istifadəçiyə paylaşın.</p>
           </div>
           <DialogFooter>
             <Button onClick={() => {
