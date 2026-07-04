@@ -65,7 +65,10 @@ export class UserModel {
 
   static async findByEmail(email: string): Promise<User | null> {
     const result = await query(
-      `SELECT * FROM ${schemaQualified}.users WHERE email = $1`,
+      `SELECT u.*, s.name as store_name
+       FROM ${schemaQualified}.users u
+       LEFT JOIN public.stores s ON u.store_id = s.id
+       WHERE u.email = $1`,
       [email.toLowerCase().trim()]
     );
     return result.rows[0] || null;

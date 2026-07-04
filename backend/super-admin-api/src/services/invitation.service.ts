@@ -123,7 +123,7 @@ export class InvitationService {
     const storeId = raw.store_id ?? raw.storeId ?? null;
 
     // İstifadəçini yarat
-    const user = await UserModel.create({
+    const createdUser = await UserModel.create({
       name: invitation.name,
       email: invitation.email,
       password: invitation.password, // already hashed
@@ -133,6 +133,9 @@ export class InvitationService {
       must_change_password: true, // First login must change password
       isPasswordHashed: true,
     });
+
+    // store_name JOIN ilə yenilənmiş user qaytaraq
+    const user = await UserModel.findById(createdUser.id) ?? createdUser;
 
     // Dəvət statusunu yenilə, amma tokenı silməyin.
     const updatedInvitation = await InvitationModel.updateStatus(invitation.id, 'ACCEPTED');
