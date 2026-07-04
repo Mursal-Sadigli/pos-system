@@ -34,16 +34,30 @@ api.interceptors.request.use(
 // ==================== RESPONSE INTERCEPTOR ====================
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
-    // 401 halında localStorage-i təmizlə, amma redirect etmə
-    // Redirect authStore.checkAuth tərəfindən idarə olunur
+  async (error) => {
     if (error.response?.status === 401 && isBrowser) {
-      const win = (globalThis as typeof globalThis & { window?: { localStorage?: { removeItem: (key: string) => void } } }).window;
+      // Try to refresh token
+      const refreshToken = window.localStorage?.getItem('refreshToken');
+      if (refreshToken) {
+        try {
+          const refreshResp = await api.post('/auth/refresh-token', { refreshToken });
+          const newToken = refreshResp?.data?.data?.token;
+          if (newToken) {
+            window.localStorage.setItem('token', newToken);
+            // Retry original request with new token
+            const config = error.config;
+            config.headers.Authorization = `Bearer ${newToken}`;
+            return api.request(config);
+          }
+        } catch {
+          // refresh failed, fall through to clear storage
+        }
+      }
+      // If we reach here, clear auth and let auth flow handle logout
+      const win = typeof window !== 'undefined' ? window : undefined;
       win?.localStorage?.removeItem('token');
       win?.localStorage?.removeItem('refreshToken');
       win?.localStorage?.removeItem('user');
-      // location.assign('/login') - BU SƏTRI SİLDİK
-      // Çünki tam page reload olur və state itirilir
     }
     return Promise.reject(error?.response?.data ?? error);
   }
@@ -72,7 +86,22 @@ export const userApi = {
     api.get('/users', { params }),
   getUser: (id: string) => api.get(`/users/${id}`),
   updateUser: (id: string, payload: any) => api.put(`/users/${id}`, payload),
-  deleteUser: (id: string) => api.delete(`/users/${id}`),
+  deleteUser: async (id: string) => {
+    try {
+      const response = await api.delete(`/users/${id}`);
+      return response;
+    } catch (error: any) {
+      const status = error?.response?.status;
+      if (status === 401 || status === 403) {
+        // token invalid or insufficient permissions – clear auth
+        const win = typeof window !== 'undefined' ? window : undefined;
+        win?.localStorage?.removeItem('token');
+        win?.localStorage?.removeItem('refreshToken');
+        win?.localStorage?.removeItem('user');
+      }
+      throw error;
+    }
+  },
 };
 
 // ==================== PRODUCT API ====================
