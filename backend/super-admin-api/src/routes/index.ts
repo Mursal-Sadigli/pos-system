@@ -9,6 +9,7 @@ const router = Router();
 
 
 
+router.use('/auth', authRoutes);
 router.use('/invitation', invitationRoutes);
 router.use('/users', usersRoutes);
 router.use('/stores', storesRoutes);
