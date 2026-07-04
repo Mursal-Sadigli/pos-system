@@ -29,7 +29,7 @@ export const resendInviteSchema = z.object({
 });
 export const changePasswordSchema = z.object({
   body: z.object({
-    currentPassword: z.string().min(6, 'Cari şifrə ən az 6 simvol olmalıdır'),
+    currentPassword: z.string().min(1, 'Cari şifrə tələb olunur'),
     newPassword: z.string().min(6, 'Yeni şifrə ən az 6 simvol olmalıdır'),
   }),
 });
