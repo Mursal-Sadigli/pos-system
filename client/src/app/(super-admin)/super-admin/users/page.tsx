@@ -29,7 +29,8 @@ export default function SuperAdminUsersPage() {
       setLoading(true);
       try {
         const resp = await userApi.getUsers();
-        const raw = resp.data?.users ?? resp.data ?? [];
+        const payload = resp.data?.data;
+        const raw = payload?.users ?? payload ?? [];
         const list = Array.isArray(raw) ? raw : (raw?.rows && Array.isArray(raw.rows) ? raw.rows : []);
         setUsers(list.map((u: any) => ({ ...u, status: u.status || (u.is_active ? 'ACTIVE' : 'INACTIVE') })));
       } catch (err: any) {
