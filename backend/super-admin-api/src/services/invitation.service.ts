@@ -84,8 +84,12 @@ export class InvitationService {
       throw new Error('Dəvət tapılmadı');
     }
 
+    // DB raw row snake_case ilə gəlir: expires_at, store_id, invited_by, etc.
+    const raw = invitation as any;
+
     // 2. Vaxtı keçib?
-    if (new Date() > new Date(invitation.expiresAt)) {
+    const expiresAt = raw.expires_at ?? raw.expiresAt;
+    if (expiresAt && new Date() > new Date(expiresAt)) {
       await InvitationModel.updateStatus(invitation.id, 'EXPIRED');
       throw new Error('Dəvətin müddəti bitib');
     }
@@ -115,13 +119,16 @@ export class InvitationService {
       };
     }
 
+    // store_id: DB raw row-dan düzgün oxu (snake_case)
+    const storeId = raw.store_id ?? raw.storeId ?? null;
+
     // İstifadəçini yarat
     const user = await UserModel.create({
       name: invitation.name,
       email: invitation.email,
       password: invitation.password, // already hashed
       role: invitation.role,
-      store_id: invitation.storeId ?? undefined,
+      store_id: storeId || undefined,
       is_verified: true,
       must_change_password: true, // First login must change password
       isPasswordHashed: true,
@@ -130,10 +137,12 @@ export class InvitationService {
     // Dəvət statusunu yenilə, amma tokenı silməyin.
     const updatedInvitation = await InvitationModel.updateStatus(invitation.id, 'ACCEPTED');
 
-    // Xoş gəldin emaili göndər
-    await EmailService.sendWelcomeEmail({
+    // Xoş gəldin emaili göndər (arxa planda - xəta olsa da davam et)
+    EmailService.sendWelcomeEmail({
       to: user.email,
       name: user.name,
+    }).catch(err => {
+      console.error('❌ Xoş gəldin emaili göndərilərkən xəta:', err);
     });
 
     return {

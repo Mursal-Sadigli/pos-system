@@ -1,4 +1,4 @@
-import { query } from '../config/database';
+import { query, schemaQualified } from '../config/database';
 
 export interface Store {
   id: string;
@@ -35,7 +35,7 @@ export interface CreateStoreData {
 export class StoreModel {
   static async create(data: CreateStoreData): Promise<Store> {
     const result = await query(
-      `INSERT INTO stores (
+      `INSERT INTO ${schemaQualified}.stores (
         name, email, phone, address, tax_number, registration_number,
         timezone, currency, language, business_type, website
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
@@ -60,7 +60,7 @@ export class StoreModel {
 
   static async findById(id: string): Promise<Store | null> {
     const result = await query(
-      'SELECT * FROM stores WHERE id = $1',
+      `SELECT * FROM ${schemaQualified}.stores WHERE id = $1`,
       [id]
     );
     return result.rows[0] || null;
@@ -96,16 +96,18 @@ export class StoreModel {
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const countResult = await query(
-      `SELECT COUNT(*) FROM stores ${whereClause}`,
+      `SELECT COUNT(*) FROM ${schemaQualified}.stores ${whereClause}`,
       params
     );
     const total = parseInt(countResult.rows[0].count);
 
     params.push(limit, offset);
     const result = await query(
-      `SELECT * FROM stores
+      `SELECT s.*, 
+        CAST((SELECT COUNT(*) FROM ${schemaQualified}.users u WHERE u.store_id = s.id) AS INTEGER) as users_count 
+       FROM ${schemaQualified}.stores s
        ${whereClause}
-       ORDER BY created_at DESC
+       ORDER BY s.created_at DESC
        LIMIT $${params.length - 1} OFFSET $${params.length}`,
       params
     );
@@ -152,7 +154,7 @@ export class StoreModel {
 
     values.push(id);
     const result = await query(
-      `UPDATE stores SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP 
+      `UPDATE ${schemaQualified}.stores SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP 
        WHERE id = $${paramIndex} RETURNING *`,
       values
     );
@@ -162,7 +164,7 @@ export class StoreModel {
 
   static async delete(id: string): Promise<boolean> {
     const result = await query(
-      'DELETE FROM stores WHERE id = $1 RETURNING id',
+      `DELETE FROM ${schemaQualified}.stores WHERE id = $1 RETURNING id`,
       [id]
     );
     return result.rowCount !== null && result.rowCount > 0;

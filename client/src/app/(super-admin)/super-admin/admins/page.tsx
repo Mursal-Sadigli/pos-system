@@ -82,7 +82,7 @@ export default function SuperAdminAdminsPage() {
           id: u.id,
           name: u.name,
           email: u.email,
-          store: (u.store_name || u.store || u.storeId) ?? '',
+          store: (u.store_name || u.store || u.storeId || u.store_id) ?? '',
           status: (u.status || (u.is_active ? 'ACTIVE' : 'INACTIVE')).toLowerCase(),
           phone: u.phone,
           lastLogin: u.last_login ?? u.lastLogin ?? null,

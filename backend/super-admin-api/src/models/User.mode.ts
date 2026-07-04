@@ -186,33 +186,35 @@ export class UserModel {
     let paramIndex = 1;
 
     if (role) {
-      conditions.push(`role = $${paramIndex++}`);
+      conditions.push(`u.role = $${paramIndex++}`);
       params.push(role);
     }
 
     if (store_id) {
-      conditions.push(`store_id = $${paramIndex++}`);
+      conditions.push(`u.store_id = $${paramIndex++}`);
       params.push(store_id);
     }
 
     if (is_active !== undefined) {
-      conditions.push(`is_active = $${paramIndex++}`);
+      conditions.push(`u.is_active = $${paramIndex++}`);
       params.push(is_active);
     }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
     const countResult = await query(
-      `SELECT COUNT(*) FROM ${schemaQualified}.users ${whereClause}`,
+      `SELECT COUNT(*) FROM ${schemaQualified}.users u ${whereClause}`,
       params
     );
     const total = parseInt(countResult.rows[0].count);
 
     params.push(limit, offset);
     const result = await query(
-      `SELECT * FROM ${schemaQualified}.users
+      `SELECT u.*, s.name as store_name 
+       FROM ${schemaQualified}.users u
+       LEFT JOIN ${schemaQualified}.stores s ON u.store_id = s.id
        ${whereClause}
-       ORDER BY created_at DESC
+       ORDER BY u.created_at DESC
        LIMIT $${params.length - 1} OFFSET $${params.length}`,
       params
     );
