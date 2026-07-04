@@ -6,6 +6,7 @@ const defaultOrigins = [
   'https://localhost:3000',
   'https://127.0.0.1:3000',
   'https://libidinally-perigean-alanna.ngrok-free.dev',
+  'https://kvantumpay.vercel.app',
 ];
 
 const allowedOrigins = [...new Set([
@@ -20,6 +21,11 @@ export const corsOptions: CorsOptions = {
 
     // Allow all ngrok URLs
     if (origin.match(/^https?:\/\/.*\.ngrok(-free)?\.dev$/)) {
+      return callback(null, true);
+    }
+
+    // Allow all Vercel URLs (*.vercel.app)
+    if (origin.match(/^https:\/\/.*\.vercel\.app$/)) {
       return callback(null, true);
     }
 
