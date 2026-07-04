@@ -5,11 +5,12 @@ dotenv.config();
 
 const emailFrom = process.env.EMAIL_FROM || `no-reply@${process.env.FRONTEND_URL?.replace(/^https?:\/\//, '') || 'localhost'}`;
 const useSmtp = Boolean(process.env.SMTP_HOST);
+const smtpPort = parseInt(process.env.SMTP_PORT || '587');
 const transporter = useSmtp
   ? nodemailer.createTransport({
       host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: false,
+      port: smtpPort,
+      secure: smtpPort === 465, // Gmail port 465 üçün true olmalıdır
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
