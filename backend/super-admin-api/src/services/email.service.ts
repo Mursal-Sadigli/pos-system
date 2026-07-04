@@ -15,16 +15,6 @@ const emailFrom = process.env.EMAIL_FROM || (resendApiKey ? "onboarding@resend.d
 console.info(`Email config: resend=${Boolean(resendApiKey)}, smtp=${Boolean(smtpUser)}, from=${emailFrom}`);
 
 const resend = resendApiKey ? new Resend(resendApiKey) : null;
-const transporter = smtpUser ? nodemailer.createTransport({
-  host: smtpHost,
-  port: smtpPort,
-  secure: smtpPort === 465,
-  requireTLS: true,
-  auth: {
-    user: smtpUser,
-    pass: smtpPass,
-  },
-}) : null;
 
 async function sendEmail(to: string, subject: string, html: string) {
   if (resend) {
@@ -46,24 +36,32 @@ async function sendEmail(to: string, subject: string, html: string) {
     }
   }
 
-  if (transporter) {
     try {
-      const info = await transporter.sendMail({
-        from: emailFrom,
-        to,
-        subject,
-        html,
+      const frontendUrl = process.env.FRONTEND_URL || "https://kvantumpay.vercel.app";
+      const apiUrl = `${frontendUrl.replace(/\/$/, "")}/api/send-email`;
+      
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to,
+          subject,
+          html,
+          secret: process.env.EMAIL_SECRET || 'kvantum_pos_secret_2026'
+        })
       });
-      console.info(`✅ Email sent via SMTP: ${subject} to ${to}`, info.messageId);
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        throw new Error(`Vercel API error: ${response.status} ${errorData}`);
+      }
+
+      console.info(`✅ Email sent via Vercel SMTP Relay: ${subject} to ${to}`);
       return;
     } catch (error) {
-      console.error("❌ SMTP error:", error);
+      console.error("❌ Vercel SMTP Relay error:", error);
       throw error;
     }
-  }
-
-  console.warn("⚠️ No real mail provider configured (neither Resend nor SMTP).");
-  throw new Error("Sistemdə email göndərmək üçün heç bir xidmət (Resend/SMTP) sazlanmayıb.");
 }
 
 export class EmailService {
