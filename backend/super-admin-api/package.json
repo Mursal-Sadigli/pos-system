@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "scripts": {
     "dev": "nodemon src/server.ts",
-    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsc",
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && npx --yes -p typescript@5.7.2 tsc",
     "start": "node dist/server.js",
     "seed": "ts-node src/scripts/seed-super-admin.ts",
     "seed:prod": "node dist/scripts/seed-super-admin.js"
@@ -25,6 +25,9 @@
     "winston": "^3.19.0",
     "zod": "^3.24.1",
     "typescript": "5.7.2"
+  },
+  "engines": {
+    "node": "20.x"
   },
   "devDependencies": {
     "@types/compression": "^1.8.1",
