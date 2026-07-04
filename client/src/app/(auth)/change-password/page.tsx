@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { authApi } from '@/lib/api';
+import { useAuthStore } from '@/store/authStore';
 
 const changePasswordSchema = z.object({
   currentPassword: z.string().min(6, 'Cari şifrə ən az 6 simvol olmalıdır'),
@@ -39,6 +40,7 @@ export default function ChangePasswordPage() {
     try {
       await authApi.changePassword(data.currentPassword, data.newPassword);
       toast.success('Şifrəniz uğurla dəyişdirildi. Daxil olun.');
+      useAuthStore.getState().logout();
       router.push('/login');
     } catch (error: any) {
       toast.error(error?.message || 'Şifrə dəyişdirilə bilmədi');
