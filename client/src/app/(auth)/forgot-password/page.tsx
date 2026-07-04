@@ -60,7 +60,7 @@ export default function ForgotPasswordPage() {
               id="email" 
               type="email" 
               placeholder="example@mail.com" 
-              className={\`h-10 rounded-xl \${errors.email ? 'border-destructive' : ''}\`}
+              className={`h-10 rounded-xl ${errors.email ? 'border-destructive' : ''}`}
               {...register('email')}
             />
             {errors.email && (
