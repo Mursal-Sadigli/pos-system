@@ -1,28 +1,69 @@
 import dotenv from "dotenv";
 dotenv.config();
 
+import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
+
 const resendApiKey = process.env.RESEND_API_KEY || "";
+const smtpHost = process.env.SMTP_HOST || "smtp.gmail.com";
+const smtpPort = Number(process.env.SMTP_PORT || 587);
 const smtpUser = process.env.SMTP_USER || "";
+const smtpPass = process.env.SMTP_PASS || "";
 // FROM address: if Resend is configured use their default, otherwise use SMTP user
 const emailFrom = process.env.EMAIL_FROM || (resendApiKey ? "onboarding@resend.dev" : smtpUser);
 
-console.info(`Email config: resend=${Boolean(resendApiKey)}, from=${emailFrom}`);
+console.info(`Email config: resend=${Boolean(resendApiKey)}, smtp=${Boolean(smtpUser)}, from=${emailFrom}`);
 
-async function sendViaResend(to: string, subject: string, html: string) {
-  const resp = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${resendApiKey}`,
-    },
-    body: JSON.stringify({ from: emailFrom, to, subject, html }),
-  });
-  const result = await resp.json().catch(() => ({}));
-  if (!resp.ok) {
-    throw new Error(`Resend API error: ${JSON.stringify(result)}`);
+const resend = resendApiKey ? new Resend(resendApiKey) : null;
+const transporter = smtpUser ? nodemailer.createTransport({
+  host: smtpHost,
+  port: smtpPort,
+  secure: smtpPort === 465,
+  requireTLS: true,
+  auth: {
+    user: smtpUser,
+    pass: smtpPass,
+  },
+}) : null;
+
+async function sendEmail(to: string, subject: string, html: string) {
+  if (resend) {
+    try {
+      const { data, error } = await resend.emails.send({
+        from: emailFrom,
+        to: [to],
+        subject,
+        html,
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+      console.info("Email sent via Resend, id:", data?.id, "->", to);
+      return;
+    } catch (error) {
+      console.warn("⚠️ Resend failed, trying SMTP fallback:", error);
+    }
   }
-  console.info("Email sent via Resend, id:", (result as any).id, "->", to);
-  return result;
+
+  if (transporter) {
+    try {
+      const info = await transporter.sendMail({
+        from: emailFrom,
+        to,
+        subject,
+        html,
+      });
+      console.info(`✅ Email sent via SMTP: ${subject} to ${to}`, info.messageId);
+      return;
+    } catch (error) {
+      console.error("❌ SMTP error:", error);
+      throw error;
+    }
+  }
+
+  console.warn("⚠️ No real mail provider configured (neither Resend nor SMTP).");
+  throw new Error("Sistemdə email göndərmək üçün heç bir xidmət (Resend/SMTP) sazlanmayıb.");
 }
 
 export class EmailService {
@@ -71,11 +112,7 @@ export class EmailService {
 </body>
 </html>`;
 
-    if (!resendApiKey) {
-      console.warn("RESEND_API_KEY yoxdur - invite email gonderilmir:", data.to);
-      return;
-    }
-    return sendViaResend(data.to, "POS Sistemine Devat - Hesabinizi Aktivlesdirin", html);
+    return sendEmail(data.to, "POS Sistemine Devat - Hesabinizi Aktivlesdirin", html);
   }
 
   static async sendWelcomeEmail(data: { to: string; name: string }) {
@@ -96,11 +133,7 @@ export class EmailService {
 </body>
 </html>`;
 
-    if (!resendApiKey) {
-      console.warn("RESEND_API_KEY yoxdur - welcome email gonderilmir:", data.to);
-      return;
-    }
-    return sendViaResend(data.to, "Xos Gelmisiniz - POS Sistemi", html);
+    return sendEmail(data.to, "Xos Gelmisiniz - POS Sistemi", html);
   }
 
   static async sendPasswordResetEmail(email: string, name: string, token: string) {
@@ -127,11 +160,7 @@ export class EmailService {
 </body>
 </html>`;
 
-    if (!resendApiKey) {
-      console.warn("RESEND_API_KEY yoxdur - reset email gonderilmir:", email);
-      return;
-    }
-    return sendViaResend(email, "Şifrə Sıfırlama - POS Sistemi", html);
+    return sendEmail(email, "Şifrə Sıfırlama - POS Sistemi", html);
   }
 }
 
