@@ -9,7 +9,7 @@ export const productService = {
   async bulkImport(products: any[]) {
     // Basic bulk import loop
     // In production, one might use a transaction and unnest, but for simplicity:
-    const imported = [];
+    const imported: any[] = [];
     for (const p of products) {
       const result = await query(
         `INSERT INTO ${schemaQualified}."products" (name, sku, category, price, stock, min_stock, status, image)
