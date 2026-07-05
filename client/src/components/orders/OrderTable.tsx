@@ -3,6 +3,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Eye, Printer } from 'lucide-react';
+import { printOrderReceipt } from '@/lib/printUtils';
 
 interface OrderItem {
   id: string;
@@ -65,7 +66,7 @@ export function OrderTable({ orders, onViewOrder }: OrderTableProps) {
                   >
                     <Eye className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon">
+                  <Button variant="ghost" size="icon" onClick={() => printOrderReceipt(order)}>
                     <Printer className="h-4 w-4" />
                   </Button>
                 </div>

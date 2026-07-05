@@ -3,6 +3,7 @@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { printOrderReceipt } from '@/lib/printUtils';
 
 interface OrderItem {
   name: string;
@@ -74,7 +75,7 @@ export function OrderDetails({ order, open, onOpenChange }: OrderDetailsProps) {
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Ləğv et
           </Button>
-          <Button>
+          <Button onClick={() => printOrderReceipt(order)}>
             Çap et
           </Button>
         </DialogFooter>
