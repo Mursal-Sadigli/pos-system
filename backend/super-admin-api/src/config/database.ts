@@ -291,7 +291,7 @@ const ensureInvitationTable = async () => {
     `);
 
     await client.query(`
-      CREATE TABLE IF NOT EXISTS "public"."orders" (
+      CREATE TABLE IF NOT EXISTS "public"."pos_orders" (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         order_number VARCHAR(100) UNIQUE,
         customer_name VARCHAR(255) DEFAULT 'Gündəlik Müştəri',
@@ -305,9 +305,9 @@ const ensureInvitationTable = async () => {
     `);
 
     await client.query(`
-      CREATE TABLE IF NOT EXISTS "public"."order_items" (
+      CREATE TABLE IF NOT EXISTS "public"."pos_order_items" (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        order_id UUID NOT NULL REFERENCES "public"."orders"(id) ON DELETE CASCADE,
+        order_id UUID NOT NULL REFERENCES "public"."pos_orders"(id) ON DELETE CASCADE,
         product_id UUID,
         name VARCHAR(255) NOT NULL,
         qty INTEGER NOT NULL DEFAULT 1,
@@ -316,8 +316,8 @@ const ensureInvitationTable = async () => {
       );
     `);
     
-    await client.query(`CREATE INDEX IF NOT EXISTS "idx_orders_status" ON "public"."orders"(status)`);
-    await client.query(`CREATE INDEX IF NOT EXISTS "idx_order_items_order_id" ON "public"."order_items"(order_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS "idx_pos_orders_status" ON "public"."pos_orders"(status)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS "idx_pos_order_items_order_id" ON "public"."pos_order_items"(order_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS "idx_invitations_email_status" ON ${schemaQualified}."invitations"(email, status)`);
     await client.query(`CREATE INDEX IF NOT EXISTS "idx_invitations_token" ON ${schemaQualified}."invitations"(token)`);
     await client.query(`CREATE INDEX IF NOT EXISTS "idx_invitations_store_id" ON ${schemaQualified}."invitations"(store_id)`);

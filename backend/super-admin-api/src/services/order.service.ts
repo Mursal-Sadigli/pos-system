@@ -18,10 +18,10 @@ export interface OrderData {
 
 export const createOrder = async (orderData: OrderData) => {
   return await transaction(async (client) => {
-    // 1. Insert into public.orders
+    // 1. Insert into public.pos_orders
     const orderNumber = `ORD-${Date.now()}`;
     const orderQuery = `
-      INSERT INTO "public"."orders" (
+      INSERT INTO "public"."pos_orders" (
         order_number, customer_name, amount, status, payment, cashier
       ) VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING *
@@ -42,7 +42,7 @@ export const createOrder = async (orderData: OrderData) => {
     for (const item of orderData.items) {
       // Insert item
       await client.query(`
-        INSERT INTO "public"."order_items" (order_id, product_id, name, qty, price)
+        INSERT INTO "public"."pos_order_items" (order_id, product_id, name, qty, price)
         VALUES ($1, $2, $3, $4, $5)
       `, [newOrder.id, item.product_id, item.name, item.qty, item.price]);
 
@@ -58,7 +58,7 @@ export const createOrder = async (orderData: OrderData) => {
 
     // 3. Fetch full order with items
     const itemsResult = await client.query(`
-      SELECT * FROM "public"."order_items" WHERE order_id = $1
+      SELECT * FROM "public"."pos_order_items" WHERE order_id = $1
     `, [newOrder.id]);
     
     newOrder.items = itemsResult.rows;
@@ -68,7 +68,7 @@ export const createOrder = async (orderData: OrderData) => {
 
 export const getOrders = async () => {
   const result = await query(`
-    SELECT * FROM "public"."orders" 
+    SELECT * FROM "public"."pos_orders" 
     ORDER BY created_at DESC
   `);
   
@@ -77,7 +77,7 @@ export const getOrders = async () => {
   // Fetch items for each order
   for (let order of orders) {
     const itemsResult = await query(`
-      SELECT * FROM "public"."order_items" WHERE order_id = $1
+      SELECT * FROM "public"."pos_order_items" WHERE order_id = $1
     `, [order.id]);
     order.items = itemsResult.rows;
   }
