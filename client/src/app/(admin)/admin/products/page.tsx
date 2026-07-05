@@ -45,6 +45,11 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/useToast';
+import { productApi } from '@/lib/api';
+import { ProductFormModal } from '@/components/products/ProductFormModal';
+import { ImportModal } from '@/components/products/ImportModal';
+import { exportToCSV } from '@/lib/exportUtils';
+import { useEffect } from 'react';
 
 // Mock Data
 const mockProducts = [
@@ -106,13 +111,35 @@ const mockProducts = [
 ];
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState(mockProducts);
+  const [products, setProducts] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  
   const { toast } = useToast();
+
+  const fetchProducts = async () => {
+    try {
+      setIsLoading(true);
+      const res = await productApi.getProducts();
+      setProducts(res.data || []);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      toast({ title: 'Xəta', description: 'Məhsulları yükləmək mümkün olmadı', variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
 
   const filteredProducts = products.filter((product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -124,15 +151,49 @@ export default function ProductsPage() {
 
   const categories = ['all', ...new Set(products.map((p) => p.category))];
 
-  const handleDeleteProduct = () => {
+  const handleDeleteProduct = async () => {
     if (!selectedProduct) return;
-    setProducts(products.filter((p) => p.id !== selectedProduct.id));
-    setDeleteDialogOpen(false);
-    toast({
-      title: 'Məhsul silindi',
-      description: `${selectedProduct.name} məhsulu uğurla silindi`,
-    });
-    setSelectedProduct(null);
+    try {
+      await productApi.deleteProduct(selectedProduct.id);
+      setProducts(products.filter((p) => p.id !== selectedProduct.id));
+      setDeleteDialogOpen(false);
+      toast({
+        title: 'Məhsul silindi',
+        description: `${selectedProduct.name} məhsulu uğurla silindi`,
+      });
+      setSelectedProduct(null);
+    } catch (error) {
+      toast({ title: 'Xəta', description: 'Silinmə zamanı xəta baş verdi', variant: 'destructive' });
+    }
+  };
+
+  const handleSaveProduct = async (productData: any) => {
+    try {
+      if (selectedProduct) {
+        await productApi.updateProduct(selectedProduct.id, productData);
+        toast({ title: 'Uğurlu', description: 'Məhsul yeniləndi' });
+      } else {
+        await productApi.createProduct(productData);
+        toast({ title: 'Uğurlu', description: 'Yeni məhsul yaradıldı' });
+      }
+      fetchProducts();
+    } catch (error) {
+      toast({ title: 'Xəta', description: 'Yadda saxlamaq mümkün olmadı', variant: 'destructive' });
+    }
+  };
+
+  const handleImportProducts = async (importedProducts: any[]) => {
+    try {
+      const res = await productApi.bulkImportProducts({ products: importedProducts });
+      toast({ title: 'Uğurlu', description: `${res.data?.count || importedProducts.length} məhsul idxal edildi` });
+      fetchProducts();
+    } catch (error) {
+      toast({ title: 'Xəta', description: 'İdxal zamanı xəta baş verdi', variant: 'destructive' });
+    }
+  };
+
+  const handleExport = () => {
+    exportToCSV(products, 'admin_mehsullar');
   };
 
   const handleToggleStatus = (product: any) => {
@@ -159,12 +220,18 @@ export default function ProductsPage() {
             Mağaza məhsullarını idarə edin
           </p>
         </div>
-        <Link href="/admin/products/new">
-          <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700">
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleExport}>
+            İxrac
+          </Button>
+          <Button variant="outline" onClick={() => setIsImportModalOpen(true)}>
+            İdxal
+          </Button>
+          <Button className="gap-2 bg-indigo-600 hover:bg-indigo-700" onClick={() => { setSelectedProduct(null); setIsProductModalOpen(true); }}>
             <Plus className="h-4 w-4" />
             Yeni Məhsul
           </Button>
-        </Link>
+        </div>
       </div>
 
       {/* Stats */}
@@ -329,7 +396,7 @@ export default function ProductsPage() {
                               <Eye className="h-4 w-4" />
                               Bax
                             </DropdownMenuItem>
-                            <DropdownMenuItem className="gap-2">
+                            <DropdownMenuItem className="gap-2" onClick={() => { setSelectedProduct(product); setIsProductModalOpen(true); }}>
                               <Edit className="h-4 w-4" />
                               Redaktə et
                             </DropdownMenuItem>
@@ -391,6 +458,19 @@ export default function ProductsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <ProductFormModal 
+        open={isProductModalOpen} 
+        onOpenChange={setIsProductModalOpen} 
+        product={selectedProduct}
+        onSave={handleSaveProduct}
+        categories={['Bütün', ...new Set(products.map(p => p.category))]}
+      />
+
+      <ImportModal 
+        open={isImportModalOpen} 
+        onOpenChange={setIsImportModalOpen} 
+        onImport={handleImportProducts}
+      />
     </div>
   );
 }

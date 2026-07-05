@@ -5,6 +5,7 @@ import compression from 'compression';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.routes';
+import productRoutes from './routes/product.routes';
 
 dotenv.config();
 
@@ -51,6 +52,7 @@ app.use(morgan('dev'));
 
 // ==================== ROUTES ====================
 app.use('/api/auth', authRoutes);
+app.use('/api/products', productRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

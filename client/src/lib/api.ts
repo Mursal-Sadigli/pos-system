@@ -112,6 +112,7 @@ export const productApi = {
   updateProduct: (id: string, payload: Partial<CreateProductRequest>) =>
     api.put<Product>(`/products/${id}`, payload),
   deleteProduct: (id: string) => api.delete(`/products/${id}`),
+  bulkImportProducts: (payload: { products: any[] }) => api.post<{message: string, count: number, products: Product[]}>('/products/bulk-import', payload),
 };
 
 // ==================== ORDER API ====================
