@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useState } from 'react';
 import { ProductGrid } from './ProductGrid';
@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Barcode, CreditCard, X } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useRef } from 'react';
+import { toast } from 'react-hot-toast';
 
 const categories = [
   { value: 'all', label: 'Bütün' },
@@ -18,6 +20,12 @@ const categories = [
 export function PosScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const handleBarcodeScan = () => {
+    searchInputRef.current?.focus();
+    toast.success('Barkod oxuyucu aktivdir. Məhsulu oxudun.');
+  };
 
   return (
     <div className="flex h-full flex-col gap-4">
@@ -34,6 +42,7 @@ export function PosScreen() {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
+                ref={searchInputRef}
                 placeholder="Barkod və ya məhsul axtarışı..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -50,7 +59,7 @@ export function PosScreen() {
               )}
             </div>
 
-            <Button variant="outline" className="min-w-[44px]">
+            <Button variant="outline" className="min-w-[44px]" onClick={handleBarcodeScan}>
               <Barcode className="h-4 w-4" />
             </Button>
 
