@@ -21,6 +21,7 @@ interface OrderItem {
 interface OrderTableProps {
   orders: OrderItem[];
   onStatusChange?: (id: string, status: string) => void;
+  onDelete?: (id: string) => void;
 }
 
 const statusMap = {
@@ -31,10 +32,10 @@ const statusMap = {
 } as const;
 
 import { format } from 'date-fns';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { MoreVertical } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { MoreVertical, Trash2 } from 'lucide-react';
 
-export function OrderTable({ orders, onStatusChange }: OrderTableProps) {
+export function OrderTable({ orders, onStatusChange, onDelete }: OrderTableProps) {
   return (
     <div className="rounded-lg border bg-card overflow-x-auto">
       <table className="min-w-full text-left text-sm">
@@ -73,7 +74,7 @@ export function OrderTable({ orders, onStatusChange }: OrderTableProps) {
                   <Button variant="ghost" size="icon" onClick={() => printOrderReceipt(order as any)}>
                     <Printer className="h-4 w-4" />
                   </Button>
-                  {onStatusChange && (
+                  {(onStatusChange || onDelete) && (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon">
@@ -81,10 +82,21 @@ export function OrderTable({ orders, onStatusChange }: OrderTableProps) {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onStatusChange(order.id, 'pending')}>Gözləmədə</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onStatusChange(order.id, 'processing')}>Hazırlanır</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onStatusChange(order.id, 'completed')}>Tamamlandı</DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onStatusChange(order.id, 'cancelled')} className="text-red-600">Ləğv et</DropdownMenuItem>
+                        {onStatusChange && (
+                          <>
+                            <DropdownMenuItem onClick={() => onStatusChange(order.id, 'pending')}>Gözləmədə</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onStatusChange(order.id, 'processing')}>Hazırlanır</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onStatusChange(order.id, 'completed')}>Tamamlandı</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onStatusChange(order.id, 'cancelled')} className="text-red-600">Ləğv et</DropdownMenuItem>
+                          </>
+                        )}
+                        {onStatusChange && onDelete && <DropdownMenuSeparator />}
+                        {onDelete && (
+                          <DropdownMenuItem onClick={() => onDelete(order.id)} className="text-destructive">
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Sil
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   )}

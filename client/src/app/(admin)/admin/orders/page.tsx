@@ -15,6 +15,7 @@ import {
   Calendar,
   Download,
   ChevronDown,
+  Trash2,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -135,6 +136,24 @@ export default function OrdersPage() {
       toast({
         title: 'Xəta',
         description: 'Statusu yeniləmək mümkün olmadı',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDeleteOrder = async (orderId: string) => {
+    if (!window.confirm('Bu sifarişi silmək istədiyinizə əminsiniz?')) return;
+    try {
+      await orderApi.deleteOrder(orderId);
+      setOrders(orders.filter(o => o.id !== orderId));
+      toast({
+        title: 'Sifariş silindi',
+        description: 'Sifariş uğurla silindi və məhsullar stoka qaytarıldı.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Xəta',
+        description: 'Sifarişi silmək mümkün olmadı',
         variant: 'destructive',
       });
     }
@@ -298,13 +317,13 @@ export default function OrdersPage() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                    <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
                       Yüklənir...
                     </td>
                   </tr>
                 ) : filteredOrders.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                    <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
                       Heç bir sifariş tapılmadı
                     </td>
                   </tr>
@@ -370,6 +389,11 @@ export default function OrdersPage() {
                                 >
                                   <XCircle className="mr-2 h-4 w-4" />
                                   Ləğv et
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => handleDeleteOrder(order.id)} className="text-red-600 focus:bg-red-50 focus:text-red-600">
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Sil
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>

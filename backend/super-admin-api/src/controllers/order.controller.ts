@@ -47,3 +47,23 @@ export const updateOrderStatus = async (req: Request, res: Response) => {
     return res.status(500).json({ error: error.message || 'Failed to update order status' });
   }
 };
+
+export const deleteOrder = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    
+    if (!id) {
+      return res.status(400).json({ error: 'ID is required' });
+    }
+    
+    const deletedOrder = await orderService.deleteOrder(id);
+    if (!deletedOrder) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    
+    return res.json({ message: 'Order deleted successfully' });
+  } catch (error: any) {
+    console.error('Delete order error:', error);
+    return res.status(500).json({ error: error.message || 'Failed to delete order' });
+  }
+};

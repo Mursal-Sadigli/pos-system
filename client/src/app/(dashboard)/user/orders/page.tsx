@@ -122,6 +122,12 @@ export default function OrdersPage() {
             await orderApi.updateOrderStatus(id, status);
             fetchOrders();
           }}
+          onDelete={async (id) => {
+            if (window.confirm('Bu sifarişi silmək istədiyinizə əminsiniz?')) {
+              await orderApi.deleteOrder(id);
+              fetchOrders();
+            }
+          }}
         />
       )}
     </div>

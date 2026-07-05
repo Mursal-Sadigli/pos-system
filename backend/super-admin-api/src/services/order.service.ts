@@ -96,3 +96,29 @@ export const updateOrderStatus = async (id: string, status: string) => {
   `, [status, id]);
   return result.rows[0];
 };
+
+export const deleteOrder = async (id: string) => {
+  return await transaction(async (client) => {
+    // Return items to stock first
+    const itemsResult = await client.query(`
+      SELECT * FROM "public"."pos_order_items" WHERE order_id = $1
+    `, [id]);
+    
+    for (const item of itemsResult.rows) {
+      if (item.product_id) {
+        await client.query(`
+          UPDATE ${schemaQualified}."products"
+          SET stock = stock + $1
+          WHERE id = $2
+        `, [item.qty, item.product_id]);
+      }
+    }
+
+    // Delete items
+    await client.query(`DELETE FROM "public"."pos_order_items" WHERE order_id = $1`, [id]);
+    
+    // Delete order
+    const result = await client.query(`DELETE FROM "public"."pos_orders" WHERE id = $1 RETURNING *`, [id]);
+    return result.rows[0];
+  });
+};
