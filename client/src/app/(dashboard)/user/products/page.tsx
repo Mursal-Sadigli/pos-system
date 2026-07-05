@@ -19,19 +19,14 @@ interface ProductItem {
   isActive: boolean;
 }
 
-const initialProducts: ProductItem[] = [
-  { id: '1', image: '📷', name: 'iPhone 15', category: 'Elektronika', price: 1200, stock: 5, isActive: true },
-  { id: '2', image: '📷', name: 'Samsung Galaxy S24', category: 'Elektronika', price: 900, stock: 3, isActive: true },
-  { id: '3', image: '📷', name: 'MacBook Pro', category: 'Elektronika', price: 2400, stock: 2, isActive: true },
-  { id: '4', image: '📷', name: 'Croissant', category: 'Qida', price: 3, stock: 12, isActive: true },
-  { id: '5', image: '📷', name: 'Su', category: 'İçkilər', price: 1, stock: 0, isActive: false },
-  { id: '6', image: '📷', name: 'Cappuccino', category: 'Qida', price: 6, stock: 8, isActive: true },
-];
+import { useEffect } from 'react';
+import { productApi } from '@/lib/api';
 
 const categories = ['Bütün', 'Elektronika', 'Qida', 'İçkilər'];
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState<ProductItem[]>(initialProducts);
+  const [products, setProducts] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<ProductItem | null>(null);
@@ -73,18 +68,52 @@ export default function ProductsPage() {
     setStockStatus('all');
   };
 
-  const handleSaveProduct = (productData: Omit<ProductItem, 'id'>) => {
-    if (editingProduct) {
-      setProducts(products.map(p => p.id === editingProduct.id ? { ...p, ...productData } : p));
-    } else {
-      const newId = Math.random().toString(36).substr(2, 9);
-      setProducts([...products, { ...productData, id: newId }]);
+  const fetchProducts = async () => {
+    try {
+      setIsLoading(true);
+      const res = await productApi.getProducts();
+      setProducts(res.data || []);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleDeleteProduct = (id: string) => {
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const handleSaveProduct = async (productData: any) => {
+    try {
+      if (editingProduct) {
+        await productApi.updateProduct(editingProduct.id, productData);
+      } else {
+        await productApi.createProduct(productData);
+      }
+      fetchProducts();
+    } catch (error) {
+      console.error('Save error:', error);
+    }
+  };
+
+  const handleDeleteProduct = async (id: string) => {
     if (confirm('Bu məhsulu silmək istədiyinizə əminsiniz?')) {
-      setProducts(products.filter(p => p.id !== id));
+      try {
+        await productApi.deleteProduct(id);
+        setProducts(products.filter(p => p.id !== id));
+      } catch (error) {
+        console.error('Delete error:', error);
+      }
+    }
+  };
+
+  const handleImportProducts = async (importedProducts: any[]) => {
+    try {
+      await productApi.bulkImportProducts({ products: importedProducts });
+      fetchProducts();
+    } catch (error) {
+      console.error('Import error:', error);
     }
   };
 
@@ -200,7 +229,7 @@ export default function ProductsPage() {
       <ImportModal 
         open={isImportModalOpen} 
         onOpenChange={setIsImportModalOpen} 
-        onImport={() => alert('Fayl uğurla analiz edildi və məhsullar əlavə olundu!')}
+        onImport={handleImportProducts}
       />
     </div>
   );
