@@ -24,13 +24,13 @@ import { useAuth } from '@/hooks/useAuth';
 
 const navigation = [
   { name: 'İdarə paneli', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'POS', href: '/pos', icon: ShoppingCart },
-  { name: 'Məhsullar', href: '/products', icon: Package },
-  { name: 'Sifarişlər', href: '/orders', icon: FileText },
-  { name: 'Müştərilər', href: '/customers', icon: Users },
-  { name: 'Hesabatlar', href: '/reports', icon: BarChart3 },
-  { name: 'Parametrlər', href: '/settings', icon: Settings },
-  { name: 'Yardım', href: '/help', icon: HelpCircle },
+  { name: 'POS', href: '/user/pos', icon: ShoppingCart },
+  { name: 'Məhsullar', href: '/user/products', icon: Package },
+  { name: 'Sifarişlər', href: '/user/orders', icon: FileText },
+  { name: 'Müştərilər', href: '/user/customers', icon: Users },
+  { name: 'Hesabatlar', href: '/user/reports', icon: BarChart3 },
+  { name: 'Parametrlər', href: '/user/settings', icon: Settings },
+  { name: 'Yardım', href: '/user/help', icon: HelpCircle },
 ];
 
 export function Sidebar() {
