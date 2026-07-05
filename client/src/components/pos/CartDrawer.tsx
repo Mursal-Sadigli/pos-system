@@ -10,7 +10,7 @@ import { Trash2, Plus, Minus, ShoppingBag } from 'lucide-react';
 import { PaymentModal } from './PaymentModal';
 import { ReceiptModal } from './ReceiptModal';
 import { orderApi } from '@/lib/api';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/useToast';
 
 export function CartDrawer() {
   const { items, total, subtotal, tax, discount, removeItem, updateQuantity, clearCart, setDiscount } =

@@ -12,7 +12,7 @@ import { productApi } from '@/lib/api';
 import type { Product } from '@/types/product';
 import { useCartStore } from '@/store/cartStore';
 import { useBarcodeScanner } from '@/hooks/useBarcodeScanner';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/hooks/useToast';
 
 const categories = [
   { value: 'all', label: 'Bütün' },
