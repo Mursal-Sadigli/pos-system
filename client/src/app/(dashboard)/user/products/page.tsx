@@ -30,7 +30,6 @@ export default function ProductsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<ProductItem | null>(null);
   const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('Bütün');
@@ -88,13 +87,8 @@ export default function ProductsPage() {
 
   const handleSaveProduct = async (productData: any) => {
     try {
-      if (editingProduct) {
-        await productApi.updateProduct(editingProduct.id, productData);
-        toast({ title: 'Uğurlu', description: 'Məhsul yeniləndi' });
-      } else {
-        await productApi.createProduct(productData);
-        toast({ title: 'Uğurlu', description: 'Məhsul əlavə edildi' });
-      }
+      await productApi.createProduct(productData);
+      toast({ title: 'Uğurlu', description: 'Məhsul əlavə edildi' });
       fetchProducts();
     } catch (error) {
       console.error('Save error:', error);
@@ -140,7 +134,6 @@ export default function ProductsPage() {
 
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" onClick={() => {
-            setEditingProduct(null);
             setIsProductModalOpen(true);
           }}>
             <Plus className="mr-2 h-4 w-4" />
@@ -174,10 +167,6 @@ export default function ProductsPage() {
 
       <ProductTable 
         products={paginatedProducts} 
-        onEdit={(product) => {
-          setEditingProduct(product);
-          setIsProductModalOpen(true);
-        }}
         onDelete={handleDeleteProduct}
       />
 
@@ -230,7 +219,7 @@ export default function ProductsPage() {
       <ProductFormModal 
         open={isProductModalOpen} 
         onOpenChange={setIsProductModalOpen} 
-        product={editingProduct}
+        product={null}
         onSave={handleSaveProduct}
         categories={categories}
       />
