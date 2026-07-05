@@ -273,6 +273,22 @@ const ensureInvitationTable = async () => {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS ${schemaQualified}."products" (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name VARCHAR(255) NOT NULL,
+        sku VARCHAR(100) UNIQUE,
+        category VARCHAR(100),
+        price DECIMAL(10, 2) NOT NULL DEFAULT 0,
+        stock INTEGER NOT NULL DEFAULT 0,
+        min_stock INTEGER NOT NULL DEFAULT 0,
+        status VARCHAR(20) DEFAULT 'active',
+        image TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
     await client.query(`CREATE INDEX IF NOT EXISTS "idx_invitations_email_status" ON ${schemaQualified}."invitations"(email, status)`);
     await client.query(`CREATE INDEX IF NOT EXISTS "idx_invitations_token" ON ${schemaQualified}."invitations"(token)`);
     await client.query(`CREATE INDEX IF NOT EXISTS "idx_invitations_store_id" ON ${schemaQualified}."invitations"(store_id)`);
