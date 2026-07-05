@@ -3,8 +3,8 @@
 import { ReactNode, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
-import { Navbar as AdminNavbar } from '@/components/layout/Navbar';
-import { Sidebar as AdminSidebar } from '@/components/layout/Sidebar';
+import { AdminNavbar } from './layout/AdminNavbar';
+import { AdminSidebar } from './layout/AdminSidebar';
 import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 
 export default function AdminLayout({ children }: { children: ReactNode }) {

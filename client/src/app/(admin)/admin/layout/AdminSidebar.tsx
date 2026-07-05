@@ -1,0 +1,119 @@
+'use client';
+
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { cn } from '@/lib/utils';
+import {
+  LayoutDashboard,
+  ShoppingCart,
+  Package,
+  Users,
+  FileText,
+  Settings,
+  LogOut,
+  ChevronLeft,
+  ChevronRight,
+  Store,
+  BarChart3,
+  HelpCircle,
+  Briefcase,
+  Tags
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { useUIStore } from '@/store/uiStore';
+import { useAuth } from '@/hooks/useAuth';
+
+const navigation = [
+  { name: 'İdarə paneli', href: '/admin', icon: LayoutDashboard },
+  { name: 'POS', href: '/pos', icon: ShoppingCart },
+  { name: 'İşçilər', href: '/admin/users', icon: Briefcase },
+  { name: 'Məhsullar', href: '/admin/products', icon: Package },
+  { name: 'Kateqoriyalar', href: '/admin/categories', icon: Tags },
+  { name: 'Sifarişlər', href: '/admin/orders', icon: FileText },
+  { name: 'Müştərilər', href: '/admin/customers', icon: Users },
+  { name: 'Hesabatlar', href: '/admin/reports', icon: BarChart3 },
+  { name: 'Parametrlər', href: '/admin/settings', icon: Settings },
+];
+
+export function AdminSidebar() {
+  const pathname = usePathname();
+  const { isCollapsed, toggleSidebar } = useUIStore();
+  const { logout, user } = useAuth();
+
+  return (
+    <div
+      className={cn(
+        'flex h-full flex-col border-r bg-card transition-all duration-300',
+        isCollapsed ? 'w-[72px]' : 'w-[280px]'
+      )}
+    >
+      <div className="flex h-16 items-center justify-between border-b px-4">
+        {!isCollapsed && (
+          <Link href="/admin" className="flex items-center space-x-2">
+            <Store className="h-6 w-6 text-primary" />
+            <div className="flex flex-col leading-tight">
+              <span className="font-semibold text-sm">
+                {(user?.store_name || user?.storeName) ? (user.store_name || user.storeName) : 'POS System'}
+              </span>
+              <span className="text-[10px] text-muted-foreground">Admin Panel</span>
+            </div>
+          </Link>
+        )}
+
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleSidebar}
+          className="ml-auto"
+        >
+          {isCollapsed ? (
+            <ChevronRight className="h-4 w-4" />
+          ) : (
+            <ChevronLeft className="h-4 w-4" />
+          )}
+        </Button>
+      </div>
+
+      <ScrollArea className="flex-1 px-3 py-4">
+        <nav className="space-y-1">
+          {navigation.map((item) => {
+            const isActive =
+              pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href + '/'));
+
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={cn(
+                  'flex items-center rounded-lg px-3 py-2 text-sm transition-all hover:bg-accent hover:text-accent-foreground',
+                  isActive
+                    ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+                    : 'text-muted-foreground',
+                  isCollapsed && 'justify-center px-0'
+                )}
+              >
+                <item.icon className={cn('h-5 w-5', !isCollapsed && 'mr-3')} />
+                {!isCollapsed && <span>{item.name}</span>}
+              </Link>
+            );
+          })}
+        </nav>
+      </ScrollArea>
+
+      <div className="border-t p-3">
+        <Button
+          variant="ghost"
+          className={cn(
+            'w-full justify-start text-muted-foreground hover:text-foreground',
+            isCollapsed && 'justify-center px-0'
+          )}
+          onClick={logout}
+        >
+          <LogOut className={cn('h-5 w-5', !isCollapsed && 'mr-3')} />
+          {!isCollapsed && 'Çıxış'}
+        </Button>
+      </div>
+    </div>
+  );
+}
