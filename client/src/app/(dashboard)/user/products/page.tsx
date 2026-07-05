@@ -54,7 +54,7 @@ export default function ProductsPage() {
 
       return matchesSearch && matchesCategory && matchesMinPrice && matchesMaxPrice && matchesStock;
     });
-  }, [search, category, minPrice, maxPrice, stockStatus]);
+  }, [search, category, minPrice, maxPrice, stockStatus, products]);
 
   const pageCount = Math.max(1, Math.ceil(filteredProducts.length / perPage));
   const paginatedProducts = useMemo(() => {
