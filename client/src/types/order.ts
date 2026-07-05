@@ -9,6 +9,7 @@ export interface OrderItem{
 
 export interface Order{
     id: string;
+    order_number?: string;
     storeId: string;
     customerId: string;
     items: OrderItem[];
