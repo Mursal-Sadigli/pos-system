@@ -7,7 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Barcode, CreditCard, X } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
+import { productApi } from '@/lib/api';
+import type { Product } from '@/types/product';
+import { useCartStore } from '@/store/cartStore';
+import { useBarcodeScanner } from '@/hooks/useBarcodeScanner';
+import { useToast } from '@/hooks/use-toast';
 
 const categories = [
   { value: 'all', label: 'Bütün' },
@@ -20,6 +25,51 @@ export function PosScreen() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const searchInputRef = useRef<HTMLInputElement>(null);
+  
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { addItem } = useCartStore();
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const res = await productApi.getProducts();
+        setProducts(res.data || []);
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
+
+  useBarcodeScanner((barcode) => {
+    // Skan edilən barkodu (sku) məhsulların içində axtar
+    const product = products.find(p => p.sku === barcode);
+    if (product) {
+      if (product.stock > 0 && product.status !== 'inactive') {
+        addItem(product as any);
+        toast({
+          title: "Məhsul əlavə edildi",
+          description: `${product.name} səbətə əlavə olundu.`,
+        });
+      } else {
+        toast({
+          title: "Məhsul bitib",
+          description: "Bu məhsuldan stokda qalmayıb.",
+          variant: "destructive"
+        });
+      }
+    } else {
+      toast({
+        title: "Tapılmadı",
+        description: `Barkod: ${barcode} sistemdə mövcud deyil.`,
+        variant: "destructive"
+      });
+    }
+  });
 
   const handleBarcodeScan = () => {
     searchInputRef.current?.focus();
@@ -80,7 +130,7 @@ export function PosScreen() {
         <div className="rounded-lg border bg-card p-4">
           <h2 className="mb-4 text-lg font-semibold">Məhsul kataloqu</h2>
           <div className="overflow-y-auto">
-            <ProductGrid searchQuery={searchQuery} category={selectedCategory} />
+            <ProductGrid searchQuery={searchQuery} category={selectedCategory} products={products} loading={loading} />
           </div>
         </div>
 

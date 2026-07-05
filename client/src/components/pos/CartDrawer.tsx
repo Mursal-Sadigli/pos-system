@@ -9,6 +9,8 @@ import { Separator } from '@/components/ui/separator';
 import { Trash2, Plus, Minus, ShoppingBag } from 'lucide-react';
 import { PaymentModal } from './PaymentModal';
 import { ReceiptModal } from './ReceiptModal';
+import { orderApi } from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
 
 export function CartDrawer() {
   const { items, total, subtotal, tax, discount, removeItem, updateQuantity, clearCart, setDiscount } =
@@ -16,24 +18,50 @@ export function CartDrawer() {
   const [showPayment, setShowPayment] = useState(false);
   const [showReceipt, setShowReceipt] = useState(false);
   const [lastOrder, setLastOrder] = useState<any>(null);
+  const { toast } = useToast();
 
   const isEmpty = items.length === 0;
 
-  const handleCompletePayment = (method: 'cash' | 'card') => {
-    // Save order data for receipt
-    setLastOrder({
-      items: [...items],
-      subtotal,
-      tax,
-      discount,
-      total,
-      paymentMethod: method,
-      date: new Date(),
-    });
-    
-    // Clear cart and show receipt
-    clearCart();
-    setShowReceipt(true);
+  const handleCompletePayment = async (method: 'cash' | 'card') => {
+    try {
+      const orderData = {
+        amount: total,
+        payment: method === 'cash' ? 'Nağd' : 'Kart',
+        items: items.map(item => ({
+          product_id: item.id,
+          name: item.name,
+          qty: item.quantity,
+          price: item.price
+        }))
+      };
+
+      // Real API çağırışı
+      const res = await orderApi.createOrder(orderData as any);
+      
+      // Save order data for receipt
+      setLastOrder({
+        id: res.data.id || res.data.order_number,
+        items: [...items],
+        subtotal,
+        tax,
+        discount,
+        total,
+        paymentMethod: method === 'cash' ? 'Nağd' : 'Kart',
+        date: new Date(),
+        cashier: 'Kassa'
+      });
+      
+      // Clear cart and show receipt
+      clearCart();
+      setShowReceipt(true);
+    } catch (error) {
+      console.error('Sifariş xətası:', error);
+      toast({
+        title: 'Xəta',
+        description: 'Sifarişi tamamlamaq mümkün olmadı',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
