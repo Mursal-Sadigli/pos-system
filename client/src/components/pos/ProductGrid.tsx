@@ -27,40 +27,35 @@ export function ProductGrid({ searchQuery, category }: ProductGridProps) {
   const filteredProducts = mockProducts.filter((product) => {
     const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = category === 'all' || product.category === category;
-    return matchesSearch && matchesCategory;
+    const remainingStock = getRemainingStock(product);
+    return matchesSearch && matchesCategory && remainingStock > 0;
   });
 
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
       {filteredProducts.map((product) => {
         const remainingStock = getRemainingStock(product);
-        const isOutOfStock = remainingStock <= 0;
 
         return (
           <Card
             key={product.id}
-            className={`p-3 transition-all ${
-              isOutOfStock 
-                ? 'opacity-60 cursor-not-allowed grayscale' 
-                : 'hover:shadow-lg cursor-pointer hover:border-primary/50'
-            }`}
-            onClick={() => !isOutOfStock && addItem(product)}
+            className="p-3 transition-all hover:shadow-lg cursor-pointer hover:border-primary/50"
+            onClick={() => addItem(product)}
           >
             <div className="flex flex-col items-center text-center">
               <div className="text-4xl mb-2">{product.image}</div>
               <h3 className="font-medium text-sm line-clamp-1">{product.name}</h3>
               <p className="text-lg font-bold text-primary">₼{product.price.toFixed(2)}</p>
-              <Badge variant={isOutOfStock ? "destructive" : "secondary"} className="mt-1 text-xs">
-                {isOutOfStock ? 'Stokda yoxdur' : `Stok: ${remainingStock}`}
+              <Badge variant="secondary" className="mt-1 text-xs">
+                {`Stok: ${remainingStock}`}
               </Badge>
               <Button
                 size="sm"
-                variant={isOutOfStock ? "secondary" : "default"}
+                variant="default"
                 className="mt-2 w-full"
-                disabled={isOutOfStock}
                 onClick={(e) => {
                   e.stopPropagation();
-                  if (!isOutOfStock) addItem(product);
+                  addItem(product);
                 }}
               >
                 <Plus className="mr-1 h-3 w-3" />
