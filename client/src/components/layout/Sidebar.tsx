@@ -30,6 +30,7 @@ const navigation = [
   { name: 'Müştərilər', href: '/user/customers', icon: Users },
   { name: 'Hesabatlar', href: '/user/reports', icon: BarChart3 },
   { name: 'Parametrlər', href: '/user/settings', icon: Settings },
+  { name: 'Loglar', href: '/user/logs', icon: FileText },
   { name: 'Yardım', href: '/user/help', icon: HelpCircle },
 ];
 
