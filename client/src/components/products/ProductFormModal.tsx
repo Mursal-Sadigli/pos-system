@@ -27,7 +27,7 @@ interface ProductItem {
   category: string;
   price: number;
   stock: number;
-  isActive: boolean;
+  status: string;
 }
 
 interface ProductFormModalProps {
@@ -44,7 +44,7 @@ export function ProductFormModal({ open, onOpenChange, product, onSave, categori
     category: categories[1] || 'Digər',
     price: 0,
     stock: 0,
-    isActive: true,
+    status: 'active',
     image: '📦',
   });
 
@@ -55,7 +55,7 @@ export function ProductFormModal({ open, onOpenChange, product, onSave, categori
         category: product.category,
         price: product.price,
         stock: product.stock,
-        isActive: product.isActive,
+        status: product.status,
         image: product.image,
       });
     } else {
@@ -64,7 +64,7 @@ export function ProductFormModal({ open, onOpenChange, product, onSave, categori
         category: categories.find(c => c !== 'Bütün') || 'Digər',
         price: 0,
         stock: 0,
-        isActive: true,
+        status: 'active',
         image: '📦',
       });
     }
@@ -146,8 +146,8 @@ export function ProductFormModal({ open, onOpenChange, product, onSave, categori
               <Label htmlFor="status" className="text-right">Status</Label>
               <div className="col-span-3">
                 <Select
-                  value={formData.isActive ? 'active' : 'inactive'}
-                  onValueChange={(val) => setFormData({ ...formData, isActive: val === 'active' })}
+                  value={formData.status}
+                  onValueChange={(val) => setFormData({ ...formData, status: val })}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Status seçin" />
