@@ -118,14 +118,9 @@ export function CartDrawer() {
             </Button>
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-2">
-            <Button disabled={isEmpty} onClick={() => setShowPayment(true)}>
-              Nağd
-            </Button>
-            <Button variant="secondary" disabled={isEmpty} onClick={() => setShowPayment(true)}>
-              Kart
-            </Button>
-          </div>
+          <Button className="w-full text-base font-medium" size="lg" disabled={isEmpty} onClick={() => setShowPayment(true)}>
+            Ödəniş et
+          </Button>
         </div>
       </Card>
 
