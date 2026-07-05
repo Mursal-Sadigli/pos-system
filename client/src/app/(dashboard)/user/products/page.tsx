@@ -5,6 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Download, Upload, Plus } from 'lucide-react';
 import { ProductFilters } from '@/components/products/ProductFilters';
 import { ProductTable } from '@/components/products/ProductTable';
+import { ProductFormModal } from '@/components/products/ProductFormModal';
+import { ImportModal } from '@/components/products/ImportModal';
+import { exportToCSV } from '@/lib/exportUtils';
 
 interface ProductItem {
   id: string;
@@ -16,7 +19,7 @@ interface ProductItem {
   isActive: boolean;
 }
 
-const products: ProductItem[] = [
+const initialProducts: ProductItem[] = [
   { id: '1', image: '📷', name: 'iPhone 15', category: 'Elektronika', price: 1200, stock: 5, isActive: true },
   { id: '2', image: '📷', name: 'Samsung Galaxy S24', category: 'Elektronika', price: 900, stock: 3, isActive: true },
   { id: '3', image: '📷', name: 'MacBook Pro', category: 'Elektronika', price: 2400, stock: 2, isActive: true },
@@ -28,6 +31,10 @@ const products: ProductItem[] = [
 const categories = ['Bütün', 'Elektronika', 'Qida', 'İçkilər'];
 
 export default function ProductsPage() {
+  const [products, setProducts] = useState<ProductItem[]>(initialProducts);
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<ProductItem | null>(null);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('Bütün');
   const [minPrice, setMinPrice] = useState('');
@@ -66,6 +73,25 @@ export default function ProductsPage() {
     setStockStatus('all');
   };
 
+  const handleSaveProduct = (productData: Omit<ProductItem, 'id'>) => {
+    if (editingProduct) {
+      setProducts(products.map(p => p.id === editingProduct.id ? { ...p, ...productData } : p));
+    } else {
+      const newId = Math.random().toString(36).substr(2, 9);
+      setProducts([...products, { ...productData, id: newId }]);
+    }
+  };
+
+  const handleDeleteProduct = (id: string) => {
+    if (confirm('Bu məhsulu silmək istədiyinizə əminsiniz?')) {
+      setProducts(products.filter(p => p.id !== id));
+    }
+  };
+
+  const handleExport = () => {
+    exportToCSV(products, 'mehsullar');
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -75,15 +101,18 @@ export default function ProductsPage() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <Button variant="secondary">
+          <Button variant="secondary" onClick={() => {
+            setEditingProduct(null);
+            setIsProductModalOpen(true);
+          }}>
             <Plus className="mr-2 h-4 w-4" />
             Yeni Məhsul
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={handleExport}>
             <Download className="mr-2 h-4 w-4" />
             İxrac
           </Button>
-          <Button variant="outline">
+          <Button variant="outline" onClick={() => setIsImportModalOpen(true)}>
             <Upload className="mr-2 h-4 w-4" />
             İdxal
           </Button>
@@ -105,7 +134,14 @@ export default function ProductsPage() {
         categories={categories}
       />
 
-      <ProductTable products={paginatedProducts} />
+      <ProductTable 
+        products={paginatedProducts} 
+        onEdit={(product) => {
+          setEditingProduct(product);
+          setIsProductModalOpen(true);
+        }}
+        onDelete={handleDeleteProduct}
+      />
 
       <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <p className="text-sm text-muted-foreground">
@@ -152,6 +188,20 @@ export default function ProductsPage() {
           </div>
         </div>
       </div>
+
+      <ProductFormModal 
+        open={isProductModalOpen} 
+        onOpenChange={setIsProductModalOpen} 
+        product={editingProduct}
+        onSave={handleSaveProduct}
+        categories={categories}
+      />
+
+      <ImportModal 
+        open={isImportModalOpen} 
+        onOpenChange={setIsImportModalOpen} 
+        onImport={() => alert('Fayl uğurla analiz edildi və məhsullar əlavə olundu!')}
+      />
     </div>
   );
 }

@@ -16,9 +16,11 @@ interface ProductItem {
 
 interface ProductTableProps {
   products: ProductItem[];
+  onEdit: (product: ProductItem) => void;
+  onDelete: (productId: string) => void;
 }
 
-export function ProductTable({ products }: ProductTableProps) {
+export function ProductTable({ products, onEdit, onDelete }: ProductTableProps) {
   return (
     <div className="rounded-lg border bg-card overflow-x-auto">
       <table className="min-w-full divide-y border-separate border-spacing-0 text-left text-sm">
@@ -50,10 +52,10 @@ export function ProductTable({ products }: ProductTableProps) {
               </td>
               <td className="px-4 py-3">
                 <div className="flex gap-2">
-                  <Button variant="ghost" size="icon">
+                  <Button variant="ghost" size="icon" onClick={() => onEdit(product)}>
                     <Edit className="h-4 w-4" />
                   </Button>
-                  <Button variant="ghost" size="icon" className="text-destructive">
+                  <Button variant="ghost" size="icon" className="text-destructive" onClick={() => onDelete(product.id)}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
