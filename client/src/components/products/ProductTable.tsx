@@ -11,7 +11,7 @@ interface ProductItem {
   category: string;
   price: number;
   stock: number;
-  isActive: boolean;
+  status: string;
 }
 
 interface ProductTableProps {
@@ -43,11 +43,11 @@ export function ProductTable({ products, onEdit, onDelete }: ProductTableProps) 
               <td className="px-4 py-3 text-2xl">{product.image}</td>
               <td className="px-4 py-3">{product.name}</td>
               <td className="px-4 py-3">{product.category}</td>
-              <td className="px-4 py-3">₼{product.price.toFixed(2)}</td>
+              <td className="px-4 py-3">₼{Number(product.price).toFixed(2)}</td>
               <td className="px-4 py-3">{product.stock}</td>
               <td className="px-4 py-3">
-                <Badge variant={product.isActive ? 'success' : 'destructive'}>
-                  {product.isActive ? 'Aktiv' : 'Passiv'}
+                <Badge variant={product.status === 'active' ? 'success' : 'destructive'}>
+                  {product.status === 'active' ? 'Aktiv' : 'Passiv'}
                 </Badge>
               </td>
               <td className="px-4 py-3">

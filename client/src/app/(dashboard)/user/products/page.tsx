@@ -43,11 +43,11 @@ export default function ProductsPage() {
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
       const matchesSearch =
-        product.name.toLowerCase().includes(search.toLowerCase()) ||
-        product.category.toLowerCase().includes(search.toLowerCase());
+        (product.name || '').toLowerCase().includes(search.toLowerCase()) ||
+        (product.category || '').toLowerCase().includes(search.toLowerCase());
       const matchesCategory = category === 'Bütün' || product.category === category;
-      const matchesMinPrice = minPrice === '' || product.price >= Number(minPrice);
-      const matchesMaxPrice = maxPrice === '' || product.price <= Number(maxPrice);
+      const matchesMinPrice = minPrice === '' || Number(product.price) >= Number(minPrice);
+      const matchesMaxPrice = maxPrice === '' || Number(product.price) <= Number(maxPrice);
       const matchesStock =
         stockStatus === 'all' ||
         (stockStatus === 'available' ? product.stock > 0 : product.stock === 0);
