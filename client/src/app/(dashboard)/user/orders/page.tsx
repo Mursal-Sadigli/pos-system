@@ -62,7 +62,7 @@ export default function OrdersPage() {
 
       return matchesTab && matchesDate && matchesCustomer && matchesCashier && matchesPayment;
     });
-  }, [activeTab, dateFrom, dateTo, customer, cashier, paymentMethod]);
+  }, [orders, activeTab, dateFrom, dateTo, customer, cashier, paymentMethod]);
 
   const handleClearFilters = () => {
     setDateFrom('');
