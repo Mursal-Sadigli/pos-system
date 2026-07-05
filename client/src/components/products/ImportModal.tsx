@@ -35,16 +35,28 @@ export function ImportModal({ open, onOpenChange, onImport }: ImportModalProps) 
       const worksheet = workbook.Sheets[firstSheetName];
       const json = XLSX.utils.sheet_to_json(worksheet);
 
-      // Map parsed json to product format
-      const products = json.map((row: any) => ({
-        name: row['Ad'] || row['Name'] || row['ad'] || row['name'] || '',
-        sku: row['SKU'] || row['sku'] || '',
-        category: row['Kateqoriya'] || row['Category'] || 'Digər',
-        price: Number(row['Qiymət'] || row['Price'] || 0),
-        stock: Number(row['Stok'] || row['Stock'] || 0),
-        min_stock: Number(row['Minimum Stok'] || row['Min Stock'] || 0),
-        status: row['Status'] || row['status'] || 'active',
-      })).filter(p => p.name); // only keep rows that have a name
+      // Map parsed json to product format - making it case insensitive and checking multiple variations
+      const products = json.map((row: any) => {
+        const getVal = (keys: string[]) => {
+          const key = Object.keys(row).find(k => keys.includes(k.toLowerCase().trim()));
+          return key ? row[key] : undefined;
+        };
+
+        return {
+          name: getVal(['ad', 'name', 'məhsul', 'məhsulun adı', 'ad/name']),
+          sku: getVal(['sku', 'barkod', 'barcode', 'kod', 'code']),
+          category: getVal(['kateqoriya', 'category', 'növlər']),
+          price: Number(getVal(['qiymət', 'price', 'satış qiyməti', 'qiyməti']) || 0),
+          stock: Number(getVal(['stok', 'stock', 'say', 'miqdar', 'qalıq']) || 0),
+          min_stock: Number(getVal(['minimum stok', 'min stock', 'min_stok']) || 0),
+          status: getVal(['status', 'hal']) || 'active',
+        };
+      }).filter(p => p.name && p.name.toString().trim() !== ''); // only keep rows that have a name
+
+      if (products.length === 0) {
+        alert('Fayldan heç bir məhsul oxuna bilmədi! Zəhmət olmasa faylın içində (Ad, Qiymət, Stok) sütunlarının düzgün yazıldığından əmin olun.');
+        return;
+      }
 
       onImport(products);
       onOpenChange(false);

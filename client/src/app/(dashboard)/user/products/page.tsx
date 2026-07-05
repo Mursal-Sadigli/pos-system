@@ -8,6 +8,7 @@ import { ProductTable } from '@/components/products/ProductTable';
 import { ProductFormModal } from '@/components/products/ProductFormModal';
 import { ImportModal } from '@/components/products/ImportModal';
 import { exportToCSV } from '@/lib/exportUtils';
+import { useToast } from '@/hooks/useToast';
 
 interface ProductItem {
   id: string;
@@ -30,6 +31,7 @@ export default function ProductsPage() {
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<ProductItem | null>(null);
+  const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('Bütün');
   const [minPrice, setMinPrice] = useState('');
@@ -88,12 +90,15 @@ export default function ProductsPage() {
     try {
       if (editingProduct) {
         await productApi.updateProduct(editingProduct.id, productData);
+        toast({ title: 'Uğurlu', description: 'Məhsul yeniləndi' });
       } else {
         await productApi.createProduct(productData);
+        toast({ title: 'Uğurlu', description: 'Məhsul əlavə edildi' });
       }
       fetchProducts();
     } catch (error) {
       console.error('Save error:', error);
+      toast({ title: 'Xəta', description: 'Məhsulu yadda saxlamaq mümkün olmadı', variant: 'destructive' });
     }
   };
 
@@ -102,18 +107,22 @@ export default function ProductsPage() {
       try {
         await productApi.deleteProduct(id);
         setProducts(products.filter(p => p.id !== id));
+        toast({ title: 'Uğurlu', description: 'Məhsul silindi' });
       } catch (error) {
         console.error('Delete error:', error);
+        toast({ title: 'Xəta', description: 'Məhsulu silmək mümkün olmadı', variant: 'destructive' });
       }
     }
   };
 
   const handleImportProducts = async (importedProducts: any[]) => {
     try {
-      await productApi.bulkImportProducts({ products: importedProducts });
+      const res = await productApi.bulkImportProducts({ products: importedProducts });
+      toast({ title: 'Uğurlu', description: `${res.data?.count || importedProducts.length} məhsul idxal edildi` });
       fetchProducts();
     } catch (error) {
       console.error('Import error:', error);
+      toast({ title: 'Xəta', description: 'İdxal zamanı xəta baş verdi', variant: 'destructive' });
     }
   };
 
