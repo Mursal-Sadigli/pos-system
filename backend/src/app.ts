@@ -58,6 +58,7 @@ app.use('/api/products', productRoutes);
 app.get('/health', (req, res) => {
   res.json({
     status: 'OK',
+    version: '1.0.1 - Products Added',
     timestamp: new Date().toISOString(),
   });
 });
