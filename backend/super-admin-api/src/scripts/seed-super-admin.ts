@@ -31,19 +31,20 @@ async function seedSuperAdmin() {
       console.log(`   🎭 Role: ${check.rows[0].role}`);
       console.log(`   🆔 ID: ${check.rows[0].id}`);
       
-      // Əgər rol SUPER_ADMIN deyilsə, yenilə
-      if (check.rows[0].role !== 'SUPER_ADMIN') {
-        console.log('⚠️  Updating role to SUPER_ADMIN...');
-        await query(
-          `UPDATE ${schemaQualified}.users 
-           SET role = 'SUPER_ADMIN', 
-               permissions = '{}'::JSONB,
-               updated_at = CURRENT_TIMESTAMP
-           WHERE email = $1`,
-          [superAdmin.email]
-        );
-        console.log('✅ Role updated to SUPER_ADMIN!');
-      }
+      const hashedPassword = await hashPassword(superAdmin.password);
+      console.log('⚠️  Updating super admin password to ensure access...');
+      
+      await query(
+        `UPDATE ${schemaQualified}.users 
+         SET password = $1,
+             role = 'SUPER_ADMIN', 
+             permissions = '{}'::JSONB,
+             updated_at = CURRENT_TIMESTAMP
+         WHERE email = $2`,
+        [hashedPassword, superAdmin.email]
+      );
+      
+      console.log('✅ Super Admin credentials and role updated!');
       return;
     }
 
