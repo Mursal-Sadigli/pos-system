@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { createOrder, getOrders } from '../controllers/order.controller';
-import { authMiddleware } from '../middleware/auth.middleware';
+import { authenticate } from '../middleware/auth.middleware';
 
 const router = Router();
 
 // Bütün istifadəçilər (Cashier, Admin) sifariş yarada və görə bilər
-router.post('/', authMiddleware, createOrder as any);
-router.get('/', authMiddleware, getOrders as any);
+router.post('/', authenticate as any, createOrder as any);
+router.get('/', authenticate as any, getOrders as any);
 
 export default router;
