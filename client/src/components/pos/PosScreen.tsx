@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Search, Barcode, CreditCard, X } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useRef } from 'react';
-import { toast } from 'react-hot-toast';
 
 const categories = [
   { value: 'all', label: 'Bütün' },
@@ -24,7 +23,6 @@ export function PosScreen() {
 
   const handleBarcodeScan = () => {
     searchInputRef.current?.focus();
-    toast.success('Barkod oxuyucu aktivdir. Məhsulu oxudun.');
   };
 
   return (
