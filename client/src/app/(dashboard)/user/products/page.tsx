@@ -17,7 +17,7 @@ interface ProductItem {
   category: string;
   price: number;
   stock: number;
-  isActive: boolean;
+  status: string;
 }
 
 import { useEffect } from 'react';
