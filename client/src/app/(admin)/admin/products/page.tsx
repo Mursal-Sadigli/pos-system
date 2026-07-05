@@ -366,7 +366,7 @@ export default function ProductsPage() {
                       </td>
                       <td className="px-4 py-3 text-sm">{product.sku}</td>
                       <td className="px-4 py-3 text-sm">{product.category}</td>
-                      <td className="px-4 py-3 font-medium">₼{product.price.toFixed(2)}</td>
+                      <td className="px-4 py-3 font-medium">₼{Number(product.price).toFixed(2)}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
                           <span className={product.stock < product.minStock ? 'text-red-600 font-medium' : ''}>

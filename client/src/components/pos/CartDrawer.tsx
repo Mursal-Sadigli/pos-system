@@ -97,7 +97,7 @@ export function CartDrawer() {
                     <div>
                       <p className="font-medium text-sm">{item.name}</p>
                       <p className="text-xs text-muted-foreground">
-                        {item.quantity} x ₼{item.price.toFixed(2)}
+                        {item.quantity} x ₼{Number(item.price).toFixed(2)}
                       </p>
                     </div>
 
