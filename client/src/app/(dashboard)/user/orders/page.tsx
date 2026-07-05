@@ -1,69 +1,28 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Search, Printer, Eye, Calendar } from 'lucide-react';
 import { OrderFilters } from '@/components/orders/OrderFilters';
 import { OrderTable } from '@/components/orders/OrderTable';
+import { orderApi } from '@/lib/api';
+import { format } from 'date-fns';
 
 const orderTabs = [
   { key: 'all', label: '📋 Bütün' },
   { key: 'pending', label: '⏳ Gözləmədə' },
-  { key: 'preparing', label: '🔄 Hazırlanır' },
+  { key: 'processing', label: '🔄 Hazırlanır' },
   { key: 'completed', label: '✅ Tamamlandı' },
   { key: 'cancelled', label: '❌ Ləğv' },
 ];
 
-const orders = [
-  {
-    id: '001',
-    customer: 'Elçin',
-    amount: 45,
-    status: 'completed',
-    payment: 'Kart',
-    time: '14:30',
-    date: '2026-06-30',
-    cashier: 'Kassa 1',
-    items: [
-      { name: 'Espresso', qty: 2, price: 5 },
-      { name: 'Kroassan', qty: 1, price: 3 },
-    ],
-  },
-  {
-    id: '002',
-    customer: 'Aynur',
-    amount: 30,
-    status: 'pending',
-    payment: 'Nağd',
-    time: '15:10',
-    date: '2026-06-30',
-    cashier: 'Kassa 2',
-    items: [
-      { name: 'Latte', qty: 1, price: 7 },
-      { name: 'Sandviç', qty: 1, price: 8 },
-    ],
-  },
-  {
-    id: '003',
-    customer: 'Rəşad',
-    amount: 72,
-    status: 'preparing',
-    payment: 'Kart',
-    time: '16:05',
-    date: '2026-06-29',
-    cashier: 'Kassa 1',
-    items: [
-      { name: 'Cappuccino', qty: 2, price: 6 },
-      { name: 'Sushi', qty: 1, price: 12 },
-    ],
-  },
-];
-
-const customers = ['Hamısı', 'Elçin', 'Aynur', 'Rəşad'];
-const cashiers = ['Hamısı', 'Kassa 1', 'Kassa 2'];
+const customers = ['Hamısı'];
+const cashiers = ['Hamısı'];
 const paymentMethods = ['Hamısı', 'Nağd', 'Kart'];
 
 export default function OrdersPage() {
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('all');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -71,15 +30,31 @@ export default function OrdersPage() {
   const [cashier, setCashier] = useState('Hamısı');
   const [paymentMethod, setPaymentMethod] = useState('Hamısı');
 
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const fetchOrders = async () => {
+    try {
+      const res = await orderApi.getOrders();
+      setOrders(res.data || []);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
       const matchesTab =
         activeTab === 'all' || order.status === activeTab;
+      const orderDate = order.created_at ? format(new Date(order.created_at), 'yyyy-MM-dd') : '';
       const matchesDate =
-        (!dateFrom || order.date >= dateFrom) &&
-        (!dateTo || order.date <= dateTo);
+        (!dateFrom || orderDate >= dateFrom) &&
+        (!dateTo || orderDate <= dateTo);
       const matchesCustomer =
-        customer === 'Hamısı' || order.customer === customer;
+        customer === 'Hamısı' || order.customer_name === customer;
       const matchesCashier =
         cashier === 'Hamısı' || order.cashier === cashier;
       const matchesPayment =
@@ -138,9 +113,17 @@ export default function OrdersPage() {
         onClear={handleClearFilters}
       />
 
-      <OrderTable
-        orders={filteredOrders}
-      />
+      {loading ? (
+        <div className="flex justify-center p-8">Yüklənir...</div>
+      ) : (
+        <OrderTable
+          orders={filteredOrders}
+          onStatusChange={async (id, status) => {
+            await orderApi.updateOrderStatus(id, status);
+            fetchOrders();
+          }}
+        />
+      )}
     </div>
   );
 }
