@@ -48,7 +48,13 @@ export const useAuthStore = create<AuthStore>()(
         set({ isLoading: true });
         try {
           const response = await authApi.login({ email, password });
-          const { user, token, refreshToken } = response.data.data as LoginResponse;
+          const { user: rawUser, token, refreshToken } = response.data.data as LoginResponse;
+
+          const user = {
+            ...rawUser,
+            storeId: (rawUser as any).store_id || rawUser.storeId || null,
+            storeName: (rawUser as any).store_name || rawUser.storeName || null,
+          };
 
           localStorage.setItem('token', token);
           localStorage.setItem('refreshToken', refreshToken);
@@ -104,8 +110,14 @@ export const useAuthStore = create<AuthStore>()(
         try {
           const response = await authApi.getMe();
           if (response?.data?.success) {
+            const rawUser = response.data.data;
+            const normalizedUser = {
+              ...rawUser,
+              storeId: rawUser.store_id || rawUser.storeId || null,
+              storeName: rawUser.store_name || rawUser.storeName || null,
+            };
             set({
-              user: response.data.data,
+              user: normalizedUser,
               token,
               isLoading: false,
             });
@@ -126,7 +138,12 @@ export const useAuthStore = create<AuthStore>()(
               try {
                 const refreshResp = await authApi.refreshToken(refreshToken);
                 if (refreshResp?.data?.success) {
-                  const { token: newToken, user: updatedUser } = refreshResp.data.data;
+                  const { token: newToken, user: rawUser } = refreshResp.data.data;
+                  const updatedUser = {
+                    ...rawUser,
+                    storeId: rawUser.store_id || rawUser.storeId || null,
+                    storeName: rawUser.store_name || rawUser.storeName || null,
+                  };
                   localStorage.setItem('token', newToken);
                   set({ user: updatedUser, token: newToken, isLoading: false });
                   return;

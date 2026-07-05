@@ -42,7 +42,7 @@ export default function DashboardPage() {
             </div>
             <div>
               <p className="text-sm text-gray-500">Mağaza</p>
-              <p className="font-semibold">{user?.storeId || 'Təyin edilməyib'}</p>
+              <p className="font-semibold">{user?.storeName || user?.storeId || 'Təyin edilməyib'}</p>
             </div>
           </div>
         </div>
