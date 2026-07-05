@@ -26,7 +26,7 @@ import { useAuth } from '@/hooks/useAuth';
 
 const navigation = [
   { name: 'İdarə paneli', href: '/admin', icon: LayoutDashboard },
-  { name: 'POS', href: '/pos', icon: ShoppingCart },
+  { name: 'POS', href: '/user/pos', icon: ShoppingCart },
   { name: 'İşçilər', href: '/admin/users', icon: Briefcase },
   { name: 'Məhsullar', href: '/admin/products', icon: Package },
   { name: 'Kateqoriyalar', href: '/admin/categories', icon: Tags },
