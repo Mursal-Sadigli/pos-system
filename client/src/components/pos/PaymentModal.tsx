@@ -18,6 +18,7 @@ import { cn } from '@/lib/utils';
 interface PaymentModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onComplete: (method: 'cash' | 'card') => void;
 }
 
 const paymentMethods = [
@@ -25,12 +26,12 @@ const paymentMethods = [
   { id: 'card' as const, label: 'Kart', icon: CreditCard },
 ];
 
-export function PaymentModal({ open, onOpenChange }: PaymentModalProps) {
-  const { total, clearCart } = useCartStore();
+export function PaymentModal({ open, onOpenChange, onComplete }: PaymentModalProps) {
+  const { total } = useCartStore();
   const [method, setMethod] = useState<'cash' | 'card'>('cash');
 
   const handlePayment = () => {
-    clearCart();
+    onComplete(method);
     onOpenChange(false);
   };
 

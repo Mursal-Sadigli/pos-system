@@ -8,13 +8,33 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Trash2, Plus, Minus, ShoppingBag } from 'lucide-react';
 import { PaymentModal } from './PaymentModal';
+import { ReceiptModal } from './ReceiptModal';
 
 export function CartDrawer() {
   const { items, total, subtotal, tax, discount, removeItem, updateQuantity, clearCart, setDiscount } =
     useCartStore();
   const [showPayment, setShowPayment] = useState(false);
+  const [showReceipt, setShowReceipt] = useState(false);
+  const [lastOrder, setLastOrder] = useState<any>(null);
 
   const isEmpty = items.length === 0;
+
+  const handleCompletePayment = (method: 'cash' | 'card') => {
+    // Save order data for receipt
+    setLastOrder({
+      items: [...items],
+      subtotal,
+      tax,
+      discount,
+      total,
+      paymentMethod: method,
+      date: new Date(),
+    });
+    
+    // Clear cart and show receipt
+    clearCart();
+    setShowReceipt(true);
+  };
 
   return (
     <>
@@ -124,7 +144,8 @@ export function CartDrawer() {
         </div>
       </Card>
 
-      <PaymentModal open={showPayment} onOpenChange={setShowPayment} />
+      <PaymentModal open={showPayment} onOpenChange={setShowPayment} onComplete={handleCompletePayment} />
+      <ReceiptModal open={showReceipt} onOpenChange={setShowReceipt} orderData={lastOrder} />
     </>
   );
 }
