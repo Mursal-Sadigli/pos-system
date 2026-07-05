@@ -2,7 +2,7 @@
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Eye, Printer } from 'lucide-react';
+import { Printer } from 'lucide-react';
 import { printOrderReceipt } from '@/lib/printUtils';
 
 interface OrderItem {
@@ -19,7 +19,6 @@ interface OrderItem {
 
 interface OrderTableProps {
   orders: OrderItem[];
-  onViewOrder: (order: OrderItem) => void;
 }
 
 const statusMap = {
@@ -29,7 +28,7 @@ const statusMap = {
   cancelled: { label: 'Ləğv', variant: 'destructive' },
 } as const;
 
-export function OrderTable({ orders, onViewOrder }: OrderTableProps) {
+export function OrderTable({ orders }: OrderTableProps) {
   return (
     <div className="rounded-lg border bg-card overflow-x-auto">
       <table className="min-w-full text-left text-sm">
@@ -59,13 +58,6 @@ export function OrderTable({ orders, onViewOrder }: OrderTableProps) {
               <td className="px-4 py-3">{order.time}</td>
               <td className="px-4 py-3">
                 <div className="flex gap-2">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => onViewOrder(order)}
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
                   <Button variant="ghost" size="icon" onClick={() => printOrderReceipt(order)}>
                     <Printer className="h-4 w-4" />
                   </Button>

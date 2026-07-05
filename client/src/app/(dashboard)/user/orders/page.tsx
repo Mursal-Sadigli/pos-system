@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Search, Printer, Eye, Calendar } from 'lucide-react';
 import { OrderFilters } from '@/components/orders/OrderFilters';
 import { OrderTable } from '@/components/orders/OrderTable';
-import { OrderDetails } from '@/components/orders/OrderDetails';
 
 const orderTabs = [
   { key: 'all', label: '📋 Bütün' },
@@ -71,8 +70,6 @@ export default function OrdersPage() {
   const [customer, setCustomer] = useState('Hamısı');
   const [cashier, setCashier] = useState('Hamısı');
   const [paymentMethod, setPaymentMethod] = useState('Hamısı');
-  const [selectedOrder, setSelectedOrder] = useState<typeof orders[number] | null>(null);
-  const [detailsOpen, setDetailsOpen] = useState(false);
 
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
@@ -91,11 +88,6 @@ export default function OrdersPage() {
       return matchesTab && matchesDate && matchesCustomer && matchesCashier && matchesPayment;
     });
   }, [activeTab, dateFrom, dateTo, customer, cashier, paymentMethod]);
-
-  const handleViewOrder = (order: typeof orders[number]) => {
-    setSelectedOrder(order);
-    setDetailsOpen(true);
-  };
 
   const handleClearFilters = () => {
     setDateFrom('');
@@ -148,13 +140,6 @@ export default function OrdersPage() {
 
       <OrderTable
         orders={filteredOrders}
-        onViewOrder={handleViewOrder}
-      />
-
-      <OrderDetails
-        order={selectedOrder}
-        open={detailsOpen}
-        onOpenChange={setDetailsOpen}
       />
     </div>
   );
