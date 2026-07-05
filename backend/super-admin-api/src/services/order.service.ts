@@ -13,6 +13,7 @@ export interface OrderData {
   status?: string;
   payment?: string;
   cashier?: string;
+  source?: string;
   items: OrderItem[];
 }
 
@@ -22,8 +23,8 @@ export const createOrder = async (orderData: OrderData) => {
     const orderNumber = `ORD-${Date.now()}`;
     const orderQuery = `
       INSERT INTO "public"."pos_orders" (
-        order_number, customer_name, amount, status, payment, cashier
-      ) VALUES ($1, $2, $3, $4, $5, $6)
+        order_number, customer_name, amount, status, payment, cashier, source
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *
     `;
     const orderValues = [
@@ -32,7 +33,8 @@ export const createOrder = async (orderData: OrderData) => {
       orderData.amount,
       orderData.status || 'completed',
       orderData.payment || 'Nağd',
-      orderData.cashier || 'Kassa'
+      orderData.cashier || 'Kassa',
+      orderData.source || 'POS'
     ];
     
     const orderResult = await client.query(orderQuery, orderValues);
@@ -83,4 +85,14 @@ export const getOrders = async () => {
   }
   
   return orders;
+};
+
+export const updateOrderStatus = async (id: string, status: string) => {
+  const result = await query(`
+    UPDATE "public"."pos_orders"
+    SET status = $1, updated_at = CURRENT_TIMESTAMP
+    WHERE id = $2
+    RETURNING *
+  `, [status, id]);
+  return result.rows[0];
 };

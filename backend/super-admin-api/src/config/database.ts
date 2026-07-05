@@ -299,6 +299,7 @@ const ensureInvitationTable = async () => {
         status VARCHAR(50) DEFAULT 'completed',
         payment VARCHAR(50) DEFAULT 'Nağd',
         cashier VARCHAR(100) DEFAULT 'Kassa',
+        source VARCHAR(50) DEFAULT 'POS',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
@@ -317,6 +318,7 @@ const ensureInvitationTable = async () => {
     `);
     
     await client.query(`CREATE INDEX IF NOT EXISTS "idx_pos_orders_status" ON "public"."pos_orders"(status)`);
+    await client.query(`ALTER TABLE "public"."pos_orders" ADD COLUMN IF NOT EXISTS source VARCHAR(50) DEFAULT 'POS'`);
     await client.query(`CREATE INDEX IF NOT EXISTS "idx_pos_order_items_order_id" ON "public"."pos_order_items"(order_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS "idx_invitations_email_status" ON ${schemaQualified}."invitations"(email, status)`);
     await client.query(`CREATE INDEX IF NOT EXISTS "idx_invitations_token" ON ${schemaQualified}."invitations"(token)`);

@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   Search,
   Filter,
   MoreVertical,
-  Eye,
+  Printer,
   CheckCircle,
   XCircle,
   Clock,
@@ -37,70 +37,9 @@ import {
 } from '@/components/ui/select';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/useToast';
-
-// Mock Data
-const mockOrders = [
-  {
-    id: 'ORD-2024-001',
-    customer: 'Elçin Məmmədov',
-    items: 3,
-    total: 124.50,
-    status: 'completed',
-    payment: 'card',
-    date: '2024-01-15 14:30',
-    cashier: 'Günel Həsənova',
-  },
-  {
-    id: 'ORD-2024-002',
-    customer: 'Günel Həsənova',
-    items: 2,
-    total: 89.99,
-    status: 'processing',
-    payment: 'cash',
-    date: '2024-01-15 13:15',
-    cashier: 'Elçin Məmmədov',
-  },
-  {
-    id: 'ORD-2024-003',
-    customer: 'Rəşad Əliyev',
-    items: 5,
-    total: 245.00,
-    status: 'pending',
-    payment: 'cash',
-    date: '2024-01-15 12:00',
-    cashier: 'Günel Həsənova',
-  },
-  {
-    id: 'ORD-2024-004',
-    customer: 'Aygün Quliyeva',
-    items: 1,
-    total: 67.50,
-    status: 'completed',
-    payment: 'card',
-    date: '2024-01-15 10:45',
-    cashier: 'Elçin Məmmədov',
-  },
-  {
-    id: 'ORD-2024-005',
-    customer: 'Tural Hüseynov',
-    items: 4,
-    total: 189.99,
-    status: 'cancelled',
-    payment: 'card',
-    date: '2024-01-15 09:20',
-    cashier: 'Günel Həsənova',
-  },
-  {
-    id: 'ORD-2024-006',
-    customer: 'Nərmin Qasımova',
-    items: 2,
-    total: 56.00,
-    status: 'processing',
-    payment: 'qr',
-    date: '2024-01-15 08:30',
-    cashier: 'Elçin Məmmədov',
-  },
-];
+import { orderApi } from '@/lib/api';
+import { ReceiptModal } from '@/components/pos/ReceiptModal';
+import { format } from 'date-fns';
 
 const statusColors = {
   completed: 'bg-green-500',
@@ -127,19 +66,45 @@ const paymentLabels = {
   cash: 'Nağd',
   card: 'Kart',
   qr: 'QR',
+  'Nağd': 'Nağd',
+  'Kart': 'Kart'
 };
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState(mockOrders);
+  const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedPayment, setSelectedPayment] = useState('all');
   const [dateRange, setDateRange] = useState('today');
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [isReceiptOpen, setIsReceiptOpen] = useState(false);
   const { toast } = useToast();
 
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
+  const fetchOrders = async () => {
+    try {
+      const res = await orderApi.getOrders();
+      setOrders(res.data || []);
+    } catch (error) {
+      toast({
+        title: 'Xəta',
+        description: 'Sifarişləri yükləmək mümkün olmadı',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const filteredOrders = orders.filter((order) => {
-    const matchesSearch = order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          order.customer.toLowerCase().includes(searchQuery.toLowerCase());
+    const idString = (order.order_number || order.id || '').toLowerCase();
+    const customerString = (order.customer_name || '').toLowerCase();
+    
+    const matchesSearch = idString.includes(searchQuery.toLowerCase()) || customerString.includes(searchQuery.toLowerCase());
     const matchesStatus = selectedStatus === 'all' || order.status === selectedStatus;
     const matchesPayment = selectedPayment === 'all' || order.payment === selectedPayment;
     return matchesSearch && matchesStatus && matchesPayment;
@@ -151,19 +116,42 @@ export default function OrdersPage() {
     processing: orders.filter((o) => o.status === 'processing').length,
     pending: orders.filter((o) => o.status === 'pending').length,
     cancelled: orders.filter((o) => o.status === 'cancelled').length,
-    totalAmount: orders.reduce((sum, o) => sum + o.total, 0),
+    totalAmount: orders.reduce((sum, o) => sum + Number(o.amount || 0), 0),
   };
 
-  const handleUpdateStatus = (orderId: string, status: string) => {
-    setOrders(
-      orders.map((o) =>
-        o.id === orderId ? { ...o, status } : o
-      )
-    );
-    toast({
-      title: 'Status yeniləndi',
-      description: `Sifariş statusu "${statusLabels[status as keyof typeof statusLabels]}" olaraq dəyişdirildi`,
-    });
+  const handleUpdateStatus = async (orderId: string, status: string) => {
+    try {
+      await orderApi.updateOrderStatus(orderId, status);
+      setOrders(
+        orders.map((o) =>
+          o.id === orderId ? { ...o, status } : o
+        )
+      );
+      toast({
+        title: 'Status yeniləndi',
+        description: `Sifariş statusu "${statusLabels[status as keyof typeof statusLabels]}" olaraq dəyişdirildi`,
+      });
+    } catch (error) {
+      toast({
+        title: 'Xəta',
+        description: 'Statusu yeniləmək mümkün olmadı',
+        variant: 'destructive',
+      });
+    }
+  };
+  
+  const handlePrint = (order: any) => {
+    const receiptData = {
+      items: order.items || [],
+      subtotal: Number(order.amount),
+      tax: 0,
+      discount: 0,
+      total: Number(order.amount),
+      paymentMethod: order.payment === 'Nağd' ? 'cash' as const : 'card' as const,
+      date: new Date(order.created_at)
+    };
+    setSelectedOrder(receiptData);
+    setIsReceiptOpen(true);
   };
 
   return (
@@ -297,9 +285,9 @@ export default function OrdersPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b bg-muted/50">
-                  <th className="px-4 py-3 text-left text-sm font-medium">Sifariş</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium">Sifariş №</th>
                   <th className="px-4 py-3 text-left text-sm font-medium">Müştəri</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium">Məhsullar</th>
+                  <th className="px-4 py-3 text-left text-sm font-medium">Mənbə</th>
                   <th className="px-4 py-3 text-left text-sm font-medium">Məbləğ</th>
                   <th className="px-4 py-3 text-left text-sm font-medium">Ödəniş</th>
                   <th className="px-4 py-3 text-left text-sm font-medium">Status</th>
@@ -308,9 +296,15 @@ export default function OrdersPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredOrders.length === 0 ? (
+                {loading ? (
                   <tr>
-                    <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
+                    <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                      Yüklənir...
+                    </td>
+                  </tr>
+                ) : filteredOrders.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
                       Heç bir sifariş tapılmadı
                     </td>
                   </tr>
@@ -320,11 +314,15 @@ export default function OrdersPage() {
                     return (
                       <tr key={order.id} className="border-b transition-colors hover:bg-muted/50">
                         <td className="px-4 py-3">
-                          <span className="font-medium">{order.id}</span>
+                          <span className="font-medium">{order.order_number || order.id.slice(0, 8)}</span>
                         </td>
-                        <td className="px-4 py-3">{order.customer}</td>
-                        <td className="px-4 py-3 text-sm">{order.items} ədəd</td>
-                        <td className="px-4 py-3 font-medium">₼{order.total.toFixed(2)}</td>
+                        <td className="px-4 py-3">{order.customer_name || 'Gündəlik Müştəri'}</td>
+                        <td className="px-4 py-3">
+                          <Badge variant="outline" className={order.source === 'ONLINE' ? 'bg-blue-50 text-blue-700' : 'bg-gray-50'}>
+                            {order.source === 'ONLINE' ? 'Sayt' : 'Kassa'}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3 font-medium">₼{Number(order.amount || 0).toFixed(2)}</td>
                         <td className="px-4 py-3">
                           <Badge variant="outline" className="text-xs">
                             {paymentLabels[order.payment as keyof typeof paymentLabels]}
@@ -336,56 +334,46 @@ export default function OrdersPage() {
                           </Badge>
                         </td>
                         <td className="px-4 py-3 text-sm text-muted-foreground">
-                          {order.date}
+                          {order.created_at ? format(new Date(order.created_at), 'dd.MM.yyyy HH:mm') : '-'}
                         </td>
                         <td className="px-4 py-3 text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuLabel>Əməliyyatlar</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem className="gap-2">
-                                <Eye className="h-4 w-4" />
-                                Bax
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuLabel className="text-xs font-normal text-muted-foreground">
-                                Statusu Dəyiş
-                              </DropdownMenuLabel>
-                              <DropdownMenuItem 
-                                className="gap-2"
-                                onClick={() => handleUpdateStatus(order.id, 'pending')}
-                              >
-                                <Clock className="h-4 w-4 text-yellow-500" />
-                                Gözləmədə
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                className="gap-2"
-                                onClick={() => handleUpdateStatus(order.id, 'processing')}
-                              >
-                                <Truck className="h-4 w-4 text-blue-500" />
-                                Hazırlanır
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                className="gap-2"
-                                onClick={() => handleUpdateStatus(order.id, 'completed')}
-                              >
-                                <CheckCircle className="h-4 w-4 text-green-500" />
-                                Tamamlandı
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                className="gap-2 text-red-600"
-                                onClick={() => handleUpdateStatus(order.id, 'cancelled')}
-                              >
-                                <XCircle className="h-4 w-4" />
-                                Ləğv Et
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          <div className="flex items-center justify-end gap-2">
+                            <Button variant="ghost" size="icon" onClick={() => handlePrint(order)}>
+                              <Printer className="h-4 w-4" />
+                            </Button>
+                            
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Statusu dəyiş</DropdownMenuLabel>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onClick={() => handleUpdateStatus(order.id, 'pending')}>
+                                  <Clock className="mr-2 h-4 w-4 text-yellow-500" />
+                                  Gözləmədə
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleUpdateStatus(order.id, 'processing')}>
+                                  <Truck className="mr-2 h-4 w-4 text-blue-500" />
+                                  Hazırlanır
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleUpdateStatus(order.id, 'completed')}>
+                                  <CheckCircle className="mr-2 h-4 w-4 text-green-500" />
+                                  Tamamlandı
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                  onClick={() => handleUpdateStatus(order.id, 'cancelled')}
+                                  className="text-red-600 focus:bg-red-50 focus:text-red-600"
+                                >
+                                  <XCircle className="mr-2 h-4 w-4" />
+                                  Ləğv et
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -396,6 +384,12 @@ export default function OrdersPage() {
           </div>
         </CardContent>
       </Card>
+      
+      <ReceiptModal 
+        open={isReceiptOpen} 
+        onOpenChange={setIsReceiptOpen}
+        orderData={selectedOrder}
+      />
     </div>
   );
 }

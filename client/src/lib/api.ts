@@ -120,6 +120,7 @@ export const orderApi = {
   getOrders: () => api.get<Order[]>('/orders'),
   getOrder: (id: string) => api.get<Order>(`/orders/${id}`),
   createOrder: (payload: CreateOrderRequest) => api.post<Order>('/orders', payload),
+  updateOrderStatus: (id: string, status: string) => api.patch(`/orders/${id}/status`, { status }),
 };
 
 // ==================== CUSTOMER API ====================

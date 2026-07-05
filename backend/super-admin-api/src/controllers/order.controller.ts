@@ -20,9 +20,30 @@ export const createOrder = async (req: Request, res: Response) => {
 export const getOrders = async (req: Request, res: Response) => {
   try {
     const orders = await orderService.getOrders();
-    res.json(orders);
+    return res.json(orders);
   } catch (error: any) {
     console.error('Get orders error:', error);
-    res.status(500).json({ error: error.message || 'Internal server error' });
+    return res.status(500).json({ error: error.message || 'Failed to retrieve orders' });
+  }
+};
+
+export const updateOrderStatus = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    if (!id || !status) {
+      return res.status(400).json({ error: 'ID and status are required' });
+    }
+    
+    const updatedOrder = await orderService.updateOrderStatus(id, status);
+    if (!updatedOrder) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    
+    return res.json(updatedOrder);
+  } catch (error: any) {
+    console.error('Update order error:', error);
+    return res.status(500).json({ error: error.message || 'Failed to update order status' });
   }
 };
