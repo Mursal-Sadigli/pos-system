@@ -60,11 +60,6 @@ export function PosScreen() {
             <Button variant="outline" className="min-w-[44px]" onClick={handleBarcodeScan}>
               <Barcode className="h-4 w-4" />
             </Button>
-
-            <Button variant="secondary" className="min-w-[90px]">
-              <CreditCard className="mr-2 h-4 w-4" />
-              Kart
-            </Button>
           </div>
         </div>
 
