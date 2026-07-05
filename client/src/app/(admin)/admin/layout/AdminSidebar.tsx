@@ -34,6 +34,7 @@ const navigation = [
   { name: 'Müştərilər', href: '/admin/customers', icon: Users },
   { name: 'Hesabatlar', href: '/admin/reports', icon: BarChart3 },
   { name: 'Parametrlər', href: '/admin/settings', icon: Settings },
+  { name: 'Loglar', href: '/admin/logs', icon: FileText },
 ];
 
 export function AdminSidebar() {
