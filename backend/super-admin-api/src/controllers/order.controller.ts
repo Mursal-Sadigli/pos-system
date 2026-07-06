@@ -1,12 +1,17 @@
 import { Request, Response } from 'express';
 import * as orderService from '../services/order.service';
 
-export const createOrder = async (req: Request, res: Response) => {
+export const createOrder = async (req: Request | any, res: Response) => {
   try {
     const orderData = req.body;
     
     if (!orderData || !orderData.items || orderData.items.length === 0) {
       return res.status(400).json({ error: 'Order must contain at least one item' });
+    }
+    
+    // Attach store_id from authenticated user if available
+    if (req.user && req.user.storeId) {
+      orderData.store_id = req.user.storeId;
     }
     
     const newOrder = await orderService.createOrder(orderData);
@@ -17,9 +22,10 @@ export const createOrder = async (req: Request, res: Response) => {
   }
 };
 
-export const getOrders = async (req: Request, res: Response) => {
+export const getOrders = async (req: Request | any, res: Response) => {
   try {
-    const orders = await orderService.getOrders();
+    const storeId = req.user?.storeId;
+    const orders = await orderService.getOrders(storeId);
     return res.json(orders);
   } catch (error: any) {
     console.error('Get orders error:', error);

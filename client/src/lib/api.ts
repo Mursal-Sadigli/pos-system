@@ -130,4 +130,12 @@ export const customerApi = {
   getCustomer: (id: string) => api.get<Customer>(`/customers/${id}`),
 };
 
+// ==================== REPORTS API ====================
+export const reportsApi = {
+  getSalesSummary: (params?: { startDate?: string; endDate?: string }) => 
+    api.get('/reports/summary', { params }),
+  getTopProducts: (params?: { startDate?: string; endDate?: string }) => 
+    api.get('/reports/top-products', { params }),
+};
+
 export default api;

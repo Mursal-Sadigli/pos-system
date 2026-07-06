@@ -14,6 +14,7 @@ export interface OrderData {
   payment?: string;
   cashier?: string;
   source?: string;
+  store_id?: string;
   items: OrderItem[];
 }
 
@@ -23,8 +24,8 @@ export const createOrder = async (orderData: OrderData) => {
     const orderNumber = `ORD-${Date.now()}`;
     const orderQuery = `
       INSERT INTO "public"."pos_orders" (
-        order_number, customer_name, amount, status, payment, cashier, source
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+        order_number, customer_name, amount, status, payment, cashier, source, store_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *
     `;
     const orderValues = [
@@ -34,7 +35,8 @@ export const createOrder = async (orderData: OrderData) => {
       orderData.status || 'completed',
       orderData.payment || 'Nağd',
       orderData.cashier || 'Kassa',
-      orderData.source || 'POS'
+      orderData.source || 'POS',
+      orderData.store_id || null
     ];
     
     const orderResult = await client.query(orderQuery, orderValues);
@@ -42,11 +44,23 @@ export const createOrder = async (orderData: OrderData) => {
 
     // 2. Insert order items and update stock
     for (const item of orderData.items) {
+      // First fetch the product to get its cost_price
+      let costPrice = item.price * 0.7; // default fallback
+      if (item.product_id) {
+        const productResult = await client.query(
+          `SELECT cost_price FROM ${schemaQualified}."products" WHERE id = $1`,
+          [item.product_id]
+        );
+        if (productResult.rows.length > 0 && productResult.rows[0].cost_price != null) {
+          costPrice = productResult.rows[0].cost_price;
+        }
+      }
+
       // Insert item
       await client.query(`
-        INSERT INTO "public"."pos_order_items" (order_id, product_id, name, qty, price)
-        VALUES ($1, $2, $3, $4, $5)
-      `, [newOrder.id, item.product_id, item.name, item.qty, item.price]);
+        INSERT INTO "public"."pos_order_items" (order_id, product_id, name, qty, price, cost_price)
+        VALUES ($1, $2, $3, $4, $5, $6)
+      `, [newOrder.id, item.product_id, item.name, item.qty, item.price, costPrice]);
 
       // Update product stock (in super_admin schema as specified by schemaQualified)
       if (item.product_id) {
@@ -68,12 +82,18 @@ export const createOrder = async (orderData: OrderData) => {
   });
 };
 
-export const getOrders = async () => {
-  const result = await query(`
-    SELECT * FROM "public"."pos_orders" 
-    ORDER BY created_at DESC
-  `);
+export const getOrders = async (storeId?: string) => {
+  let queryText = `SELECT * FROM "public"."pos_orders"`;
+  const params: any[] = [];
   
+  if (storeId) {
+    queryText += ` WHERE store_id = $1`;
+    params.push(storeId);
+  }
+  
+  queryText += ` ORDER BY created_at DESC`;
+
+  const result = await query(queryText, params);
   const orders = result.rows;
   
   // Fetch items for each order

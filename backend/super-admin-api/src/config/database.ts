@@ -281,6 +281,7 @@ const ensureInvitationTable = async () => {
         sku VARCHAR(100) UNIQUE,
         category VARCHAR(100),
         price DECIMAL(10, 2) NOT NULL DEFAULT 0,
+        cost_price DECIMAL(10, 2) NOT NULL DEFAULT 0,
         stock INTEGER NOT NULL DEFAULT 0,
         min_stock INTEGER NOT NULL DEFAULT 0,
         status VARCHAR(20) DEFAULT 'active',
@@ -313,10 +314,20 @@ const ensureInvitationTable = async () => {
         name VARCHAR(255) NOT NULL,
         qty INTEGER NOT NULL DEFAULT 1,
         price DECIMAL(10, 2) NOT NULL DEFAULT 0,
+        cost_price DECIMAL(10, 2) NOT NULL DEFAULT 0,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
     
+    // Add cost_price columns if they don't exist (for existing tables)
+    await client.query(`ALTER TABLE ${schemaQualified}."products" ADD COLUMN IF NOT EXISTS cost_price DECIMAL(10, 2) DEFAULT 0`);
+    await client.query(`ALTER TABLE "public"."pos_order_items" ADD COLUMN IF NOT EXISTS cost_price DECIMAL(10, 2) DEFAULT 0`);
+    await client.query(`ALTER TABLE "public"."pos_orders" ADD COLUMN IF NOT EXISTS store_id UUID`);
+    
+    // Mock initial cost_price for existing products
+    await client.query(`UPDATE ${schemaQualified}."products" SET cost_price = price * 0.7 WHERE cost_price = 0 OR cost_price IS NULL`);
+    await client.query(`UPDATE "public"."pos_order_items" SET cost_price = price * 0.7 WHERE cost_price = 0 OR cost_price IS NULL`);
+
     await client.query(`CREATE INDEX IF NOT EXISTS "idx_pos_orders_status" ON "public"."pos_orders"(status)`);
     await client.query(`ALTER TABLE "public"."pos_orders" ADD COLUMN IF NOT EXISTS source VARCHAR(50) DEFAULT 'POS'`);
     await client.query(`CREATE INDEX IF NOT EXISTS "idx_pos_order_items_order_id" ON "public"."pos_order_items"(order_id)`);
