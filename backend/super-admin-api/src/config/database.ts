@@ -357,6 +357,10 @@ const ensureInvitationTable = async () => {
     await client.query(`ALTER TABLE "public"."stores" ADD COLUMN IF NOT EXISTS work_end VARCHAR(20)`);
     await client.query(`ALTER TABLE "public"."stores" ADD COLUMN IF NOT EXISTS work_days JSONB`);
     
+    // Add columns for user profile
+    await client.query(`ALTER TABLE ${schemaQualified}."users" ADD COLUMN IF NOT EXISTS last_name VARCHAR(255)`);
+    await client.query(`ALTER TABLE ${schemaQualified}."users" ADD COLUMN IF NOT EXISTS phone VARCHAR(50)`);
+    
     // Mock initial cost_price for existing products
     await client.query(`UPDATE ${schemaQualified}."products" SET cost_price = price * 0.7 WHERE cost_price = 0 OR cost_price IS NULL`);
     await client.query(`UPDATE "public"."pos_order_items" SET cost_price = price * 0.7 WHERE cost_price = 0 OR cost_price IS NULL`);

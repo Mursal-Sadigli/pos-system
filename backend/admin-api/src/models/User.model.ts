@@ -45,7 +45,9 @@ export class UserModel {
 
     const fieldMap: Record<string, string> = {
       name: 'name',
+      last_name: 'last_name',
       email: 'email',
+      phone: 'phone',
       role: 'role',
       permissions: 'permissions',
       store_id: 'store_id',

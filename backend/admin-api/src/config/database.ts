@@ -33,6 +33,8 @@ export const query = async (text: string, params?: any[]) => {
 export const connectDB = async () => {
   try {
     await pool.query('SELECT 1');
+    await pool.query(`ALTER TABLE public.users ADD COLUMN IF NOT EXISTS last_name VARCHAR(255)`);
+    await pool.query(`ALTER TABLE public.users ADD COLUMN IF NOT EXISTS phone VARCHAR(50)`);
     logger.info('✅ Admin API database connection successful');
   } catch (error) {
     logger.error('❌ Admin API database connection failed', error);

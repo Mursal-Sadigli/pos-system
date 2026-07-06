@@ -59,7 +59,7 @@ export class StoreController {
 
 	static async getStore(req: Request, res: Response) {
 		try {
-			const { id } = req.params;
+			const id = req.params.id as string;
 			const store = await StoreService.getStoreById(id);
 			if (!store) return errorResponse(res, 'Mağaza tapılmadı', 404);
 			return successResponse(res, store, 'Mağaza tapıldı');
@@ -80,8 +80,9 @@ export class StoreController {
 
 	static async updateStore(req: Request, res: Response) {
 		try {
-			const { id } = req.params;
-			const updated = await StoreService.updateStore(id, req.body);
+			const id = req.params.id as string;
+			const updateData = req.body;
+			const updated = await StoreService.updateStore(id, updateData);
 			if (!updated) return errorResponse(res, 'Mağaza tapılmadı və ya yenilənə bilmədi', 404);
 			return successResponse(res, updated, 'Mağaza yeniləndi');
 		} catch (error: any) {
@@ -91,7 +92,7 @@ export class StoreController {
 
 	static async deleteStore(req: Request, res: Response) {
 		try {
-			const { id } = req.params;
+			const id = req.params.id as string;
 			const ok = await StoreService.deleteStore(id);
 			if (!ok) return errorResponse(res, 'Mağaza tapılmadı və ya silinə bilmədi', 404);
 			return successResponse(res, null, 'Mağaza silindi');

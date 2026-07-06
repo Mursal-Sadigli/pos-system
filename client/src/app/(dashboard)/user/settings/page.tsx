@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { storeApi } from '@/lib/api';
+import { storeApi, userApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,145 @@ const tabs = [
   { value: 'reports', label: '📊 Hesabatlar' },
   { value: 'security', label: '🔒 Təhlükəsizlik' },
 ];
+
+function ProfileTab() {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+  });
+  const [passwords, setPasswords] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      setLoading(true);
+      const res = await userApi.getProfile();
+      const profile = res.data.data;
+      if (profile) {
+        setFormData({
+          name: profile.name || '',
+          last_name: profile.last_name || '',
+          email: profile.email || '',
+          phone: profile.phone || '',
+        });
+      }
+    } catch (error) {
+      console.error('Profil gətirilə bilmədi', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleProfileSave = async () => {
+    try {
+      setSaving(true);
+      await userApi.updateProfile(formData);
+      alert('Şəxsi məlumatlar yeniləndi!');
+    } catch (error: any) {
+      console.error('Profil yadda saxlanıla bilmədi', error);
+      alert(error.response?.data?.message || 'Yenilənmə zamanı xəta baş verdi');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handlePasswordSave = async () => {
+    if (!passwords.currentPassword || !passwords.newPassword || !passwords.confirmPassword) {
+      return alert('Bütün şifrə xanalarını doldurun!');
+    }
+    if (passwords.newPassword !== passwords.confirmPassword) {
+      return alert('Yeni şifrə təkrarı ilə uyğun deyil!');
+    }
+    try {
+      setSaving(true);
+      await userApi.updatePassword({
+        currentPassword: passwords.currentPassword,
+        newPassword: passwords.newPassword,
+      });
+      alert('Şifrə uğurla dəyişdirildi!');
+      setPasswords({ currentPassword: '', newPassword: '', confirmPassword: '' });
+    } catch (error: any) {
+      console.error('Şifrə yenilənə bilmədi', error);
+      alert(error.response?.data?.message || 'Şifrə dəyişdirilərkən xəta baş verdi');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="p-8 text-center text-muted-foreground">Yüklənir...</div>;
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Şəxsi məlumatlar</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-2">
+          <div>
+            <Label htmlFor="first-name">Ad</Label>
+            <Input id="first-name" placeholder="Ad" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+          </div>
+          <div>
+            <Label htmlFor="last-name">Soyad</Label>
+            <Input id="last-name" placeholder="Soyad" value={formData.last_name} onChange={e => setFormData({...formData, last_name: e.target.value})} />
+          </div>
+          <div>
+            <Label htmlFor="email">Email</Label>
+            <Input id="email" type="email" placeholder="email@domain.az" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} disabled />
+          </div>
+          <div>
+            <Label htmlFor="phone">Telefon</Label>
+            <Input id="phone" placeholder="+994 50 123 45 67" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+          </div>
+        </CardContent>
+        <div className="flex justify-end p-6 pt-0">
+          <Button onClick={handleProfileSave} disabled={saving}>
+            {saving ? 'Yenilənir...' : 'Yadda Saxla'}
+          </Button>
+        </div>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Şifrə dəyiş</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-2">
+          <div>
+            <Label htmlFor="current-password">Cari şifrə</Label>
+            <Input id="current-password" type="password" value={passwords.currentPassword} onChange={e => setPasswords({...passwords, currentPassword: e.target.value})} />
+          </div>
+          <div></div>
+          <div>
+            <Label htmlFor="new-password">Yeni şifrə</Label>
+            <Input id="new-password" type="password" value={passwords.newPassword} onChange={e => setPasswords({...passwords, newPassword: e.target.value})} />
+          </div>
+          <div>
+            <Label htmlFor="confirm-password">Şifrə təkrarı</Label>
+            <Input id="confirm-password" type="password" value={passwords.confirmPassword} onChange={e => setPasswords({...passwords, confirmPassword: e.target.value})} />
+          </div>
+        </CardContent>
+        <div className="flex justify-end p-6 pt-0">
+          <Button onClick={handlePasswordSave} disabled={saving}>
+            {saving ? 'Dəyişdirilir...' : 'Şifrəni Dəyiş'}
+          </Button>
+        </div>
+      </Card>
+    </div>
+  );
+}
 
 function GeneralTab() {
   const [loading, setLoading] = useState(true);
@@ -211,63 +350,7 @@ export default function SettingsPage() {
           )}
 
           {activeTab === 'profile' && (
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Şəxsi məlumatlar</CardTitle>
-                </CardHeader>
-                <CardContent className="grid gap-4 md:grid-cols-2">
-                  <div>
-                    <Label htmlFor="first-name">Ad</Label>
-                    <Input id="first-name" placeholder="Ad" />
-                  </div>
-                  <div>
-                    <Label htmlFor="last-name">Soyad</Label>
-                    <Input id="last-name" placeholder="Soyad" />
-                  </div>
-                  <div>
-                    <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" placeholder="email@domain.az" />
-                  </div>
-                  <div>
-                    <Label htmlFor="phone">Telefon</Label>
-                    <Input id="phone" placeholder="+994 50 123 45 67" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Şifrə dəyiş</CardTitle>
-                </CardHeader>
-                <CardContent className="grid gap-4 md:grid-cols-2">
-                  <div>
-                    <Label htmlFor="current-password">Cari şifrə</Label>
-                    <Input id="current-password" type="password" />
-                  </div>
-                  <div>
-                    <Label htmlFor="new-password">Yeni şifrə</Label>
-                    <Input id="new-password" type="password" />
-                  </div>
-                  <div>
-                    <Label htmlFor="confirm-password">Şifrə təkrarı</Label>
-                    <Input id="confirm-password" type="password" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Profil şəkli</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="rounded-lg border border-dashed p-8 text-center">
-                    <p className="text-sm text-muted-foreground">Şəkil yüklə və ya dəyiş</p>
-                  </div>
-                  <Button>Yüklə</Button>
-                </CardContent>
-              </Card>
-            </div>
+            <ProfileTab />
           )}
 
           {activeTab === 'users' && (

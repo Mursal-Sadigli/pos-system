@@ -98,7 +98,6 @@ export const userApi = {
     } catch (error: any) {
       const status = error?.response?.status;
       if (status === 401 || status === 403) {
-        // token invalid or insufficient permissions – clear auth
         const win = typeof window !== 'undefined' ? window : undefined;
         win?.localStorage?.removeItem('token');
         win?.localStorage?.removeItem('refreshToken');
@@ -107,6 +106,9 @@ export const userApi = {
       throw error;
     }
   },
+  getProfile: () => adminApi.get('/users/profile'),
+  updateProfile: (payload: any) => adminApi.put('/users/profile', payload),
+  updatePassword: (payload: any) => adminApi.put('/users/profile/password', payload),
 };
 
 // ==================== PRODUCT API ====================
@@ -148,5 +150,6 @@ export const storeApi = {
   getMyStore: () => adminApi.get('/stores/my-store'),
   updateMyStore: (payload: any) => adminApi.put('/stores/my-store', payload),
 };
+
 
 export default api;

@@ -3,7 +3,9 @@ export type UserRole = 'SUPER_ADMIN' | 'ADMIN' | 'MANAGER' | 'CASHIER' | 'VIEWER
 export interface User {
   id: string;
   name: string;
+  last_name: string | null;
   email: string;
+  phone: string | null;
   password: string;
   role: UserRole;
   permissions: string[];
