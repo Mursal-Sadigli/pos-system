@@ -48,7 +48,7 @@ export const createOrder = async (orderData: OrderData) => {
       let costPrice = item.price * 0.7; // default fallback
       if (item.product_id) {
         const productResult = await client.query(
-          `SELECT cost_price FROM ${schemaQualified}."products" WHERE id = $1`,
+          `SELECT cost_price FROM "public"."products" WHERE id = $1`,
           [item.product_id]
         );
         if (productResult.rows.length > 0 && productResult.rows[0].cost_price != null) {
@@ -65,7 +65,7 @@ export const createOrder = async (orderData: OrderData) => {
       // Update product stock (in super_admin schema as specified by schemaQualified)
       if (item.product_id) {
         await client.query(`
-          UPDATE ${schemaQualified}."products"
+          UPDATE "public"."products"
           SET stock = stock - $1
           WHERE id = $2 AND stock >= $1
         `, [item.qty, item.product_id]);
@@ -127,7 +127,7 @@ export const deleteOrder = async (id: string) => {
     for (const item of itemsResult.rows) {
       if (item.product_id) {
         await client.query(`
-          UPDATE ${schemaQualified}."products"
+          UPDATE "public"."products"
           SET stock = stock + $1
           WHERE id = $2
         `, [item.qty, item.product_id]);

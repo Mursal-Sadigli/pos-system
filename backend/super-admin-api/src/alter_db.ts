@@ -6,7 +6,7 @@ import { query, schemaQualified } from './config/database';
 async function alterDb() {
   try {
     console.log('Adding cost_price to products...');
-    await query(`ALTER TABLE ${schemaQualified}."products" ADD COLUMN IF NOT EXISTS cost_price DECIMAL(10, 2) DEFAULT 0;`);
+    await query(`ALTER TABLE "public"."products" ADD COLUMN IF NOT EXISTS cost_price DECIMAL(10, 2) DEFAULT 0;`);
     console.log('Done.');
 
     console.log('Adding cost_price to pos_order_items...');
@@ -15,7 +15,7 @@ async function alterDb() {
 
     // Update existing products to have cost_price = price * 0.7 for realistic data
     console.log('Updating existing products cost_price...');
-    await query(`UPDATE ${schemaQualified}."products" SET cost_price = price * 0.7 WHERE cost_price = 0;`);
+    await query(`UPDATE "public"."products" SET cost_price = price * 0.7 WHERE cost_price = 0;`);
     console.log('Done.');
     
     // Update existing order items to have cost_price = price * 0.7
