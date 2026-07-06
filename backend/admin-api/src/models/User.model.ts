@@ -1,4 +1,4 @@
-import { query } from '../config/database';
+import { query, schemaQualified } from '../config/database';
 import { hashPassword } from '../utils/bcrypt';
 import type { CreateUserData, User } from '../types/user.types';
 
@@ -7,7 +7,7 @@ export class UserModel {
     const password = data.isPasswordHashed ? data.password : await hashPassword(data.password);
 
     const result = await query(
-      `INSERT INTO users (
+      `INSERT INTO ${schemaQualified}.users (
         name, email, password, role, permissions, store_id,
         invited_by, is_verified, must_change_password
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
@@ -29,12 +29,12 @@ export class UserModel {
   }
 
   static async findByEmail(email: string) {
-    const result = await query('SELECT * FROM users WHERE email = $1', [email.toLowerCase().trim()]);
+    const result = await query(`SELECT * FROM ${schemaQualified}.users WHERE email = $1`, [email.toLowerCase().trim()]);
     return result.rows[0] || null;
   }
 
   static async findById(id: string) {
-    const result = await query('SELECT * FROM users WHERE id = $1', [id]);
+    const result = await query(`SELECT * FROM ${schemaQualified}.users WHERE id = $1`, [id]);
     return result.rows[0] || null;
   }
 
@@ -72,31 +72,31 @@ export class UserModel {
 
     values.push(id);
     const result = await query(
-      `UPDATE users SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = $${idx} RETURNING *`,
+      `UPDATE ${schemaQualified}.users SET ${fields.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = $${idx} RETURNING *`,
       values
     );
     return result.rows[0] || null;
   }
 
   static async updateRefreshToken(id: string, token: string | null) {
-    await query('UPDATE users SET refresh_token = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [token, id]);
+    await query(`UPDATE ${schemaQualified}.users SET refresh_token = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`, [token, id]);
   }
 
   static async updateLastLogin(id: string) {
-    await query('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = $1', [id]);
+    await query(`UPDATE ${schemaQualified}.users SET last_login = CURRENT_TIMESTAMP WHERE id = $1`, [id]);
   }
 
   static async updatePassword(id: string, newPassword: string) {
     const hashed = await hashPassword(newPassword);
     const result = await query(
-      'UPDATE users SET password = $1, must_change_password = false, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id',
+      `UPDATE ${schemaQualified}.users SET password = $1, must_change_password = false, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING id`,
       [hashed, id]
     );
     return (result.rowCount ?? 0) > 0;
   }
 
   static async delete(id: string) {
-    const result = await query('DELETE FROM users WHERE id = $1 RETURNING id', [id]);
+    const result = await query(`DELETE FROM ${schemaQualified}.users WHERE id = $1 RETURNING id`, [id]);
     return (result.rowCount ?? 0) > 0;
   }
 
@@ -127,12 +127,12 @@ export class UserModel {
 
     const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
 
-    const countRes = await query(`SELECT COUNT(*) FROM users ${where}`, values);
+    const countRes = await query(`SELECT COUNT(*) FROM ${schemaQualified}.users ${where}`, values);
     const total = parseInt(countRes.rows[0].count, 10);
 
     values.push(limit, offset);
     const dataRes = await query(
-      `SELECT * FROM users ${where} ORDER BY created_at DESC LIMIT $${values.length - 1} OFFSET $${values.length}`,
+      `SELECT * FROM ${schemaQualified}.users ${where} ORDER BY created_at DESC LIMIT $${values.length - 1} OFFSET $${values.length}`,
       values
     );
 

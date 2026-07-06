@@ -4,6 +4,15 @@ import { logger } from './logger';
 
 dotenv.config();
 
+const databaseUrl = process.env.DATABASE_URL || '';
+export const dbSchema = (() => {
+  if (!databaseUrl) return 'public';
+  const match = databaseUrl.match(/[?&]schema=([^&]+)/);
+  return match ? decodeURIComponent(match[1]) : 'public';
+})();
+
+export const schemaQualified = `"${dbSchema.replace(/"/g, '""')}"`;
+
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   max: parseInt(process.env.DB_POOL_MAX || '10', 10),
@@ -39,8 +48,8 @@ export const query = async (text: string, params?: any[]) => {
 export const connectDB = async () => {
   try {
     await pool.query('SELECT 1');
-    await pool.query(`ALTER TABLE public.users ADD COLUMN IF NOT EXISTS last_name VARCHAR(255)`);
-    await pool.query(`ALTER TABLE public.users ADD COLUMN IF NOT EXISTS phone VARCHAR(50)`);
+    await pool.query(`ALTER TABLE ${schemaQualified}.users ADD COLUMN IF NOT EXISTS last_name VARCHAR(255)`);
+    await pool.query(`ALTER TABLE ${schemaQualified}.users ADD COLUMN IF NOT EXISTS phone VARCHAR(50)`);
     logger.info('✅ Admin API database connection successful');
   } catch (error) {
     logger.error('❌ Admin API database connection failed', error);

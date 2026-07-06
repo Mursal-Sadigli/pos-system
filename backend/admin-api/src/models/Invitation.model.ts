@@ -1,4 +1,4 @@
-import { query } from '../config/database';
+import { query, schemaQualified } from '../config/database';
 
 export interface Invitation {
   id: string;
@@ -30,7 +30,7 @@ export interface CreateInvitationData {
 export class InvitationModel {
   static async create(data: CreateInvitationData) {
     const result = await query(
-      `INSERT INTO invitations (
+      `INSERT INTO ${schemaQualified}."invitations" (
         email, name, role, store_id, invited_by, token, password, expires_at
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING *`,
@@ -49,13 +49,13 @@ export class InvitationModel {
   }
 
   static async findByToken(token: string) {
-    const result = await query('SELECT * FROM invitations WHERE token = $1', [token]);
+    const result = await query(`SELECT * FROM ${schemaQualified}."invitations" WHERE token = $1`, [token]);
     return result.rows[0] || null;
   }
 
   static async findByEmail(email: string) {
     const result = await query(
-      'SELECT * FROM invitations WHERE email = $1 AND status = $2 ORDER BY created_at DESC LIMIT 1',
+      `SELECT * FROM ${schemaQualified}."invitations" WHERE email = $1 AND status = $2 ORDER BY created_at DESC LIMIT 1`,
       [email.toLowerCase().trim(), 'PENDING']
     );
     return result.rows[0] || null;
@@ -63,7 +63,7 @@ export class InvitationModel {
 
   static async updateStatus(id: string, status: string) {
     const result = await query(
-      `UPDATE invitations SET status = $1, accepted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *`,
+      `UPDATE ${schemaQualified}."invitations" SET status = $1, accepted_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $2 RETURNING *`,
       [status, id]
     );
     return result.rows[0] || null;
