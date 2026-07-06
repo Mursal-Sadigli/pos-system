@@ -292,6 +292,32 @@ const ensureInvitationTable = async () => {
     `);
 
     await client.query(`
+      CREATE TABLE IF NOT EXISTS "public"."stores" (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255),
+        phone VARCHAR(50),
+        address TEXT,
+        tax_number VARCHAR(100),
+        registration_number VARCHAR(100),
+        timezone VARCHAR(100) DEFAULT 'Asia/Baku',
+        currency VARCHAR(10) DEFAULT 'AZN',
+        language VARCHAR(10) DEFAULT 'az',
+        business_type VARCHAR(100),
+        website VARCHAR(255),
+        store_code VARCHAR(50),
+        manager_name VARCHAR(255),
+        contact_phone VARCHAR(50),
+        work_start VARCHAR(20),
+        work_end VARCHAR(20),
+        work_days JSONB,
+        is_active BOOLEAN DEFAULT true,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    await client.query(`
       CREATE TABLE IF NOT EXISTS "public"."pos_orders" (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         order_number VARCHAR(100) UNIQUE,
@@ -323,6 +349,13 @@ const ensureInvitationTable = async () => {
     await client.query(`ALTER TABLE ${schemaQualified}."products" ADD COLUMN IF NOT EXISTS cost_price DECIMAL(10, 2) DEFAULT 0`);
     await client.query(`ALTER TABLE "public"."pos_order_items" ADD COLUMN IF NOT EXISTS cost_price DECIMAL(10, 2) DEFAULT 0`);
     await client.query(`ALTER TABLE "public"."pos_orders" ADD COLUMN IF NOT EXISTS store_id UUID`);
+
+    await client.query(`ALTER TABLE "public"."stores" ADD COLUMN IF NOT EXISTS store_code VARCHAR(50)`);
+    await client.query(`ALTER TABLE "public"."stores" ADD COLUMN IF NOT EXISTS manager_name VARCHAR(255)`);
+    await client.query(`ALTER TABLE "public"."stores" ADD COLUMN IF NOT EXISTS contact_phone VARCHAR(50)`);
+    await client.query(`ALTER TABLE "public"."stores" ADD COLUMN IF NOT EXISTS work_start VARCHAR(20)`);
+    await client.query(`ALTER TABLE "public"."stores" ADD COLUMN IF NOT EXISTS work_end VARCHAR(20)`);
+    await client.query(`ALTER TABLE "public"."stores" ADD COLUMN IF NOT EXISTS work_days JSONB`);
     
     // Mock initial cost_price for existing products
     await client.query(`UPDATE ${schemaQualified}."products" SET cost_price = price * 0.7 WHERE cost_price = 0 OR cost_price IS NULL`);

@@ -6,6 +6,9 @@ import { authorize } from '../middleware/role.middleware';
 const router = Router();
 
 router.get('/', authenticate, authorize('SUPER_ADMIN', 'ADMIN', 'MANAGER'), StoreController.getStores);
+router.get('/my-store', authenticate, StoreController.getMyStore);
+router.put('/my-store', authenticate, authorize('SUPER_ADMIN', 'ADMIN'), StoreController.updateMyStore);
+
 router.get('/:id', authenticate, authorize('SUPER_ADMIN', 'ADMIN', 'MANAGER'), StoreController.getStore);
 router.post('/', authenticate, authorize('SUPER_ADMIN', 'ADMIN'), StoreController.createStore);
 router.put('/:id', authenticate, authorize('SUPER_ADMIN', 'ADMIN'), StoreController.updateStore);

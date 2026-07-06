@@ -18,6 +18,45 @@ export class StoreController {
 		}
 	}
 
+	static async getMyStore(req: Request, res: Response) {
+		try {
+			let storeId = (req as any).user?.storeId;
+			if (!storeId) {
+				// Super admin fallback: just pick the first store
+				const result = await StoreService.getStores({ limit: 1 });
+				if (result.stores.length > 0) {
+					storeId = result.stores[0].id;
+				}
+			}
+			
+			if (!storeId) return errorResponse(res, 'Mağaza tapılmadı', 404);
+			
+			const store = await StoreService.getStoreById(storeId);
+			return successResponse(res, store, 'Mağaza gətirildi');
+		} catch (error: any) {
+			return errorResponse(res, error.message || 'Mağaza gətirilə bilmədi', 500);
+		}
+	}
+
+	static async updateMyStore(req: Request, res: Response) {
+		try {
+			let storeId = (req as any).user?.storeId;
+			if (!storeId) {
+				const result = await StoreService.getStores({ limit: 1 });
+				if (result.stores.length > 0) {
+					storeId = result.stores[0].id;
+				}
+			}
+			
+			if (!storeId) return errorResponse(res, 'Mağaza tapılmadı', 404);
+			
+			const updated = await StoreService.updateStore(storeId, req.body);
+			return successResponse(res, updated, 'Mağaza məlumatları yeniləndi');
+		} catch (error: any) {
+			return errorResponse(res, error.message || 'Mağaza yenilənə bilmədi', 500);
+		}
+	}
+
 	static async getStore(req: Request, res: Response) {
 		try {
 			const { id } = req.params;

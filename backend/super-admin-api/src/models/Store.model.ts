@@ -13,6 +13,12 @@ export interface Store {
   language: string;
   business_type: string | null;
   website: string | null;
+  store_code: string | null;
+  manager_name: string | null;
+  contact_phone: string | null;
+  work_start: string | null;
+  work_end: string | null;
+  work_days: any | null;
   is_active: boolean;
   created_at: Date;
   updated_at: Date;
@@ -30,6 +36,12 @@ export interface CreateStoreData {
   language?: string;
   business_type?: string;
   website?: string;
+  store_code?: string;
+  manager_name?: string;
+  contact_phone?: string;
+  work_start?: string;
+  work_end?: string;
+  work_days?: any;
 }
 
 export class StoreModel {
@@ -37,8 +49,9 @@ export class StoreModel {
     const result = await query(
       `INSERT INTO public.stores (
         name, email, phone, address, tax_number, registration_number,
-        timezone, currency, language, business_type, website
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        timezone, currency, language, business_type, website,
+        store_code, manager_name, contact_phone, work_start, work_end, work_days
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
       RETURNING *`,
       [
         data.name,
@@ -52,6 +65,12 @@ export class StoreModel {
         data.language || 'az',
         data.business_type || null,
         data.website || null,
+        data.store_code || null,
+        data.manager_name || null,
+        data.contact_phone || null,
+        data.work_start || null,
+        data.work_end || null,
+        data.work_days ? JSON.stringify(data.work_days) : null,
       ]
     );
     
@@ -140,6 +159,12 @@ export class StoreModel {
       language: 'language',
       business_type: 'business_type',
       website: 'website',
+      store_code: 'store_code',
+      manager_name: 'manager_name',
+      contact_phone: 'contact_phone',
+      work_start: 'work_start',
+      work_end: 'work_end',
+      work_days: 'work_days',
       is_active: 'is_active',
     };
 

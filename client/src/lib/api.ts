@@ -138,4 +138,10 @@ export const reportsApi = {
     api.get('/reports/top-products', { params }),
 };
 
+// ==================== STORE API ====================
+export const storeApi = {
+  getMyStore: () => api.get('/stores/my-store'),
+  updateMyStore: (payload: any) => api.put('/stores/my-store', payload),
+};
+
 export default api;

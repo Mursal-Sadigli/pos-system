@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { storeApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -19,6 +20,161 @@ const tabs = [
   { value: 'reports', label: '📊 Hesabatlar' },
   { value: 'security', label: '🔒 Təhlükəsizlik' },
 ];
+
+function GeneralTab() {
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    store_code: '',
+    address: '',
+    phone: '',
+    email: '',
+    contact_phone: '',
+    manager_name: '',
+    work_start: '',
+    work_end: '',
+    work_days: [] as string[]
+  });
+
+  useEffect(() => {
+    fetchStore();
+  }, []);
+
+  const fetchStore = async () => {
+    try {
+      setLoading(true);
+      const res = await storeApi.getMyStore();
+      const store = res.data?.data;
+      if (store) {
+        setFormData({
+          name: store.name || '',
+          store_code: store.store_code || '',
+          address: store.address || '',
+          phone: store.phone || '',
+          email: store.email || '',
+          contact_phone: store.contact_phone || '',
+          manager_name: store.manager_name || '',
+          work_start: store.work_start || '',
+          work_end: store.work_end || '',
+          work_days: store.work_days ? (typeof store.work_days === 'string' ? JSON.parse(store.work_days) : store.work_days) : ['Bazar ertəsi - Cümə']
+        });
+      }
+    } catch (error) {
+      console.error('Failed to fetch store', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      await storeApi.updateMyStore(formData);
+      alert('Mağaza məlumatları yeniləndi!');
+    } catch (error) {
+      console.error('Failed to save store', error);
+      alert('Yenilənmə zamanı xəta baş verdi');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const toggleDay = (day: string) => {
+    setFormData(prev => ({
+      ...prev,
+      work_days: prev.work_days.includes(day)
+        ? prev.work_days.filter(d => d !== day)
+        : [...prev.work_days, day]
+    }));
+  };
+
+  if (loading) return <div className="p-8 text-center text-muted-foreground">Yüklənir...</div>;
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Mağaza məlumatları</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-2">
+          <div>
+            <Label htmlFor="store-name">Mağaza adı</Label>
+            <Input id="store-name" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="Mağaza adı" />
+          </div>
+          <div>
+            <Label htmlFor="store-code">Mağaza kodu</Label>
+            <Input id="store-code" value={formData.store_code} onChange={e => setFormData({...formData, store_code: e.target.value})} placeholder="ST001" />
+          </div>
+          <div>
+            <Label htmlFor="store-address">Ünvan</Label>
+            <Input id="store-address" value={formData.address} onChange={e => setFormData({...formData, address: e.target.value})} placeholder="Bakı, Azərbaycan" />
+          </div>
+          <div>
+            <Label htmlFor="store-phone">Telefon</Label>
+            <Input id="store-phone" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="+994 50 123 45 67" />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Əlaqə məlumatları</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-2">
+          <div>
+            <Label htmlFor="contact-email">Email</Label>
+            <Input id="contact-email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="info@yourstore.az" />
+          </div>
+          <div>
+            <Label htmlFor="contact-phone">Əsas telefon</Label>
+            <Input id="contact-phone" value={formData.contact_phone} onChange={e => setFormData({...formData, contact_phone: e.target.value})} placeholder="+994 12 345 67 89" />
+          </div>
+          <div>
+            <Label htmlFor="contact-manager">Mağaza meneceri</Label>
+            <Input id="contact-manager" value={formData.manager_name} onChange={e => setFormData({...formData, manager_name: e.target.value})} placeholder="Ad Soyad" />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>İş saatları</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <Label htmlFor="work-start">Başlama</Label>
+              <Input id="work-start" type="time" value={formData.work_start} onChange={e => setFormData({...formData, work_start: e.target.value})} />
+            </div>
+            <div>
+              <Label htmlFor="work-end">Bitmə</Label>
+              <Input id="work-end" type="time" value={formData.work_end} onChange={e => setFormData({...formData, work_end: e.target.value})} />
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {['Bazar ertəsi - Cümə', 'Şənbə', 'Bazar'].map(day => (
+              <Badge 
+                key={day} 
+                variant={formData.work_days.includes(day) ? 'default' : 'secondary'}
+                className="cursor-pointer"
+                onClick={() => toggleDay(day)}
+              >
+                {day}
+              </Badge>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="flex justify-end">
+        <Button onClick={handleSave} disabled={saving}>
+          {saving ? 'Saxlanılır...' : 'Yadda Saxla'}
+        </Button>
+      </div>
+    </div>
+  );
+}
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('general');
@@ -51,74 +207,7 @@ export default function SettingsPage() {
 
         <div className="space-y-6">
           {activeTab === 'general' && (
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Mağaza məlumatları</CardTitle>
-                </CardHeader>
-                <CardContent className="grid gap-4 md:grid-cols-2">
-                  <div>
-                    <Label htmlFor="store-name">Mağaza adı</Label>
-                    <Input id="store-name" placeholder="Mağaza adı" />
-                  </div>
-                  <div>
-                    <Label htmlFor="store-code">Mağaza kodu</Label>
-                    <Input id="store-code" placeholder="ST001" />
-                  </div>
-                  <div>
-                    <Label htmlFor="store-address">Ünvan</Label>
-                    <Input id="store-address" placeholder="Bakı, Azərbaycan" />
-                  </div>
-                  <div>
-                    <Label htmlFor="store-phone">Telefon</Label>
-                    <Input id="store-phone" placeholder="+994 50 123 45 67" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Əlaqə məlumatları</CardTitle>
-                </CardHeader>
-                <CardContent className="grid gap-4 md:grid-cols-2">
-                  <div>
-                    <Label htmlFor="contact-email">Email</Label>
-                    <Input id="contact-email" placeholder="info@yourstore.az" />
-                  </div>
-                  <div>
-                    <Label htmlFor="contact-phone">Əsas telefon</Label>
-                    <Input id="contact-phone" placeholder="+994 12 345 67 89" />
-                  </div>
-                  <div>
-                    <Label htmlFor="contact-manager">Mağaza meneceri</Label>
-                    <Input id="contact-manager" placeholder="Ad Soyad" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>İş saatları</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div>
-                      <Label htmlFor="work-start">Başlama</Label>
-                      <Input id="work-start" type="time" />
-                    </div>
-                    <div>
-                      <Label htmlFor="work-end">Bitmə</Label>
-                      <Input id="work-end" type="time" />
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    <Badge variant="secondary">Bazar ertəsi - Cümə</Badge>
-                    <Badge variant="secondary">Şənbə</Badge>
-                    <Badge variant="secondary">Bazar</Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <GeneralTab />
           )}
 
           {activeTab === 'profile' && (
