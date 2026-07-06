@@ -186,7 +186,11 @@ pool.on('connect', () => {
   logger.info('🗄️  Database connected');
 });
 
-pool.on('error', (err) => {
+pool.on('error', (err: any) => {
+  if (err.message === 'Connection terminated unexpectedly') {
+    // Ignore Neon's idle connection termination
+    return;
+  }
   logger.error('❌ Database error:', err);
 });
 

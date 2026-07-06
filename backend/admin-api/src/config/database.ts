@@ -13,7 +13,13 @@ const pool = new Pool({
 });
 
 pool.on('connect', () => logger.info('🗄️  Admin API database connected'));
-pool.on('error', (err) => logger.error('❌ Admin API database error:', err));
+pool.on('error', (err: any) => {
+  if (err.message === 'Connection terminated unexpectedly') {
+    // Ignore Neon's idle connection termination
+    return;
+  }
+  logger.error('❌ Database error:', err);
+});
 
 export const query = async (text: string, params?: any[]) => {
   const start = Date.now();
