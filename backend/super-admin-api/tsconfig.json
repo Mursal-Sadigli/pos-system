@@ -8,11 +8,10 @@
     "forceConsistentCasingInFileNames": true,
     "outDir": "dist",
     "rootDir": "src",
-    "moduleResolution": "node",
+    "moduleResolution": "node16",
     "resolveJsonModule": true,
     "allowSyntheticDefaultImports": true,
     "noImplicitAny": false,
-    "ignoreDeprecations": "6.0",
     "types": ["node"]
   },
   "include": ["src/**/*"],
