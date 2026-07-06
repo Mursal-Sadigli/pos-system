@@ -5,6 +5,7 @@ import type { Customer } from '@/types/customer';
 import type { LoginRequest, LoginResponse } from '@/types/user';
 
 const baseURL = process.env.NEXT_PUBLIC_SUPER_ADMIN_API ?? '/api';
+const adminBaseURL = process.env.NEXT_PUBLIC_ADMIN_API ?? '/api/admin';
 
 const isBrowser = typeof globalThis !== 'undefined' && 'window' in globalThis;
 
@@ -16,52 +17,56 @@ const api = axios.create({
   },
 });
 
+export const adminApi = axios.create({
+  baseURL: adminBaseURL,
+  withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
 // ==================== REQUEST INTERCEPTOR ====================
 // Hər request-ə token əlavə et
-api.interceptors.request.use(
-  (config) => {
-    const token = isBrowser ? (globalThis as typeof globalThis & { window?: { localStorage?: { getItem: (key: string) => string | null } } }).window?.localStorage?.getItem('token') ?? null : null;
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => {
-    return Promise.reject(error);
+const requestInterceptor = (config: any) => {
+  const token = isBrowser ? (globalThis as typeof globalThis & { window?: { localStorage?: { getItem: (key: string) => string | null } } }).window?.localStorage?.getItem('token') ?? null : null;
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
-);
+  return config;
+};
+
+api.interceptors.request.use(requestInterceptor, (error) => Promise.reject(error));
+adminApi.interceptors.request.use(requestInterceptor, (error) => Promise.reject(error));
 
 // ==================== RESPONSE INTERCEPTOR ====================
-api.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (error.response?.status === 401 && isBrowser) {
-      // Try to refresh token
-      const refreshToken = window.localStorage?.getItem('refreshToken');
-      if (refreshToken) {
-        try {
-          const refreshResp = await api.post('/auth/refresh-token', { refreshToken });
-          const newToken = refreshResp?.data?.data?.token;
-          if (newToken) {
-            window.localStorage.setItem('token', newToken);
-            // Retry original request with new token
-            const config = error.config;
-            config.headers.Authorization = `Bearer ${newToken}`;
-            return api.request(config);
-          }
-        } catch {
-          // refresh failed, fall through to clear storage
+const responseErrorInterceptor = async (error: any) => {
+  if (error.response?.status === 401 && isBrowser) {
+    // Try to refresh token
+    const refreshToken = window.localStorage?.getItem('refreshToken');
+    if (refreshToken) {
+      try {
+        const res = await axios.post(`${baseURL}/auth/refresh-token`, { refreshToken });
+        const newToken = res.data.token;
+        if (newToken) {
+          window.localStorage.setItem('token', newToken);
+          error.config.headers.Authorization = `Bearer ${newToken}`;
+          return axios(error.config);
         }
+      } catch (refreshError) {
+        window.localStorage.removeItem('token');
+        window.localStorage.removeItem('refreshToken');
+        window.location.href = '/login';
       }
-      // If we reach here, clear auth and let auth flow handle logout
-      const win = typeof window !== 'undefined' ? window : undefined;
-      win?.localStorage?.removeItem('token');
-      win?.localStorage?.removeItem('refreshToken');
-      win?.localStorage?.removeItem('user');
+    } else {
+      window.localStorage.removeItem('token');
+      window.location.href = '/login';
     }
-    return Promise.reject(error?.response?.data ?? error);
   }
-);
+  return Promise.reject(error);
+};
+
+api.interceptors.response.use((response) => response, responseErrorInterceptor);
+adminApi.interceptors.response.use((response) => response, responseErrorInterceptor);
 
 // ==================== AUTH API ====================
 export const authApi = {
@@ -140,8 +145,8 @@ export const reportsApi = {
 
 // ==================== STORE API ====================
 export const storeApi = {
-  getMyStore: () => api.get('/stores/my-store'),
-  updateMyStore: (payload: any) => api.put('/stores/my-store', payload),
+  getMyStore: () => adminApi.get('/stores/my-store'),
+  updateMyStore: (payload: any) => adminApi.put('/stores/my-store', payload),
 };
 
 export default api;

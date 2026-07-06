@@ -73,7 +73,7 @@ function GeneralTab() {
       await storeApi.updateMyStore(formData);
       alert('Mağaza məlumatları yeniləndi!');
     } catch (error) {
-      console.error('Failed to save store', error);
+      console.error('Mağaza yadda saxlanıla bilmədi', error);
       alert('Yenilənmə zamanı xəta baş verdi');
     } finally {
       setSaving(false);
