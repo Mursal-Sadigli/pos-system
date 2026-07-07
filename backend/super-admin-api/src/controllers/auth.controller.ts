@@ -45,11 +45,16 @@ export class AuthController {
       }
 
       const { name, email, role, storeId } = req.body;
+      
+      if (req.user.role === 'ADMIN' && role === 'ADMIN') {
+        return errorResponse(res, 'Sizin Admin rolu əlavə etmək icazəniz yoxdur', 403);
+      }
+
       const result = await AuthService.invite({
         name,
         email,
         role,
-        storeId,
+        storeId: req.user.role !== 'SUPER_ADMIN' ? req.user.storeId : storeId,
         invitedBy: req.user.id,
       });
 

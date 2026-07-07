@@ -18,7 +18,6 @@ const allowedOrigins = [
   'http://127.0.0.1:3000',
   'https://localhost:3000',
   'https://127.0.0.1:3000',
-  'https://libidinally-perigean-alanna.ngrok-free.dev',
   ...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim()).filter(Boolean) : []),
 ];
 
@@ -34,7 +33,7 @@ app.use(cors({
       return;
     }
 
-    if (origin.includes('ngrok') || origin.includes('localhost') || origin.includes('127.0.0.1')) {
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
       callback(null, true);
       return;
     }

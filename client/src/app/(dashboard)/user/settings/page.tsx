@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { storeApi, userApi } from '@/lib/api';
+import { storeApi, userApi, authApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,9 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { useAuth } from '@/hooks/useAuth';
 
 const tabs = [
   { value: 'general', label: '🏠 Ümumi' },
@@ -315,8 +318,176 @@ function GeneralTab() {
   );
 }
 
+function UsersTab({ currentUser }: { currentUser: any }) {
+  const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState<any[]>([]);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteData, setInviteData] = useState({ name: '', email: '', role: 'CASHIER' });
+  const [inviting, setInviting] = useState(false);
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const res = await userApi.getUsers();
+      if (res.data?.data) {
+        setUsers(res.data.data.rows || res.data.data);
+      }
+    } catch (error) {
+      console.error('İstifadəçilər gətirilə bilmədi', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleInvite = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      setInviting(true);
+      await authApi.inviteUser(inviteData);
+      alert('İstifadəçi dəvət edildi!');
+      setInviteOpen(false);
+      setInviteData({ name: '', email: '', role: 'CASHIER' });
+      fetchUsers();
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Dəvət göndərilərkən xəta baş verdi');
+    } finally {
+      setInviting(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Bu istifadəçini silmək istədiyinizə əminsiniz?')) return;
+    try {
+      await userApi.deleteUser(id);
+      fetchUsers();
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Silinmə uğursuz oldu');
+    }
+  };
+
+  const getRoleLabel = (role: string) => {
+    const roles: any = { ADMIN: 'Admin', MANAGER: 'Menedjer', CASHIER: 'Kassir', VIEWER: 'İzləyici', SUPER_ADMIN: 'Super Admin' };
+    return roles[role] || role;
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <CardTitle>İstifadəçi siyahısı</CardTitle>
+          <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+            <DialogTrigger asChild>
+              <Button>Yeni istifadəçi əlavə et</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Yeni İstifadəçi Dəvət Et</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleInvite} className="space-y-4">
+                <div>
+                  <Label>Ad və Soyad</Label>
+                  <Input required value={inviteData.name} onChange={e => setInviteData({...inviteData, name: e.target.value})} placeholder="Ad Soyad" />
+                </div>
+                <div>
+                  <Label>Email</Label>
+                  <Input required type="email" value={inviteData.email} onChange={e => setInviteData({...inviteData, email: e.target.value})} placeholder="email@domain.com" />
+                </div>
+                <div>
+                  <Label>Rol</Label>
+                  <select 
+                    className="mt-2 block w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none focus:border-ring focus:ring-1 focus:ring-ring"
+                    value={inviteData.role} 
+                    onChange={e => setInviteData({...inviteData, role: e.target.value})}
+                  >
+                    {currentUser?.role === 'SUPER_ADMIN' && <option value="ADMIN">Admin</option>}
+                    <option value="MANAGER">Menedjer</option>
+                    <option value="CASHIER">Kassir</option>
+                    <option value="VIEWER">İzləyici</option>
+                  </select>
+                </div>
+                <div className="flex justify-end pt-4">
+                  <Button type="submit" disabled={inviting}>
+                    {inviting ? 'Göndərilir...' : 'Dəvət Göndər'}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </CardHeader>
+        <CardContent className="overflow-x-auto">
+          {loading ? (
+            <div className="text-center py-4 text-muted-foreground">Yüklənir...</div>
+          ) : (
+            <table className="min-w-full text-left text-sm">
+              <thead className="bg-muted text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-3">Ad</th>
+                  <th className="px-4 py-3">Email</th>
+                  <th className="px-4 py-3">Rol</th>
+                  <th className="px-4 py-3">Status</th>
+                  <th className="px-4 py-3">Əməliyyat</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {users.map((u) => (
+                  <tr key={u.id}>
+                    <td className="px-4 py-3">{u.name} {u.last_name || ''}</td>
+                    <td className="px-4 py-3">{u.email}</td>
+                    <td className="px-4 py-3">{getRoleLabel(u.role)}</td>
+                    <td className="px-4 py-3">
+                      <Badge variant={u.is_active ? 'success' : 'secondary'}>{u.is_active ? 'Aktiv' : 'Passiv'}</Badge>
+                    </td>
+                    <td className="px-4 py-3 space-x-2">
+                      <Button variant="outline" size="sm" onClick={() => alert('Düzəliş etmək gələcək versiyada olacaq')}>Düzəliş et</Button>
+                      <Button variant="destructive" size="sm" onClick={() => handleDelete(u.id)}>Sil</Button>
+                    </td>
+                  </tr>
+                ))}
+                {users.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="text-center py-4 text-muted-foreground">İstifadəçi tapılmadı.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Rollar və icazələr</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-2">
+          <div>
+            <Label>Admin</Label>
+            <p className="text-sm text-muted-foreground">Tam idarəetmə icazəsi.</p>
+          </div>
+          <div>
+            <Label>Menedjer</Label>
+            <p className="text-sm text-muted-foreground">Satış və stok izləmə, həmçinin mağaza idarəsi icazəsi.</p>
+          </div>
+          <div>
+            <Label>Kassir</Label>
+            <p className="text-sm text-muted-foreground">Yalnız POS terminalı üzərindən satış etmə icazəsi.</p>
+          </div>
+          <div>
+            <Label>İzləyici</Label>
+            <p className="text-sm text-muted-foreground">Məlumatlara sadəcə baxış icazəsi, heç bir dəyişiklik edə bilməz.</p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState('general');
+  const { user } = useAuth();
 
   return (
     <div className="space-y-6">
@@ -354,60 +525,7 @@ export default function SettingsPage() {
           )}
 
           {activeTab === 'users' && (
-            <div className="space-y-6">
-              <Card>
-                <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                  <CardTitle>İstifadəçi siyahısı</CardTitle>
-                  <Button>Yeni istifadəçi əlavə et</Button>
-                </CardHeader>
-                <CardContent className="overflow-x-auto">
-                  <table className="min-w-full text-left text-sm">
-                    <thead className="bg-muted text-muted-foreground">
-                      <tr>
-                        <th className="px-4 py-3">Ad</th>
-                        <th className="px-4 py-3">Email</th>
-                        <th className="px-4 py-3">Rol</th>
-                        <th className="px-4 py-3">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y">
-                      <tr>
-                        <td className="px-4 py-3">Elçin Məmmədov</td>
-                        <td className="px-4 py-3">elchin@domain.az</td>
-                        <td className="px-4 py-3">Admin</td>
-                        <td className="px-4 py-3">
-                          <Badge variant="success">Aktiv</Badge>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td className="px-4 py-3">Aynur Quliyeva</td>
-                        <td className="px-4 py-3">aynur@domain.az</td>
-                        <td className="px-4 py-3">Menedjer</td>
-                        <td className="px-4 py-3">
-                          <Badge variant="secondary">Yeni</Badge>
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Rollar və icazələr</CardTitle>
-                </CardHeader>
-                <CardContent className="grid gap-4 md:grid-cols-2">
-                  <div>
-                    <Label>Admin</Label>
-                    <p className="text-sm text-muted-foreground">Tam idarəetmə icazəsi.</p>
-                  </div>
-                  <div>
-                    <Label>Menedjer</Label>
-                    <p className="text-sm text-muted-foreground">Satış və stok izləmə icazəsi.</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <UsersTab currentUser={user} />
           )}
 
           {activeTab === 'store' && (

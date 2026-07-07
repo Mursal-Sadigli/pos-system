@@ -8,7 +8,7 @@ const nextConfig: NextConfig = {
     const apiBase =
       process.env.SUPER_ADMIN_API_URL ||
       process.env.NEXT_PUBLIC_SUPER_ADMIN_API ||
-      'https://pos-system-o043.onrender.com';
+      'http://localhost:5000';
 
     // apiBase artıq /api ilə bitmirsə, /api əlavə et
     const destination = apiBase.endsWith('/api')

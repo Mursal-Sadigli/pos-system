@@ -4,8 +4,18 @@ import type { CreateOrderRequest, Order } from '@/types/order';
 import type { Customer } from '@/types/customer';
 import type { LoginRequest, LoginResponse } from '@/types/user';
 
-const baseURL = process.env.NEXT_PUBLIC_SUPER_ADMIN_API ?? '/api';
-const adminBaseURL = process.env.NEXT_PUBLIC_ADMIN_API ?? '/api/admin';
+let baseURL = process.env.NEXT_PUBLIC_SUPER_ADMIN_API ?? '/api';
+let adminBaseURL = process.env.NEXT_PUBLIC_ADMIN_API ?? '/api/admin';
+
+// Sistem yaddaşında ilişib qalmış ngrok-u bypass etmək üçün lokal təhlükəsizlik
+if (typeof baseURL === 'string' && baseURL.includes('ngrok')) {
+  baseURL = 'http://localhost:5000/api';
+}
+if (typeof adminBaseURL === 'string' && adminBaseURL.includes('ngrok')) {
+  adminBaseURL = 'http://localhost:5001/api/admin';
+}
+
+console.log("Current API URLs:", { baseURL, adminBaseURL });
 
 const isBrowser = typeof globalThis !== 'undefined' && 'window' in globalThis;
 
