@@ -19,6 +19,7 @@ export interface Store {
   work_start: string | null;
   work_end: string | null;
   work_days: any | null;
+  role_permissions: any | null;
   is_active: boolean;
   created_at: Date;
   updated_at: Date;
@@ -42,6 +43,7 @@ export interface CreateStoreData {
   work_start?: string;
   work_end?: string;
   work_days?: any;
+  role_permissions?: any;
 }
 
 export class StoreModel {
@@ -50,8 +52,8 @@ export class StoreModel {
       `INSERT INTO public.stores (
         name, email, phone, address, tax_number, registration_number,
         timezone, currency, language, business_type, website,
-        store_code, manager_name, contact_phone, work_start, work_end, work_days
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+        store_code, manager_name, contact_phone, work_start, work_end, work_days, role_permissions
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
       RETURNING *`,
       [
         data.name,
@@ -71,6 +73,7 @@ export class StoreModel {
         data.work_start || null,
         data.work_end || null,
         data.work_days ? JSON.stringify(data.work_days) : null,
+        data.role_permissions ? JSON.stringify(data.role_permissions) : null,
       ]
     );
     
@@ -165,6 +168,7 @@ export class StoreModel {
       work_start: 'work_start',
       work_end: 'work_end',
       work_days: 'work_days',
+      role_permissions: 'role_permissions',
       is_active: 'is_active',
     };
 
@@ -172,7 +176,7 @@ export class StoreModel {
       if (data[key as keyof Store] !== undefined) {
         fields.push(`${dbField} = $${paramIndex++}`);
         const val = data[key as keyof Store];
-        values.push(key === 'work_days' && val ? JSON.stringify(val) : val);
+        values.push((key === 'work_days' || key === 'role_permissions') && val ? JSON.stringify(val) : val);
       }
     }
 
