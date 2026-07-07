@@ -9,7 +9,7 @@ let adminBaseURL = process.env.NEXT_PUBLIC_ADMIN_API ?? '/api/admin';
 
 // Sistem yaddaşında ilişib qalmış ngrok-u bypass etmək üçün lokal təhlükəsizlik
 if (typeof baseURL === 'string' && baseURL.includes('ngrok')) {
-  baseURL = 'http://localhost:5000/api';
+  baseURL = 'http://localhost:5002/api';
 }
 if (typeof adminBaseURL === 'string' && adminBaseURL.includes('ngrok')) {
   adminBaseURL = 'http://localhost:5001/api/admin';
