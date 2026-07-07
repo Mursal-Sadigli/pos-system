@@ -360,6 +360,7 @@ const ensureInvitationTable = async () => {
     await client.query(`ALTER TABLE ${schemaQualified}."stores" ADD COLUMN IF NOT EXISTS work_start VARCHAR(20)`);
     await client.query(`ALTER TABLE ${schemaQualified}."stores" ADD COLUMN IF NOT EXISTS work_end VARCHAR(20)`);
     await client.query(`ALTER TABLE ${schemaQualified}."stores" ADD COLUMN IF NOT EXISTS work_days JSONB`);
+    await client.query(`ALTER TABLE ${schemaQualified}."stores" ADD COLUMN IF NOT EXISTS role_permissions JSONB DEFAULT '{"MANAGER": ["sales_view", "inventory_manage", "store_settings"], "CASHIER": ["pos_access", "sales_view_own"], "VIEWER": ["sales_view", "inventory_view"]}'::jsonb`);
     
     // Add columns for user profile
     await client.query(`ALTER TABLE ${schemaQualified}."users" ADD COLUMN IF NOT EXISTS last_name VARCHAR(255)`);

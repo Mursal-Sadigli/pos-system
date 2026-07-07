@@ -325,16 +325,79 @@ function UsersTab({ currentUser }: { currentUser: any }) {
   const [inviteData, setInviteData] = useState({ name: '', email: '', role: 'CASHIER' });
   const [inviting, setInviting] = useState(false);
 
+  // Edit user state
+  const [editOpen, setEditOpen] = useState(false);
+  const [editData, setEditData] = useState<any>(null);
+  const [editing, setEditing] = useState(false);
+
+  // Roles state
+  const [rolePermissions, setRolePermissions] = useState<Record<string, string[]>>({
+    MANAGER: [],
+    CASHIER: [],
+    VIEWER: []
+  });
+  const [savingRoles, setSavingRoles] = useState(false);
+
+  const availablePermissions = [
+    { id: 'pos_access', label: 'POS Terminal Satış' },
+    { id: 'sales_view_own', label: 'Öz Satışlarını Görmək' },
+    { id: 'sales_view', label: 'Bütün Satışları Görmək' },
+    { id: 'inventory_view', label: 'Anbarı Görmək' },
+    { id: 'inventory_manage', label: 'Anbarı İdarə Etmək' },
+    { id: 'store_settings', label: 'Mağaza Tənzimləmələri' }
+  ];
+
   useEffect(() => {
     fetchUsers();
+    fetchStoreRoles();
   }, []);
+
+  const fetchStoreRoles = async () => {
+    try {
+      const res = await storeApi.getMyStore();
+      if (res.data?.data?.role_permissions) {
+        setRolePermissions(res.data.data.role_permissions);
+      }
+    } catch (e) {
+      console.error('Failed to fetch store roles', e);
+    }
+  };
+
+  const handleRoleToggle = (role: string, permissionId: string) => {
+    setRolePermissions(prev => {
+      const perms = prev[role] || [];
+      const newPerms = perms.includes(permissionId)
+        ? perms.filter(p => p !== permissionId)
+        : [...perms, permissionId];
+      return { ...prev, [role]: newPerms };
+    });
+  };
+
+  const saveRolePermissions = async () => {
+    try {
+      setSavingRoles(true);
+      await storeApi.updateMyStore({ role_permissions: rolePermissions });
+      alert('İcazələr yadda saxlanıldı!');
+    } catch (e) {
+      alert('İcazələri yadda saxlamaq mümkün olmadı');
+    } finally {
+      setSavingRoles(false);
+    }
+  };
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
       const res = await userApi.getUsers();
       if (res.data?.data) {
-        setUsers(res.data.data.rows || res.data.data);
+        const usersData = res.data.data.users || res.data.data.rows || res.data.data;
+        if (Array.isArray(usersData)) {
+          // ADMIN və SUPER_ADMIN-ləri gizlədirik
+          const filteredUsers = usersData.filter((u: any) => u.role !== 'ADMIN' && u.role !== 'SUPER_ADMIN');
+          setUsers(filteredUsers);
+        } else {
+          setUsers([]);
+        }
       }
     } catch (error) {
       console.error('İstifadəçilər gətirilə bilmədi', error);
@@ -374,18 +437,45 @@ function UsersTab({ currentUser }: { currentUser: any }) {
     return roles[role] || role;
   };
 
+  const handleEditOpen = (user: any) => {
+    setEditData({
+      id: user.id,
+      name: user.name,
+      last_name: user.last_name || '',
+      role: user.role,
+      is_active: user.is_active
+    });
+    setEditOpen(true);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editData) return;
+    try {
+      setEditing(true);
+      await userApi.updateUser(editData.id, editData);
+      alert('Məlumatlar yeniləndi!');
+      setEditOpen(false);
+      fetchUsers();
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Yenilənmə uğursuz oldu');
+    } finally {
+      setEditing(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <CardTitle>İstifadəçi siyahısı</CardTitle>
+          <CardTitle>İşçi siyahısı</CardTitle>
           <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
             <DialogTrigger asChild>
-              <Button>Yeni istifadəçi əlavə et</Button>
+              <Button>Yeni işçi əlavə et</Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Yeni İstifadəçi Dəvət Et</DialogTitle>
+                <DialogTitle>Yeni İşçi Dəvət Et</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleInvite} className="space-y-4">
                 <div>
@@ -442,7 +532,7 @@ function UsersTab({ currentUser }: { currentUser: any }) {
                       <Badge variant={u.is_active ? 'success' : 'secondary'}>{u.is_active ? 'Aktiv' : 'Passiv'}</Badge>
                     </td>
                     <td className="px-4 py-3 space-x-2">
-                      <Button variant="outline" size="sm" onClick={() => alert('Düzəliş etmək gələcək versiyada olacaq')}>Düzəliş et</Button>
+                      <Button variant="outline" size="sm" onClick={() => handleEditOpen(u)}>Düzəliş et</Button>
                       <Button variant="destructive" size="sm" onClick={() => handleDelete(u.id)}>Sil</Button>
                     </td>
                   </tr>
@@ -458,27 +548,88 @@ function UsersTab({ currentUser }: { currentUser: any }) {
         </CardContent>
       </Card>
 
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>İşçi Məlumatlarına Düzəliş Et</DialogTitle>
+          </DialogHeader>
+          {editData && (
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              <div>
+                <Label>Ad</Label>
+                <Input required value={editData.name} onChange={e => setEditData({...editData, name: e.target.value})} />
+              </div>
+              <div>
+                <Label>Soyad</Label>
+                <Input value={editData.last_name} onChange={e => setEditData({...editData, last_name: e.target.value})} />
+              </div>
+              <div>
+                <Label>Rol</Label>
+                <select 
+                  className="mt-2 block w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none focus:border-ring focus:ring-1 focus:ring-ring"
+                  value={editData.role} 
+                  onChange={e => setEditData({...editData, role: e.target.value})}
+                >
+                  <option value="MANAGER">Menedjer</option>
+                  <option value="CASHIER">Kassir</option>
+                  <option value="VIEWER">İzləyici</option>
+                </select>
+              </div>
+              <div className="flex items-center space-x-2 pt-2">
+                <input 
+                  type="checkbox" 
+                  id="isActive" 
+                  checked={editData.is_active} 
+                  onChange={e => setEditData({...editData, is_active: e.target.checked})}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <Label htmlFor="isActive">Aktivdir</Label>
+              </div>
+              <div className="flex justify-end pt-4">
+                <Button type="submit" disabled={editing}>
+                  {editing ? 'Yadda Saxlanılır...' : 'Yadda Saxla'}
+                </Button>
+              </div>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-col md:flex-row md:items-center justify-between">
           <CardTitle>Rollar və icazələr</CardTitle>
+          <Button onClick={saveRolePermissions} disabled={savingRoles}>
+            {savingRoles ? 'Saxlanılır...' : 'İcazələri Yadda Saxla'}
+          </Button>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2">
-          <div>
-            <Label>Admin</Label>
-            <p className="text-sm text-muted-foreground">Tam idarəetmə icazəsi.</p>
-          </div>
-          <div>
-            <Label>Menedjer</Label>
-            <p className="text-sm text-muted-foreground">Satış və stok izləmə, həmçinin mağaza idarəsi icazəsi.</p>
-          </div>
-          <div>
-            <Label>Kassir</Label>
-            <p className="text-sm text-muted-foreground">Yalnız POS terminalı üzərindən satış etmə icazəsi.</p>
-          </div>
-          <div>
-            <Label>İzləyici</Label>
-            <p className="text-sm text-muted-foreground">Məlumatlara sadəcə baxış icazəsi, heç bir dəyişiklik edə bilməz.</p>
-          </div>
+        <CardContent className="space-y-6">
+          {['MANAGER', 'CASHIER', 'VIEWER'].map(role => (
+            <div key={role} className="border rounded-lg p-4">
+              <h3 className="font-semibold text-lg mb-3">
+                {role === 'MANAGER' ? 'Menedjer' : role === 'CASHIER' ? 'Kassir' : 'İzləyici'}
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                {availablePermissions.map(perm => {
+                  const hasPerm = (rolePermissions[role] || []).includes(perm.id);
+                  return (
+                    <div key={perm.id} className="flex items-center space-x-2">
+                      <input 
+                        type="checkbox" 
+                        id={`${role}-${perm.id}`}
+                        checked={hasPerm}
+                        onChange={() => handleRoleToggle(role, perm.id)}
+                        className="h-4 w-4 rounded border-gray-300"
+                      />
+                      <Label htmlFor={`${role}-${perm.id}`} className="text-sm font-normal cursor-pointer">
+                        {perm.label}
+                      </Label>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </CardContent>
       </Card>
     </div>
