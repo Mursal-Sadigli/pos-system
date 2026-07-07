@@ -279,7 +279,7 @@ const ensureInvitationTable = async () => {
     `);
 
     await client.query(`
-      CREATE TABLE IF NOT EXISTS "public"."products" (
+      CREATE TABLE IF NOT EXISTS ${schemaQualified}."products" (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         name VARCHAR(255) NOT NULL,
         sku VARCHAR(100) UNIQUE,
@@ -296,7 +296,7 @@ const ensureInvitationTable = async () => {
     `);
 
     await client.query(`
-      CREATE TABLE IF NOT EXISTS "public"."stores" (
+      CREATE TABLE IF NOT EXISTS ${schemaQualified}."stores" (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         name VARCHAR(255) NOT NULL,
         email VARCHAR(255),
@@ -322,7 +322,7 @@ const ensureInvitationTable = async () => {
     `);
 
     await client.query(`
-      CREATE TABLE IF NOT EXISTS "public"."pos_orders" (
+      CREATE TABLE IF NOT EXISTS ${schemaQualified}."pos_orders" (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         order_number VARCHAR(100) UNIQUE,
         customer_name VARCHAR(255) DEFAULT 'Gündəlik Müştəri',
@@ -337,9 +337,9 @@ const ensureInvitationTable = async () => {
     `);
 
     await client.query(`
-      CREATE TABLE IF NOT EXISTS "public"."pos_order_items" (
+      CREATE TABLE IF NOT EXISTS ${schemaQualified}."pos_order_items" (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        order_id UUID NOT NULL REFERENCES "public"."pos_orders"(id) ON DELETE CASCADE,
+        order_id UUID NOT NULL REFERENCES ${schemaQualified}."pos_orders"(id) ON DELETE CASCADE,
         product_id UUID,
         name VARCHAR(255) NOT NULL,
         qty INTEGER NOT NULL DEFAULT 1,
@@ -350,28 +350,28 @@ const ensureInvitationTable = async () => {
     `);
     
     // Add cost_price columns if they don't exist (for existing tables)
-    await client.query(`ALTER TABLE "public"."products" ADD COLUMN IF NOT EXISTS cost_price DECIMAL(10, 2) DEFAULT 0`);
-    await client.query(`ALTER TABLE "public"."pos_order_items" ADD COLUMN IF NOT EXISTS cost_price DECIMAL(10, 2) DEFAULT 0`);
-    await client.query(`ALTER TABLE "public"."pos_orders" ADD COLUMN IF NOT EXISTS store_id UUID`);
+    await client.query(`ALTER TABLE ${schemaQualified}."products" ADD COLUMN IF NOT EXISTS cost_price DECIMAL(10, 2) DEFAULT 0`);
+    await client.query(`ALTER TABLE ${schemaQualified}."pos_order_items" ADD COLUMN IF NOT EXISTS cost_price DECIMAL(10, 2) DEFAULT 0`);
+    await client.query(`ALTER TABLE ${schemaQualified}."pos_orders" ADD COLUMN IF NOT EXISTS store_id UUID`);
 
-    await client.query(`ALTER TABLE "public"."stores" ADD COLUMN IF NOT EXISTS store_code VARCHAR(50)`);
-    await client.query(`ALTER TABLE "public"."stores" ADD COLUMN IF NOT EXISTS manager_name VARCHAR(255)`);
-    await client.query(`ALTER TABLE "public"."stores" ADD COLUMN IF NOT EXISTS contact_phone VARCHAR(50)`);
-    await client.query(`ALTER TABLE "public"."stores" ADD COLUMN IF NOT EXISTS work_start VARCHAR(20)`);
-    await client.query(`ALTER TABLE "public"."stores" ADD COLUMN IF NOT EXISTS work_end VARCHAR(20)`);
-    await client.query(`ALTER TABLE "public"."stores" ADD COLUMN IF NOT EXISTS work_days JSONB`);
+    await client.query(`ALTER TABLE ${schemaQualified}."stores" ADD COLUMN IF NOT EXISTS store_code VARCHAR(50)`);
+    await client.query(`ALTER TABLE ${schemaQualified}."stores" ADD COLUMN IF NOT EXISTS manager_name VARCHAR(255)`);
+    await client.query(`ALTER TABLE ${schemaQualified}."stores" ADD COLUMN IF NOT EXISTS contact_phone VARCHAR(50)`);
+    await client.query(`ALTER TABLE ${schemaQualified}."stores" ADD COLUMN IF NOT EXISTS work_start VARCHAR(20)`);
+    await client.query(`ALTER TABLE ${schemaQualified}."stores" ADD COLUMN IF NOT EXISTS work_end VARCHAR(20)`);
+    await client.query(`ALTER TABLE ${schemaQualified}."stores" ADD COLUMN IF NOT EXISTS work_days JSONB`);
     
     // Add columns for user profile
     await client.query(`ALTER TABLE ${schemaQualified}."users" ADD COLUMN IF NOT EXISTS last_name VARCHAR(255)`);
     await client.query(`ALTER TABLE ${schemaQualified}."users" ADD COLUMN IF NOT EXISTS phone VARCHAR(50)`);
     
     // Mock initial cost_price for existing products
-    await client.query(`UPDATE "public"."products" SET cost_price = price * 0.7 WHERE cost_price = 0 OR cost_price IS NULL`);
-    await client.query(`UPDATE "public"."pos_order_items" SET cost_price = price * 0.7 WHERE cost_price = 0 OR cost_price IS NULL`);
+    await client.query(`UPDATE ${schemaQualified}."products" SET cost_price = price * 0.7 WHERE cost_price = 0 OR cost_price IS NULL`);
+    await client.query(`UPDATE ${schemaQualified}."pos_order_items" SET cost_price = price * 0.7 WHERE cost_price = 0 OR cost_price IS NULL`);
 
-    await client.query(`CREATE INDEX IF NOT EXISTS "idx_pos_orders_status" ON "public"."pos_orders"(status)`);
-    await client.query(`ALTER TABLE "public"."pos_orders" ADD COLUMN IF NOT EXISTS source VARCHAR(50) DEFAULT 'POS'`);
-    await client.query(`CREATE INDEX IF NOT EXISTS "idx_pos_order_items_order_id" ON "public"."pos_order_items"(order_id)`);
+    await client.query(`CREATE INDEX IF NOT EXISTS "idx_pos_orders_status" ON ${schemaQualified}."pos_orders"(status)`);
+    await client.query(`ALTER TABLE ${schemaQualified}."pos_orders" ADD COLUMN IF NOT EXISTS source VARCHAR(50) DEFAULT 'POS'`);
+    await client.query(`CREATE INDEX IF NOT EXISTS "idx_pos_order_items_order_id" ON ${schemaQualified}."pos_order_items"(order_id)`);
     await client.query(`CREATE INDEX IF NOT EXISTS "idx_invitations_email_status" ON ${schemaQualified}."invitations"(email, status)`);
     await client.query(`CREATE INDEX IF NOT EXISTS "idx_invitations_token" ON ${schemaQualified}."invitations"(token)`);
     await client.query(`CREATE INDEX IF NOT EXISTS "idx_invitations_store_id" ON ${schemaQualified}."invitations"(store_id)`);

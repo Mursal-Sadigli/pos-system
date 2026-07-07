@@ -7,14 +7,14 @@ export const getSalesSummary = async (storeId?: string, startDate?: string, endD
       SUM(amount) as total_sales,
       (
         SELECT SUM((i.price - i.cost_price) * i.qty)
-        FROM "public"."pos_order_items" i
-        JOIN "public"."pos_orders" o2 ON i.order_id = o2.id
+        FROM "pos_order_items" i
+        JOIN "pos_orders" o2 ON i.order_id = o2.id
         WHERE o2.status != 'cancelled' AND (o2.source = 'POS' OR o2.source = 'Kassa')
         ${storeId ? ` AND o2.store_id = '${storeId}'` : ''}
         ${startDate ? ` AND o2.created_at >= '${startDate}'` : ''}
         ${endDate ? ` AND o2.created_at <= '${endDate} 23:59:59'` : ''}
       ) as total_profit
-    FROM "public"."pos_orders"
+    FROM "pos_orders"
     WHERE status != 'cancelled' AND (source = 'POS' OR source = 'Kassa')
   `;
   const params: any[] = [];
@@ -42,7 +42,7 @@ export const getSalesSummary = async (storeId?: string, startDate?: string, endD
       TO_CHAR(created_at, 'YYYY-MM-DD') as date,
       SUM(amount) as sales,
       COUNT(*) as count
-    FROM "public"."pos_orders"
+    FROM "pos_orders"
     WHERE status != 'cancelled' AND (source = 'POS' OR source = 'Kassa')
   `;
   const chartParams: any[] = [];
@@ -70,7 +70,7 @@ export const getSalesSummary = async (storeId?: string, startDate?: string, endD
       cashier,
       SUM(amount) as total_sales,
       COUNT(*) as total_orders
-    FROM "public"."pos_orders"
+    FROM "pos_orders"
     WHERE status != 'cancelled' AND (source = 'POS' OR source = 'Kassa')
   `;
   
@@ -108,8 +108,8 @@ export const getTopProducts = async (storeId?: string, startDate?: string, endDa
       i.name,
       SUM(i.qty) as total_qty,
       SUM(i.qty * i.price) as total_sales
-    FROM "public"."pos_order_items" i
-    JOIN "public"."pos_orders" o ON i.order_id = o.id
+    FROM "pos_order_items" i
+    JOIN "pos_orders" o ON i.order_id = o.id
     WHERE o.status != 'cancelled' AND (o.source = 'POS' OR o.source = 'Kassa')
   `;
   const params: any[] = [];
