@@ -433,7 +433,7 @@ function UsersTab({ currentUser }: { currentUser: any }) {
   };
 
   const getRoleLabel = (role: string) => {
-    const roles: any = { ADMIN: 'Admin', MANAGER: 'Menedjer', CASHIER: 'Kassir', VIEWER: 'İzləyici', SUPER_ADMIN: 'Super Admin' };
+    const roles: any = { ADMIN: 'Admin', MANAGER: 'Menecer', CASHIER: 'Kassir', VIEWER: 'İzləyici', SUPER_ADMIN: 'Super Admin' };
     return roles[role] || role;
   };
 
@@ -494,7 +494,7 @@ function UsersTab({ currentUser }: { currentUser: any }) {
                     onChange={e => setInviteData({...inviteData, role: e.target.value})}
                   >
                     {currentUser?.role === 'SUPER_ADMIN' && <option value="ADMIN">Admin</option>}
-                    <option value="MANAGER">Menedjer</option>
+                    <option value="MANAGER">Menecer</option>
                     <option value="CASHIER">Kassir</option>
                     <option value="VIEWER">İzləyici</option>
                   </select>
@@ -571,7 +571,7 @@ function UsersTab({ currentUser }: { currentUser: any }) {
                   value={editData.role} 
                   onChange={e => setEditData({...editData, role: e.target.value})}
                 >
-                  <option value="MANAGER">Menedjer</option>
+                  <option value="MANAGER">Menecer</option>
                   <option value="CASHIER">Kassir</option>
                   <option value="VIEWER">İzləyici</option>
                 </select>
@@ -607,7 +607,7 @@ function UsersTab({ currentUser }: { currentUser: any }) {
           {['MANAGER', 'CASHIER', 'VIEWER'].map(role => (
             <div key={role} className="border rounded-lg p-4">
               <h3 className="font-semibold text-lg mb-3">
-                {role === 'MANAGER' ? 'Menedjer' : role === 'CASHIER' ? 'Kassir' : 'İzləyici'}
+                {role === 'MANAGER' ? 'Menecer' : role === 'CASHIER' ? 'Kassir' : 'İzləyici'}
               </h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                 {availablePermissions.map(perm => {
