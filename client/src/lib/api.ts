@@ -201,6 +201,7 @@ export const reportsApi = {
 
 // ==================== STORE API ====================
 export const storeApi = {
+  getStores: () => adminApi.get('/stores'),
   getMyStore: () => adminApi.get('/stores/my-store'),
   updateMyStore: (payload: any) => adminApi.put('/stores/my-store', payload),
 };

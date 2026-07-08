@@ -918,8 +918,9 @@ function UsersTab({ currentUser }: { currentUser: any }) {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<any[]>([]);
   const [inviteOpen, setInviteOpen] = useState(false);
-  const [inviteData, setInviteData] = useState({ name: '', email: '', role: 'CASHIER' });
+  const [inviteData, setInviteData] = useState({ name: '', email: '', role: 'CASHIER', storeId: '' });
   const [inviting, setInviting] = useState(false);
+  const [stores, setStores] = useState<any[]>([]);
 
   // Edit user state
   const [editOpen, setEditOpen] = useState(false);
@@ -946,7 +947,23 @@ function UsersTab({ currentUser }: { currentUser: any }) {
   useEffect(() => {
     fetchUsers();
     fetchStoreRoles();
-  }, []);
+    if (currentUser?.role === 'SUPER_ADMIN') {
+      fetchStores();
+    }
+  }, [currentUser]);
+
+  const fetchStores = async () => {
+    try {
+      const res = await storeApi.getStores();
+      if (res.data?.data?.stores) {
+        setStores(res.data.data.stores);
+      } else if (Array.isArray(res.data?.data)) {
+        setStores(res.data.data);
+      }
+    } catch (e) {
+      console.error('Failed to fetch stores', e);
+    }
+  };
 
   const fetchStoreRoles = async () => {
     try {
@@ -1006,10 +1023,15 @@ function UsersTab({ currentUser }: { currentUser: any }) {
     e.preventDefault();
     try {
       setInviting(true);
-      await authApi.inviteUser(inviteData);
+      // storeId boşdursa (və ya yoxdursa) göndərmirik, backend özü həll edəcək
+      const payload = { ...inviteData };
+      if (!payload.storeId) {
+        delete (payload as any).storeId;
+      }
+      await authApi.inviteUser(payload);
       alert('İstifadəçi dəvət edildi!');
       setInviteOpen(false);
-      setInviteData({ name: '', email: '', role: 'CASHIER' });
+      setInviteData({ name: '', email: '', role: 'CASHIER', storeId: '' });
       fetchUsers();
     } catch (error: any) {
       alert(error.response?.data?.message || 'Dəvət göndərilərkən xəta baş verdi');
@@ -1060,49 +1082,68 @@ function UsersTab({ currentUser }: { currentUser: any }) {
     }
   };
 
+  const canManageUsers = ['SUPER_ADMIN', 'ADMIN'].includes(currentUser?.role);
+
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <CardTitle>İşçi siyahısı</CardTitle>
-          <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
-            <DialogTrigger asChild>
-              <Button>Yeni işçi əlavə et</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Yeni İşçi Dəvət Et</DialogTitle>
-              </DialogHeader>
-              <form onSubmit={handleInvite} className="space-y-4">
-                <div>
-                  <Label>Ad və Soyad</Label>
-                  <Input required value={inviteData.name} onChange={e => setInviteData({...inviteData, name: e.target.value})} placeholder="Ad Soyad" />
-                </div>
-                <div>
-                  <Label>Email</Label>
-                  <Input required type="email" value={inviteData.email} onChange={e => setInviteData({...inviteData, email: e.target.value})} placeholder="email@domain.com" />
-                </div>
-                <div>
-                  <Label>Rol</Label>
-                  <select 
-                    className="mt-2 block w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none focus:border-ring focus:ring-1 focus:ring-ring"
-                    value={inviteData.role} 
-                    onChange={e => setInviteData({...inviteData, role: e.target.value})}
-                  >
-                    {currentUser?.role === 'SUPER_ADMIN' && <option value="ADMIN">Admin</option>}
-                    <option value="MANAGER">Menecer</option>
-                    <option value="CASHIER">Kassir</option>
-                    <option value="VIEWER">İzləyici</option>
-                  </select>
-                </div>
-                <div className="flex justify-end pt-4">
-                  <Button type="submit" disabled={inviting}>
-                    {inviting ? 'Göndərilir...' : 'Dəvət Göndər'}
-                  </Button>
-                </div>
-              </form>
-            </DialogContent>
-          </Dialog>
+          {canManageUsers && (
+            <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+              <DialogTrigger asChild>
+                <Button>Yeni işçi əlavə et</Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Yeni İşçi Dəvət Et</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleInvite} className="space-y-4">
+                  <div>
+                    <Label>Ad və Soyad</Label>
+                    <Input required value={inviteData.name} onChange={e => setInviteData({...inviteData, name: e.target.value})} placeholder="Ad Soyad" />
+                  </div>
+                  <div>
+                    <Label>Email</Label>
+                    <Input required type="email" value={inviteData.email} onChange={e => setInviteData({...inviteData, email: e.target.value})} placeholder="email@domain.com" />
+                  </div>
+                  <div>
+                    <Label>Rol</Label>
+                    <select 
+                      className="mt-2 block w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none focus:border-ring focus:ring-1 focus:ring-ring"
+                      value={inviteData.role} 
+                      onChange={e => setInviteData({...inviteData, role: e.target.value})}
+                    >
+                      {currentUser?.role === 'SUPER_ADMIN' && <option value="ADMIN">Admin</option>}
+                      <option value="MANAGER">Menecer</option>
+                      <option value="CASHIER">Kassir</option>
+                      <option value="VIEWER">İzləyici</option>
+                    </select>
+                  </div>
+                  {currentUser?.role === 'SUPER_ADMIN' && stores.length > 0 && (
+                    <div>
+                      <Label>Mağaza</Label>
+                      <select 
+                        className="mt-2 block w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none focus:border-ring focus:ring-1 focus:ring-ring"
+                        value={inviteData.storeId} 
+                        onChange={e => setInviteData({...inviteData, storeId: e.target.value})}
+                      >
+                        <option value="">-- Avtomatik (İlk Mağaza) --</option>
+                        {stores.map(s => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  <div className="flex justify-end pt-4">
+                    <Button type="submit" disabled={inviting}>
+                      {inviting ? 'Göndərilir...' : 'Dəvət Göndər'}
+                    </Button>
+                  </div>
+                </form>
+              </DialogContent>
+            </Dialog>
+          )}
         </CardHeader>
         <CardContent className="overflow-x-auto">
           {loading ? (
@@ -1115,7 +1156,7 @@ function UsersTab({ currentUser }: { currentUser: any }) {
                   <th className="px-4 py-3">Email</th>
                   <th className="px-4 py-3">Rol</th>
                   <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Əməliyyat</th>
+                  {canManageUsers && <th className="px-4 py-3">Əməliyyat</th>}
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -1127,15 +1168,17 @@ function UsersTab({ currentUser }: { currentUser: any }) {
                     <td className="px-4 py-3">
                       <Badge variant={u.is_active ? 'success' : 'secondary'}>{u.is_active ? 'Aktiv' : 'Passiv'}</Badge>
                     </td>
-                    <td className="px-4 py-3 space-x-2">
-                      <Button variant="outline" size="sm" onClick={() => handleEditOpen(u)}>Düzəliş et</Button>
-                      <Button variant="destructive" size="sm" onClick={() => handleDelete(u.id)}>Sil</Button>
-                    </td>
+                    {canManageUsers && (
+                      <td className="px-4 py-3 space-x-2">
+                        <Button variant="outline" size="sm" onClick={() => handleEditOpen(u)}>Düzəliş et</Button>
+                        <Button variant="destructive" size="sm" onClick={() => handleDelete(u.id)}>Sil</Button>
+                      </td>
+                    )}
                   </tr>
                 ))}
                 {users.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="text-center py-4 text-muted-foreground">İstifadəçi tapılmadı.</td>
+                    <td colSpan={canManageUsers ? 5 : 4} className="text-center py-4 text-muted-foreground">İstifadəçi tapılmadı.</td>
                   </tr>
                 )}
               </tbody>
@@ -1145,53 +1188,56 @@ function UsersTab({ currentUser }: { currentUser: any }) {
       </Card>
 
       {/* Edit Dialog */}
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>İşçi Məlumatlarına Düzəliş Et</DialogTitle>
-          </DialogHeader>
-          {editData && (
-            <form onSubmit={handleEditSubmit} className="space-y-4">
-              <div>
-                <Label>Ad</Label>
-                <Input required value={editData.name} onChange={e => setEditData({...editData, name: e.target.value})} />
-              </div>
-              <div>
-                <Label>Soyad</Label>
-                <Input value={editData.last_name} onChange={e => setEditData({...editData, last_name: e.target.value})} />
-              </div>
-              <div>
-                <Label>Rol</Label>
-                <select 
-                  className="mt-2 block w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none focus:border-ring focus:ring-1 focus:ring-ring"
-                  value={editData.role} 
-                  onChange={e => setEditData({...editData, role: e.target.value})}
-                >
-                  <option value="MANAGER">Menecer</option>
-                  <option value="CASHIER">Kassir</option>
-                  <option value="VIEWER">İzləyici</option>
-                </select>
-              </div>
-              <div className="flex items-center space-x-2 pt-2">
-                <input 
-                  type="checkbox" 
-                  id="isActive" 
-                  checked={editData.is_active} 
-                  onChange={e => setEditData({...editData, is_active: e.target.checked})}
-                  className="h-4 w-4 rounded border-gray-300"
-                />
-                <Label htmlFor="isActive">Aktivdir</Label>
-              </div>
-              <div className="flex justify-end pt-4">
-                <Button type="submit" disabled={editing}>
-                  {editing ? 'Yadda Saxlanılır...' : 'Yadda Saxla'}
-                </Button>
-              </div>
-            </form>
-          )}
-        </DialogContent>
-      </Dialog>
+      {canManageUsers && (
+        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>İşçi Məlumatlarına Düzəliş Et</DialogTitle>
+            </DialogHeader>
+            {editData && (
+              <form onSubmit={handleEditSubmit} className="space-y-4">
+                <div>
+                  <Label>Ad</Label>
+                  <Input required value={editData.name} onChange={e => setEditData({...editData, name: e.target.value})} />
+                </div>
+                <div>
+                  <Label>Soyad</Label>
+                  <Input value={editData.last_name} onChange={e => setEditData({...editData, last_name: e.target.value})} />
+                </div>
+                <div>
+                  <Label>Rol</Label>
+                  <select 
+                    className="mt-2 block w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none focus:border-ring focus:ring-1 focus:ring-ring"
+                    value={editData.role} 
+                    onChange={e => setEditData({...editData, role: e.target.value})}
+                  >
+                    <option value="MANAGER">Menecer</option>
+                    <option value="CASHIER">Kassir</option>
+                    <option value="VIEWER">İzləyici</option>
+                  </select>
+                </div>
+                <div className="flex items-center space-x-2 pt-2">
+                  <input 
+                    type="checkbox" 
+                    id="isActive" 
+                    checked={editData.is_active} 
+                    onChange={e => setEditData({...editData, is_active: e.target.checked})}
+                    className="h-4 w-4 rounded border-gray-300"
+                  />
+                  <Label htmlFor="isActive">Aktivdir</Label>
+                </div>
+                <div className="flex justify-end pt-4">
+                  <Button type="submit" disabled={editing}>
+                    {editing ? 'Yadda Saxlanılır...' : 'Yadda Saxla'}
+                  </Button>
+                </div>
+              </form>
+            )}
+          </DialogContent>
+        </Dialog>
+      )}
 
+      {canManageUsers && (
       <Card>
         <CardHeader className="flex flex-col md:flex-row md:items-center justify-between">
           <CardTitle>Rollar və icazələr</CardTitle>
@@ -1228,6 +1274,7 @@ function UsersTab({ currentUser }: { currentUser: any }) {
           ))}
         </CardContent>
       </Card>
+      )}
     </div>
   );
 }
