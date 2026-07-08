@@ -318,7 +318,7 @@ export function Navbar() {
                   )}
                 </div>
                 <Link
-                  href={user?.role === 'super-admin' ? '/super-admin/settings/general' : '/user/settings/profile'}
+                  href={user?.role === 'super-admin' ? '/super-admin/settings/general' : '/user/settings?tab=profile'}
                   className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-primary/10"
                   onClick={() => setIsMenuOpen(false)}
                 >

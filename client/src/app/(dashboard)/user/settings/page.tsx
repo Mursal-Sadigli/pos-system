@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { QrCode, Smartphone, Copy, Check } from 'lucide-react';
 import { PasskeySettings } from '@/components/Security/PasskeySettings';
 import { SessionManagement } from '@/components/Security/SessionManagement';
@@ -1302,9 +1303,18 @@ function UsersTab({ currentUser }: { currentUser: any }) {
   );
 }
 
-export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState('general');
+function SettingsPageContent() {
+  const searchParams = useSearchParams();
+  const initialTab = searchParams.get('tab') || 'general';
+  const [activeTab, setActiveTab] = useState(initialTab);
   const { user } = useAuth();
+  const router = useRouter();
+
+  // Update URL when tab changes to preserve state on reload
+  const handleTabChange = (tabValue: string) => {
+    setActiveTab(tabValue);
+    router.replace(`/user/settings?tab=${tabValue}`, { scroll: false });
+  };
 
   return (
     <div className="space-y-6">
@@ -1320,7 +1330,7 @@ export default function SettingsPage() {
           {tabs.map((tab) => (
             <button
               key={tab.value}
-              onClick={() => setActiveTab(tab.value)}
+              onClick={() => handleTabChange(tab.value)}
               className={`flex w-full items-center justify-between rounded-lg px-4 py-3 text-left text-sm transition ${
                 activeTab === tab.value
                   ? 'bg-primary text-primary-foreground'
@@ -1361,5 +1371,13 @@ export default function SettingsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={<div className="flex items-center justify-center py-12"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" /></div>}>
+      <SettingsPageContent />
+    </Suspense>
   );
 }
