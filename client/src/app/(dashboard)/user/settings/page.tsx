@@ -470,7 +470,7 @@ function SecurityTab() {
           {showSetup && setupSecret && (
             <div className="space-y-4 rounded-lg border p-4 bg-muted/30">
               <div className="space-y-2">
-                <p className="text-sm font-semibold">📱 Addım 1 — Google Authenticator tətbiqini açın</p>
+                <p className="text-sm font-semibold">📱 1-ci addım — Google Authenticator tətbiqini açın</p>
                 <p className="text-sm text-muted-foreground">
                   Tətbiqdə <strong>"+"</strong> → <strong>"Açarı əl ilə daxil et"</strong> seçin və aşağıdakı gizli açarı kopyalayın:
                 </p>
@@ -481,7 +481,7 @@ function SecurityTab() {
               </div>
               <div className="border-t" />
               <div className="space-y-2">
-                <p className="text-sm font-semibold">🔢 Addım 2 — Tətbiqin yaratdığı 6 rəqəmli kodu daxil edin:</p>
+                <p className="text-sm font-semibold">🔢 2-ci addım — Tətbiqin yaratdığı 6 rəqəmli kodu daxil edin:</p>
                 <div className="flex gap-2">
                   <Input
                     id="otp-token"
