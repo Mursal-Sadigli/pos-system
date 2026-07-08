@@ -1061,6 +1061,7 @@ function UsersTab({ currentUser }: { currentUser: any }) {
       name: user.name,
       last_name: user.last_name || '',
       role: user.role,
+      storeId: user.store_id || user.storeId || '',
       is_active: user.is_active
     });
     setEditOpen(true);
@@ -1071,7 +1072,13 @@ function UsersTab({ currentUser }: { currentUser: any }) {
     if (!editData) return;
     try {
       setEditing(true);
-      await userApi.updateUser(editData.id, editData);
+      const payload: any = { ...editData };
+      if (payload.storeId) {
+        payload.store_id = payload.storeId;
+      }
+      delete payload.storeId; // Cleanup the camelCase version
+      
+      await userApi.updateUser(editData.id, payload);
       alert('Məlumatlar yeniləndi!');
       setEditOpen(false);
       fetchUsers();
@@ -1211,11 +1218,27 @@ function UsersTab({ currentUser }: { currentUser: any }) {
                     value={editData.role} 
                     onChange={e => setEditData({...editData, role: e.target.value})}
                   >
+                    {currentUser?.role === 'SUPER_ADMIN' && <option value="ADMIN">Admin</option>}
                     <option value="MANAGER">Menecer</option>
                     <option value="CASHIER">Kassir</option>
                     <option value="VIEWER">İzləyici</option>
                   </select>
                 </div>
+                {currentUser?.role === 'SUPER_ADMIN' && stores.length > 0 && (
+                  <div>
+                    <Label>Mağaza</Label>
+                    <select 
+                      className="mt-2 block w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none focus:border-ring focus:ring-1 focus:ring-ring"
+                      value={editData.storeId} 
+                      onChange={e => setEditData({...editData, storeId: e.target.value})}
+                    >
+                      <option value="">-- Dəyişdirilməsin --</option>
+                      {stores.map(s => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <div className="flex items-center space-x-2 pt-2">
                   <input 
                     type="checkbox" 
