@@ -7,6 +7,14 @@ import type { LoginRequest, LoginResponse } from '@/types/user';
 let baseURL = process.env.NEXT_PUBLIC_SUPER_ADMIN_API ?? '/api';
 let adminBaseURL = process.env.NEXT_PUBLIC_ADMIN_API ?? '/api/admin';
 
+// Vercel-də env yazarkən /api və ya /api/admin əlavə etməyi unutmusunuzsa, avtomatik düzəltsin:
+if (baseURL.startsWith('http') && !baseURL.endsWith('/api')) {
+  baseURL = baseURL.replace(/\/$/, '') + '/api';
+}
+if (adminBaseURL.startsWith('http') && !adminBaseURL.endsWith('/api/admin')) {
+  adminBaseURL = adminBaseURL.replace(/\/$/, '') + '/api/admin';
+}
+
 // Sistem yaddaşında ilişib qalmış ngrok-u bypass etmək üçün lokal təhlükəsizlik
 if (typeof baseURL === 'string' && baseURL.includes('ngrok')) {
   baseURL = 'http://localhost:5002/api';
