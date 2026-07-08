@@ -1,10 +1,19 @@
 import { io, type Socket } from 'socket.io-client';
 
-// Yalnız backend URL-i — frontend port 3000, backend port 5000
-const SOCKET_URL =
-  (typeof process !== 'undefined' &&
-    (process.env.NEXT_PUBLIC_SOCKET_URL || process.env.NEXT_PUBLIC_API_URL)) ||
-  'http://localhost:5001';
+// Socket URL-i Admin API-nin ünvanından (origin) çıxarılır.
+const adminApiUrl = process.env.NEXT_PUBLIC_ADMIN_API || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
+
+// "https://backend.render.com/api" -> "https://backend.render.com"
+const getOrigin = (url: string) => {
+  try {
+    const urlObj = new URL(url.startsWith('http') ? url : `http://${url}`);
+    return urlObj.origin;
+  } catch {
+    return 'http://localhost:5001';
+  }
+};
+
+const SOCKET_URL = process.env.NEXT_PUBLIC_SOCKET_URL || getOrigin(adminApiUrl);
 
 let socket: Socket | null = null;
 
