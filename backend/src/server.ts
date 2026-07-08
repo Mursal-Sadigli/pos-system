@@ -1,11 +1,8 @@
-import app from './app';
-import dotenv from 'dotenv';
-
-dotenv.config();
+import { httpServer } from './socket/index';
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
   console.log('='.repeat(50));
   console.log('🔐 POS System Backend');
   console.log('='.repeat(50));

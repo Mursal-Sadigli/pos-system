@@ -1,20 +1,31 @@
-import { useEffect } from "react";
-import { initSocket, getSocket } from "@/lib/socket";
+import { useEffect, useRef } from 'react';
+import { initSocket } from '@/lib/socket';
 
+/**
+ * Socket hadisəsini dinləyir.
+ * @param event   - Socket event adı
+ * @param callback - Hadisə baş verdikdə çağırılan funksiya
+ */
+export function useSocket(event: string, callback: (...args: any[]) => void) {
+  const callbackRef = useRef(callback);
 
-export function useSocket(event: string, callback: (...args: any[]) => void){
-    useEffect(() => {
-        const socket=initSocket();
-        socket.connect();
+  // Always keep ref up-to-date without re-subscribing
+  useEffect(() => {
+    callbackRef.current = callback;
+  }, [callback]);
 
-        socket.on(event, callback);
+  useEffect(() => {
+    const socket = initSocket();
 
-        return() => {
-            socket.off(event, callback);
-            const current=getSocket();
-            if(current){
-                current.disconnect();
-            }
-        };
-    }, [event, callback]);
+    const handler = (...args: any[]) => {
+      callbackRef.current(...args);
+    };
+
+    socket.on(event, handler);
+
+    return () => {
+      socket.off(event, handler);
+      // Do NOT disconnect here — shared singleton should stay alive
+    };
+  }, [event]);
 }

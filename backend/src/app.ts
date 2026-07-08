@@ -5,7 +5,7 @@ import compression from 'compression';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.routes';
-import productRoutes from './routes/product.routes';
+import notificationRoutes from './routes/notification.routes';
 
 dotenv.config();
 
@@ -13,7 +13,7 @@ const app = express();
 
 // ==================== MIDDLEWARE ====================
 app.use(helmet());
-const allowedOrigins = [
+export const allowedOrigins = [
   'http://localhost:3000',
   'http://127.0.0.1:3000',
   'https://localhost:3000',
@@ -51,7 +51,7 @@ app.use(morgan('dev'));
 
 // ==================== ROUTES ====================
 app.use('/api/auth', authRoutes);
-app.use('/api/products', productRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
