@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { HelpService } from '../services/help.service';
 import { successResponse, errorResponse } from '../utils/response';
+import { query, schemaQualified } from '../config/database';
 
 export class HelpController {
   // GET /api/help/faqs
@@ -27,10 +28,23 @@ export class HelpController {
   // GET /api/help/tickets
   static async getTickets(req: AuthRequest, res: Response) {
     try {
-      if (!req.user || !req.user.storeId) {
+      if (!req.user) {
         return errorResponse(res, 'Authentication required', 401);
       }
-      const tickets = await HelpService.getTickets(req.user.storeId, req.user.id);
+      let storeId = req.user.storeId;
+      if (!storeId) {
+        // SUPER_ADMIN may have no storeId - try to get from DB or use first store
+        const userRow = await query(`SELECT store_id FROM ${schemaQualified}.users WHERE id = $1`, [req.user.id]);
+        storeId = userRow.rows[0]?.store_id;
+        if (!storeId) {
+          const storeRow = await query(`SELECT id FROM ${schemaQualified}.stores LIMIT 1`);
+          storeId = storeRow.rows[0]?.id;
+        }
+      }
+      if (!storeId) {
+        return successResponse(res, [], 'Mağaza tapılmadı');
+      }
+      const tickets = await HelpService.getTickets(storeId, req.user.id);
       return successResponse(res, tickets);
     } catch (error: any) {
       return errorResponse(res, error.message, 500);
@@ -40,16 +54,30 @@ export class HelpController {
   // POST /api/help/tickets
   static async createTicket(req: AuthRequest, res: Response) {
     try {
-      if (!req.user || !req.user.storeId) {
+      if (!req.user) {
         return errorResponse(res, 'Authentication required', 401);
       }
-      
+
       const { subject, message } = req.body;
       if (!subject || !message) {
         return errorResponse(res, 'Mövzu və mesaj mütləqdir', 400);
       }
 
-      const ticket = await HelpService.createTicket(req.user.storeId, req.user.id, subject, message);
+      let storeId = req.user.storeId;
+      if (!storeId) {
+        // SUPER_ADMIN may have no storeId - try to get from DB or use first store
+        const userRow = await query(`SELECT store_id FROM ${schemaQualified}.users WHERE id = $1`, [req.user.id]);
+        storeId = userRow.rows[0]?.store_id;
+        if (!storeId) {
+          const storeRow = await query(`SELECT id FROM ${schemaQualified}.stores LIMIT 1`);
+          storeId = storeRow.rows[0]?.id;
+        }
+      }
+      if (!storeId) {
+        return errorResponse(res, 'Mağaza tapılmadı', 400);
+      }
+
+      const ticket = await HelpService.createTicket(storeId, req.user.id, subject, message);
       return successResponse(res, ticket, 'Müraciətiniz uğurla göndərildi');
     } catch (error: any) {
       return errorResponse(res, error.message, 500);
