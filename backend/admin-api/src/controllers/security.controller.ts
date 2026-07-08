@@ -115,6 +115,25 @@ export class SecurityController {
     }
   }
 
+  static async deletePasskeys(req: AuthRequest, res: Response) {
+    try {
+      if (!req.user) return errorResponse(res, 'Authentication required', 401);
+      await SecurityService.deletePasskeys(req.user.id);
+      
+      await SecurityService.createAuditLog({
+        userId: req.user.id,
+        action: 'passkey_removed',
+        description: 'Biometrik təsdiq (Passkey) deaktiv edildi',
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+
+      return successResponse(res, null, 'Biometrik təsdiq ləğv edildi');
+    } catch (error: any) {
+      return errorResponse(res, error.message, 500);
+    }
+  }
+
   static async generateRegistrationOptions(req: AuthRequest, res: Response) {
     try {
       if (!req.user) return errorResponse(res, 'Authentication required', 401);

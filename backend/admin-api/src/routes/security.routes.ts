@@ -21,6 +21,7 @@ router.get('/audit-logs', SecurityController.getAuditLogs);
 
 // WebAuthn / Passkeys
 router.get('/passkey/status', SecurityController.getPasskeyStatus);
+router.delete('/passkey', SecurityController.deletePasskeys);
 router.get('/passkey/generate-registration-options', SecurityController.generateRegistrationOptions);
 router.post('/passkey/verify-registration', SecurityController.verifyRegistrationResponse);
 router.get('/passkey/generate-authentication-options', SecurityController.generateAuthenticationOptions);

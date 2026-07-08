@@ -141,6 +141,13 @@ export class SecurityService {
     return { hasPasskey: parseInt(res.rows[0].count, 10) > 0 };
   }
 
+  static async deletePasskeys(userId: string) {
+    await query(
+      `DELETE FROM ${schemaQualified}.passkeys WHERE user_id = $1`,
+      [userId]
+    );
+  }
+
   static async generateRegistrationOptions(userId: string, email: string) {
     const userPasskeys = await query(
       `SELECT id, transports FROM ${schemaQualified}.passkeys WHERE user_id = $1`,

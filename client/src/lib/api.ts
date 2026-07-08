@@ -132,6 +132,7 @@ export const userApi = {
   
   // Security - Passkey
   getPasskeyStatus: () => adminApi.get('/security/passkey/status'),
+  removePasskey: () => adminApi.delete('/security/passkey'),
   getPasskeyRegistrationOptions: () => adminApi.get('/security/passkey/generate-registration-options'),
   verifyPasskeyRegistration: (body: any) => adminApi.post('/security/passkey/verify-registration', body),
   getPasskeyAuthenticationOptions: () => adminApi.get('/security/passkey/generate-authentication-options'),

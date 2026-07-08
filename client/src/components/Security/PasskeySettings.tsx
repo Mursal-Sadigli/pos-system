@@ -69,6 +69,22 @@ export function PasskeySettings({ onLogsUpdated, onPasskeyStatusChange }: Passke
     }
   };
 
+  const handleRemovePasskey = async () => {
+    if (!confirm('Biometrik təsdiqi ləğv etmək istədiyinizə əminsiniz?')) return;
+    setIsRegistering(true);
+    try {
+      await userApi.removePasskey();
+      toast.success('Biometrik təsdiq deaktiv edildi');
+      setHasPasskey(false);
+      if (onPasskeyStatusChange) onPasskeyStatusChange(false);
+      if (onLogsUpdated) onLogsUpdated();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Xəta baş verdi');
+    } finally {
+      setIsRegistering(false);
+    }
+  };
+
   if (loading) return null;
 
   return (
@@ -92,8 +108,8 @@ export function PasskeySettings({ onLogsUpdated, onPasskeyStatusChange }: Passke
                 {isRegistering ? 'Gözlənilir...' : 'Əlavə et'}
               </Button>
             ) : (
-              <Button size="sm" onClick={handleRegisterPasskey} disabled={isRegistering} variant="outline">
-                Başqa cihaz əlavə et
+              <Button size="sm" variant="destructive" onClick={handleRemovePasskey} disabled={isRegistering}>
+                Deaktiv et
               </Button>
             )}
           </div>
