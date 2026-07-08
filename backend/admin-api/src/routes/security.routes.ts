@@ -19,4 +19,12 @@ router.post('/revoke-sessions', SecurityController.revokeAllSessions);
 // Audit logs
 router.get('/audit-logs', SecurityController.getAuditLogs);
 
+// WebAuthn / Passkeys
+router.get('/passkey/status', SecurityController.getPasskeyStatus);
+router.get('/passkey/generate-registration-options', SecurityController.generateRegistrationOptions);
+router.post('/passkey/verify-registration', SecurityController.verifyRegistrationResponse);
+router.get('/passkey/generate-authentication-options', SecurityController.generateAuthenticationOptions);
+router.post('/passkey/verify-authentication', SecurityController.verifyAuthenticationResponse);
+router.post('/revoke-sessions-with-passkey', SecurityController.revokeSessionsWithPasskey);
+
 export default router;

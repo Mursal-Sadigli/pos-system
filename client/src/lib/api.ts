@@ -127,7 +127,15 @@ export const userApi = {
   enable2FA: (token: string) => adminApi.post('/security/2fa/enable', { token }),
   disable2FA: (password: string) => adminApi.post('/security/2fa/disable', { password }),
   revokeAllSessions: () => adminApi.post('/security/revoke-sessions'),
+  revokeSessionsWithPasskey: (assertion: any) => adminApi.post('/security/revoke-sessions-with-passkey', { assertion }),
   getAuditLogs: (limit?: number) => adminApi.get('/security/audit-logs', { params: { limit } }),
+  
+  // Security - Passkey
+  getPasskeyStatus: () => adminApi.get('/security/passkey/status'),
+  getPasskeyRegistrationOptions: () => adminApi.get('/security/passkey/generate-registration-options'),
+  verifyPasskeyRegistration: (body: any) => adminApi.post('/security/passkey/verify-registration', body),
+  getPasskeyAuthenticationOptions: () => adminApi.get('/security/passkey/generate-authentication-options'),
+  verifyPasskeyAuthentication: (body: any) => adminApi.post('/security/passkey/verify-authentication', body),
 };
 
 // ==================== PRODUCT API ====================

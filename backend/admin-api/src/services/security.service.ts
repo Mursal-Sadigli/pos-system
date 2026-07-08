@@ -2,6 +2,16 @@ import speakeasy from 'speakeasy';
 import QRCode from 'qrcode';
 import { query, schemaQualified } from '../config/database';
 import { hashPassword, comparePassword } from '../utils/bcrypt';
+import {
+  generateRegistrationOptions,
+  verifyRegistrationResponse,
+  generateAuthenticationOptions,
+  verifyAuthenticationResponse,
+} from '@simplewebauthn/server';
+
+const rpName = 'POS System';
+const rpID = process.env.NODE_ENV === 'production' ? process.env.DOMAIN || 'localhost' : 'localhost';
+const expectedOrigin = process.env.NODE_ENV === 'production' ? `https://${rpID}` : 'http://localhost:3000';
 
 export class SecurityService {
   // ─── 2FA ────────────────────────────────────────────────────────────
@@ -121,4 +131,174 @@ export class SecurityService {
     return result.rows;
   }
 
+  // ─── WebAuthn / Passkeys ──────────────────────────────────────────
+
+  static async getPasskeyStatus(userId: string) {
+    const res = await query(
+      `SELECT COUNT(*) as count FROM ${schemaQualified}.passkeys WHERE user_id = $1`,
+      [userId]
+    );
+    return { hasPasskey: parseInt(res.rows[0].count, 10) > 0 };
+  }
+
+  static async generateRegistrationOptions(userId: string, email: string) {
+    const userPasskeys = await query(
+      `SELECT id, transports FROM ${schemaQualified}.passkeys WHERE user_id = $1`,
+      [userId]
+    );
+
+    const options = await generateRegistrationOptions({
+      rpName,
+      rpID,
+      userID: Buffer.from(userId, 'utf-8'),
+      userName: email,
+      attestationType: 'none',
+      excludeCredentials: userPasskeys.rows.map(passkey => ({
+        id: passkey.id,
+        type: 'public-key',
+        transports: passkey.transports ? JSON.parse(passkey.transports) : undefined,
+      })),
+      authenticatorSelection: {
+        residentKey: 'discouraged',
+        userVerification: 'preferred',
+      },
+    });
+
+    // Save challenge
+    await query(
+      `UPDATE ${schemaQualified}.users SET current_challenge = $1 WHERE id = $2`,
+      [options.challenge, userId]
+    );
+
+    return options;
+  }
+
+  static async verifyRegistrationResponse(userId: string, body: any) {
+    const userRes = await query(
+      `SELECT current_challenge FROM ${schemaQualified}.users WHERE id = $1`,
+      [userId]
+    );
+    const expectedChallenge = userRes.rows[0]?.current_challenge;
+
+    if (!expectedChallenge) {
+      throw new Error('Registration challenge tapılmadı');
+    }
+
+    const verification = await verifyRegistrationResponse({
+      response: body,
+      expectedChallenge,
+      expectedOrigin,
+      expectedRPID: rpID,
+    });
+
+    if (verification.verified && verification.registrationInfo) {
+      const credential = verification.registrationInfo.credential;
+
+      await query(
+        `INSERT INTO ${schemaQualified}.passkeys 
+         (id, user_id, public_key, webauthn_user_id, counter, device_type, backed_up, transports)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        [
+          credential.id,
+          userId,
+          Buffer.from(credential.publicKey), // Store Uint8Array as BYTEA
+          userId, // we used the userId as webauthn_user_id
+          verification.registrationInfo.credential.counter ?? 0,
+          verification.registrationInfo.credentialDeviceType || 'singleDevice',
+          verification.registrationInfo.credentialBackedUp || false,
+          body.response.transports ? JSON.stringify(body.response.transports) : null
+        ]
+      );
+
+      // Clear challenge
+      await query(
+        `UPDATE ${schemaQualified}.users SET current_challenge = NULL WHERE id = $1`,
+        [userId]
+      );
+      return true;
+    }
+    return false;
+  }
+
+  static async generateAuthenticationOptions(userId: string) {
+    const userPasskeys = await query(
+      `SELECT id, transports FROM ${schemaQualified}.passkeys WHERE user_id = $1`,
+      [userId]
+    );
+
+    if (userPasskeys.rows.length === 0) {
+      throw new Error('Heç bir passkey tapılmadı');
+    }
+
+    const options = await generateAuthenticationOptions({
+      rpID,
+      allowCredentials: userPasskeys.rows.map(passkey => ({
+        id: passkey.id,
+        type: 'public-key',
+        transports: passkey.transports ? JSON.parse(passkey.transports) : undefined,
+      })),
+      userVerification: 'preferred',
+    });
+
+    // Save challenge
+    await query(
+      `UPDATE ${schemaQualified}.users SET current_challenge = $1 WHERE id = $2`,
+      [options.challenge, userId]
+    );
+
+    return options;
+  }
+
+  static async verifyAuthenticationResponse(userId: string, body: any) {
+    const userRes = await query(
+      `SELECT current_challenge FROM ${schemaQualified}.users WHERE id = $1`,
+      [userId]
+    );
+    const expectedChallenge = userRes.rows[0]?.current_challenge;
+
+    if (!expectedChallenge) {
+      throw new Error('Authentication challenge tapılmadı');
+    }
+
+    const passkeyRes = await query(
+      `SELECT public_key, counter, transports FROM ${schemaQualified}.passkeys WHERE user_id = $1 AND id = $2`,
+      [userId, body.id]
+    );
+
+    const passkey = passkeyRes.rows[0];
+    if (!passkey) {
+      throw new Error('Passkey tapılmadı');
+    }
+
+    const verification = await verifyAuthenticationResponse({
+      response: body,
+      expectedChallenge,
+      expectedOrigin,
+      expectedRPID: rpID,
+      credential: {
+        id: body.id,
+        publicKey: new Uint8Array(passkey.public_key), // Parse BYTEA to Uint8Array
+        counter: Number(passkey.counter),
+        transports: passkey.transports ? JSON.parse(passkey.transports) : undefined,
+      },
+    });
+
+    if (verification.verified && verification.authenticationInfo) {
+      const { newCounter } = verification.authenticationInfo;
+
+      await query(
+        `UPDATE ${schemaQualified}.passkeys SET counter = $1 WHERE id = $2`,
+        [newCounter, body.id]
+      );
+
+      // Clear challenge
+      await query(
+        `UPDATE ${schemaQualified}.users SET current_challenge = NULL WHERE id = $1`,
+        [userId]
+      );
+
+      return true;
+    }
+    return false;
+  }
 }

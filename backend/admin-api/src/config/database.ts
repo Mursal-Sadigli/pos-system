@@ -74,6 +74,23 @@ export const connectDB = async () => {
     await pool.query(`ALTER TABLE ${schemaQualified}.users ADD COLUMN IF NOT EXISTS two_factor_secret VARCHAR(255)`);
     await pool.query(`ALTER TABLE ${schemaQualified}.users ADD COLUMN IF NOT EXISTS two_factor_enabled BOOLEAN DEFAULT FALSE`);
     await pool.query(`ALTER TABLE ${schemaQualified}.users ADD COLUMN IF NOT EXISTS token_version INTEGER DEFAULT 0`);
+    await pool.query(`ALTER TABLE ${schemaQualified}.users ADD COLUMN IF NOT EXISTS current_challenge VARCHAR(255)`);
+
+    // Passkeys table for WebAuthn
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS ${schemaQualified}.passkeys (
+        id VARCHAR(255) PRIMARY KEY,
+        user_id UUID NOT NULL REFERENCES ${schemaQualified}.users(id) ON DELETE CASCADE,
+        public_key BYTEA NOT NULL,
+        webauthn_user_id VARCHAR(255) NOT NULL,
+        counter BIGINT NOT NULL DEFAULT 0,
+        device_type VARCHAR(50) NOT NULL,
+        backed_up BOOLEAN NOT NULL DEFAULT FALSE,
+        transports VARCHAR(255),
+        created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
     // Audit logs table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS ${schemaQualified}.audit_logs (

@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { QrCode, Smartphone, Copy, Check } from 'lucide-react';
+import { PasskeySettings } from '@/components/Security/PasskeySettings';
+import { SessionManagement } from '@/components/Security/SessionManagement';
 import { storeApi, userApi, authApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -341,8 +344,8 @@ function SecurityTab() {
   const [disablePassword, setDisablePassword] = useState('');
   const [disabling2FA, setDisabling2FA] = useState(false);
 
-  // ── Session ────────────────────────────────────────────────────────
-  const [revokingSession, setRevokingSession] = useState(false);
+  // ── Global Security State ─────────────────────────────────────────
+  const [hasPasskey, setHasPasskey] = useState(false);
 
   // ── Audit log state ───────────────────────────────────────────────
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
@@ -417,21 +420,6 @@ function SecurityTab() {
     }
   };
 
-  // ── Session revoke ────────────────────────────────────────────────────
-  const handleRevokeAllSessions = async () => {
-    if (!confirm('Bütün digər cihaz və brauzerlərinizdəki sessiyalar ləğv ediləcək. Davam etmək istəyirsiniz?')) return;
-    setRevokingSession(true);
-    try {
-      await userApi.revokeAllSessions();
-      toast.success('Bütün sessiyalar ləğv edildi. Digər cihazlar sistemi tərk etdi.');
-      await refreshLogs();
-    } catch {
-      toast.error('Sessiyalar ləğv edilərkən xəta baş verdi');
-    } finally {
-      setRevokingSession(false);
-    }
-  };
-
 
   const ACTION_LABELS: Record<string, string> = {
     login: '🔑 Sistemə giriş',
@@ -439,6 +427,7 @@ function SecurityTab() {
     '2fa_enabled': '🛡️ 2FA aktivləşdirildi',
     '2fa_disabled': '⚠️ 2FA deaktiv edildi',
     sessions_revoked: '🚫 Sessiyalar ləğv edildi',
+    passkey_added: '✅ Passkey əlavə edildi',
   };
 
   if (loading) {
@@ -536,28 +525,19 @@ function SecurityTab() {
           )}
         </CardContent>
       </Card>
-
+      <PasskeySettings 
+        onLogsUpdated={refreshLogs} 
+        onPasskeyStatusChange={setHasPasskey} 
+      />
 
       </div>
 
       <div className="space-y-6">
-      {/* ── Session Management Card ── */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Sessiya İdarəsi</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="rounded-lg border p-4">
-            <p className="font-medium">Bütün sessiyaları ləğv et</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Cari cihazınız xaricindəki bütün aktiv sessiyaları (digər kompüterlər, telefonlar) dərhal bağlayacaq.
-            </p>
-          </div>
-          <Button variant="destructive" onClick={handleRevokeAllSessions} disabled={revokingSession}>
-            {revokingSession ? 'Ləğv edilir...' : '🚫 Bütün sessiyaları bağla'}
-          </Button>
-        </CardContent>
-      </Card>
+      
+      <SessionManagement 
+        hasPasskey={hasPasskey} 
+        onLogsUpdated={refreshLogs} 
+      />
 
       {/* ── Audit Log Card ── */}
       <Card>
