@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -20,9 +20,11 @@ import {
   Pie,
   Cell,
 } from 'recharts';
-import { Printer, Download } from 'lucide-react';
+import { Printer, Download, RefreshCw } from 'lucide-react';
 import { reportsApi } from '@/lib/api';
-import { format, subDays, startOfWeek, startOfMonth, startOfYear } from 'date-fns';
+import { format, startOfWeek, startOfMonth, startOfYear } from 'date-fns';
+import toast from 'react-hot-toast';
+import * as XLSX from 'xlsx';
 
 const reportTabs = [
   { value: 'sales', label: '📊 Satış' },
@@ -30,7 +32,7 @@ const reportTabs = [
 ];
 
 const dateRanges = ['Bugün', 'Həftə', 'Ay', 'İl', 'Custom'];
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+const COLORS = ['#4F46E5', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
 
 export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState('sales');
@@ -44,10 +46,6 @@ export default function ReportsPage() {
   const [chartData, setChartData] = useState([]);
   const [dailyReports, setDailyReports] = useState<any[]>([]);
   const [topProducts, setTopProducts] = useState<any[]>([]);
-
-  useEffect(() => {
-    fetchData();
-  }, [activeRange, fromDate, toDate]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -73,24 +71,39 @@ export default function ReportsPage() {
       
       const [summaryRes, topProductsRes] = await Promise.all([
         reportsApi.getSalesSummary(params),
-        reportsApi.getTopProducts(params)
+        reportsApi.getTopProducts({ ...params, limit: 5 })
       ]);
       
-      setSummary(summaryRes.data.summary);
-      setChartData(summaryRes.data.chartData);
-      setDailyReports(summaryRes.data.dailyReports);
-      setTopProducts(topProductsRes.data);
+      const data = summaryRes.data.data;
+      setSummary(data.summary || { total_sales: 0, total_orders: 0, total_profit: 0 });
+      setChartData(data.chartData || []);
+      setDailyReports(data.dailyReports || []);
+      setTopProducts(topProductsRes.data.data || []);
     } catch (error) {
-      console.error('Failed to fetch reports', error);
+      console.error('Failed to fetch reports:', error);
+      toast.error('Məlumatların yüklənməsində xəta baş verdi');
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    if (activeRange !== 'Custom') {
+      fetchData();
+    }
+  }, [activeRange]);
+
+  const handleCustomSearch = () => {
+    if (!fromDate) {
+      toast.error('Başlanğıc tarixini daxil edin');
+      return;
+    }
+    fetchData();
+  };
+
   const filteredReports = useMemo(() => {
     return dailyReports.filter((row) => {
-      const matchesRegister = register === 'Hamısı' || row.cashier === register;
-      return matchesRegister;
+      return register === 'Hamısı' || row.cashier === register;
     });
   }, [dailyReports, register]);
   
@@ -100,6 +113,29 @@ export default function ReportsPage() {
     value: Number(p.total_qty),
     color: COLORS[index % COLORS.length]
   }));
+
+  const handleExport = () => {
+    try {
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(filteredReports.map(r => ({
+        'Tarix': r.date,
+        'Kassir': r.cashier,
+        'Sifariş Sayı': r.total_orders,
+        'Toplam Satış (₼)': r.total_sales.toFixed(2)
+      })));
+      XLSX.utils.book_append_sheet(wb, ws, 'Gündəlik Satış');
+      XLSX.writeFile(wb, `POS-User-Satis-Hesabati-${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+      toast.success('Excel faylı uğurla yükləndi');
+    } catch (err) {
+      toast.error('İxrac zamanı xəta baş verdi');
+    }
+  };
+
+  // Get unique cashiers for filter dropdown
+  const uniqueCashiers = useMemo(() => {
+    const list = dailyReports.map(r => r.cashier);
+    return ['Hamısı', ...Array.from(new Set(list))];
+  }, [dailyReports]);
 
   return (
     <div className="space-y-6">
@@ -112,24 +148,28 @@ export default function ReportsPage() {
             </p>
           </div>
 
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="gap-2">
-              {reportTabs.map((tab) => (
-                <TabsTrigger key={tab.value} value={tab.value}>
-                  {tab.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={fetchData} disabled={loading}>
+              <RefreshCw className={loading ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} />
+              Yenilə
+            </Button>
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="gap-2">
+                {reportTabs.map((tab) => (
+                  <TabsTrigger key={tab.value} value={tab.value}>
+                    {tab.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+          </div>
         </div>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Filtrlər</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Tarix və kassa üzrə hesabatları daralt.
-          </p>
+          <CardDescription>Tarix və kassa üzrə hesabatları daralt.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
@@ -144,9 +184,9 @@ export default function ReportsPage() {
             ))}
           </div>
 
-          {activeRange === 'Custom' ? (
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
+          {activeRange === 'Custom' && (
+            <div className="flex items-end gap-4 p-4 border rounded-lg bg-muted/40">
+              <div className="grid gap-2">
                 <Label htmlFor="from-date">Başlanğıc</Label>
                 <Input
                   id="from-date"
@@ -155,7 +195,7 @@ export default function ReportsPage() {
                   onChange={(event) => setFromDate(event.target.value)}
                 />
               </div>
-              <div>
+              <div className="grid gap-2">
                 <Label htmlFor="to-date">Son</Label>
                 <Input
                   id="to-date"
@@ -164,21 +204,22 @@ export default function ReportsPage() {
                   onChange={(event) => setToDate(event.target.value)}
                 />
               </div>
+              <Button onClick={handleCustomSearch} disabled={loading}>Araşdır</Button>
             </div>
-          ) : null}
+          )}
 
           <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
             <div>
-              <Label htmlFor="register-select">Kassa</Label>
+              <Label htmlFor="register-select">Kassir / Kassa</Label>
               <select
                 id="register-select"
                 value={register}
                 onChange={(event) => setRegister(event.target.value)}
                 className="mt-2 block w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none focus:border-ring focus:ring-1 focus:ring-ring"
               >
-                <option>Hamısı</option>
-                <option>Kassa 1</option>
-                <option>Kassa 2</option>
+                {uniqueCashiers.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
               </select>
             </div>
           </div>
@@ -282,11 +323,11 @@ export default function ReportsPage() {
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Günlük Kassa Xülasəsi (Daily Summary)</CardTitle>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={() => window.print()}>
                   <Printer className="mr-2 h-4 w-4" />
                   Çap et
                 </Button>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={handleExport}>
                   <Download className="mr-2 h-4 w-4" />
                   Excel yüklə
                 </Button>

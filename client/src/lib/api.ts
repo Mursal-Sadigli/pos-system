@@ -152,9 +152,15 @@ export const customerApi = {
 // ==================== REPORTS API ====================
 export const reportsApi = {
   getSalesSummary: (params?: { startDate?: string; endDate?: string }) => 
-    api.get('/reports/summary', { params }),
-  getTopProducts: (params?: { startDate?: string; endDate?: string }) => 
-    api.get('/reports/top-products', { params }),
+    adminApi.get('/reports/summary', { params }),
+  getTopProducts: (params?: { startDate?: string; endDate?: string; limit?: number }) => 
+    adminApi.get('/reports/top-products', { params }),
+  getByCategory: (params?: { startDate?: string; endDate?: string }) =>
+    adminApi.get('/reports/by-category', { params }),
+  getInventoryReport: () =>
+    adminApi.get('/reports/inventory'),
+  sendReportEmail: (payload: { type: 'sales' | 'inventory'; startDate?: string; endDate?: string }) =>
+    adminApi.post('/reports/send-email', payload),
 };
 
 // ==================== STORE API ====================

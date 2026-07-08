@@ -40,4 +40,13 @@ export class EmailService {
       html,
     });
   }
+
+  static async sendEmail(data: { to: string; subject: string; html: string }) {
+    await transporter.sendMail({
+      from: process.env.EMAIL_FROM,
+      to: data.to,
+      subject: data.subject,
+      html: data.html,
+    });
+  }
 }
