@@ -330,27 +330,52 @@ function NotificationsTab() {
 }
 
 function SecurityTab() {
+  // ── 2FA state ─────────────────────────────────────────────────────
   const [twoFAEnabled, setTwoFAEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [showQR, setShowQR] = useState(false);
-  const [qrData, setQrData] = useState<{ qrCodeUrl: string; secret: string } | null>(null);
+  const [showSetup, setShowSetup] = useState(false);
+  const [setupSecret, setSetupSecret] = useState('');
   const [otpToken, setOtpToken] = useState('');
   const [enabling2FA, setEnabling2FA] = useState(false);
   const [showDisableModal, setShowDisableModal] = useState(false);
   const [disablePassword, setDisablePassword] = useState('');
   const [disabling2FA, setDisabling2FA] = useState(false);
+
+  // ── PIN state ──────────────────────────────────────────────────────
+  const [hasPin, setHasPin] = useState(false);
+  const [showPinSetup, setShowPinSetup] = useState(false);
+  const [newPin, setNewPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
+  const [pinPassword, setPinPassword] = useState('');
+  const [settingPin, setSettingPin] = useState(false);
+  const [showRemovePin, setShowRemovePin] = useState(false);
+  const [removePinPassword, setRemovePinPassword] = useState('');
+  const [removingPin, setRemovingPin] = useState(false);
+
+  // ── Session / PIN confirm for revoke ──────────────────────────────
   const [revokingSession, setRevokingSession] = useState(false);
+  const [showRevokeConfirm, setShowRevokeConfirm] = useState(false);
+  const [revokePin, setRevokePin] = useState('');
+
+  // ── Audit log state ───────────────────────────────────────────────
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [logsLoading, setLogsLoading] = useState(true);
+
+  const refreshLogs = async () => {
+    const logsRes = await userApi.getAuditLogs(20);
+    setAuditLogs(logsRes.data?.data?.logs || []);
+  };
 
   useEffect(() => {
     (async () => {
       try {
-        const [statusRes, logsRes] = await Promise.all([
+        const [statusRes, pinRes, logsRes] = await Promise.all([
           userApi.get2FAStatus(),
+          userApi.getPinStatus(),
           userApi.getAuditLogs(20),
         ]);
         setTwoFAEnabled(statusRes.data?.data?.enabled || false);
+        setHasPin(pinRes.data?.data?.hasPin || false);
         setAuditLogs(logsRes.data?.data?.logs || []);
       } catch {
         // silently ignore
@@ -361,13 +386,14 @@ function SecurityTab() {
     })();
   }, []);
 
+  // ── 2FA handlers ──────────────────────────────────────────────────
   const handleGenerate2FA = async () => {
     try {
       const res = await userApi.generate2FA();
-      setQrData(res.data?.data);
-      setShowQR(true);
+      setSetupSecret(res.data?.data?.secret || '');
+      setShowSetup(true);
     } catch {
-      toast.error('QR kod yaradılarkən xəta baş verdi');
+      toast.error('2FA yaradılarkən xəta baş verdi');
     }
   };
 
@@ -377,12 +403,11 @@ function SecurityTab() {
     try {
       await userApi.enable2FA(otpToken);
       setTwoFAEnabled(true);
-      setShowQR(false);
-      setQrData(null);
+      setShowSetup(false);
+      setSetupSecret('');
       setOtpToken('');
       toast.success('2FA uğurla aktivləşdirildi!');
-      const logsRes = await userApi.getAuditLogs(20);
-      setAuditLogs(logsRes.data?.data?.logs || []);
+      await refreshLogs();
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Kod yanlışdır');
     } finally {
@@ -399,8 +424,7 @@ function SecurityTab() {
       setShowDisableModal(false);
       setDisablePassword('');
       toast.success('2FA deaktiv edildi');
-      const logsRes = await userApi.getAuditLogs(20);
-      setAuditLogs(logsRes.data?.data?.logs || []);
+      await refreshLogs();
     } catch (err: any) {
       toast.error(err?.response?.data?.message || 'Şifrə yanlışdır');
     } finally {
@@ -408,14 +432,71 @@ function SecurityTab() {
     }
   };
 
+  // ── PIN handlers ──────────────────────────────────────────────────
+  const handleSetPin = async () => {
+    if (!/^\d{4,6}$/.test(newPin)) return toast.error('PIN 4-6 rəqəmdən ibarət olmalıdır');
+    if (newPin !== confirmPin) return toast.error('PIN-lər uyğun gəlmir');
+    if (!pinPassword) return toast.error('Cari şifrənizi daxil edin');
+    setSettingPin(true);
+    try {
+      await userApi.setPin(newPin, pinPassword);
+      setHasPin(true);
+      setShowPinSetup(false);
+      setNewPin(''); setConfirmPin(''); setPinPassword('');
+      toast.success('PIN uğurla quruldu!');
+      await refreshLogs();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Xəta baş verdi');
+    } finally {
+      setSettingPin(false);
+    }
+  };
+
+  const handleRemovePin = async () => {
+    if (!removePinPassword) return toast.error('Cari şifrənizi daxil edin');
+    setRemovingPin(true);
+    try {
+      await userApi.removePin(removePinPassword);
+      setHasPin(false);
+      setShowRemovePin(false);
+      setRemovePinPassword('');
+      toast.success('PIN silindi');
+      await refreshLogs();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Şifrə yanlışdır');
+    } finally {
+      setRemovingPin(false);
+    }
+  };
+
+  // ── Session revoke (PIN required if PIN is set) ───────────────────
   const handleRevokeAllSessions = async () => {
+    if (hasPin) {
+      setShowRevokeConfirm(true);
+      return;
+    }
     if (!confirm('Bütün digər cihaz və brauzerlərinizdəki sessiyalar ləğv ediləcək. Davam etmək istəyirsiniz?')) return;
+    await doRevoke();
+  };
+
+  const handleRevokeWithPin = async () => {
+    if (!revokePin) return toast.error('PIN daxil edin');
+    try {
+      await userApi.verifyPin(revokePin);
+    } catch {
+      return toast.error('PIN yanlışdır');
+    }
+    setShowRevokeConfirm(false);
+    setRevokePin('');
+    await doRevoke();
+  };
+
+  const doRevoke = async () => {
     setRevokingSession(true);
     try {
       await userApi.revokeAllSessions();
       toast.success('Bütün sessiyalar ləğv edildi. Digər cihazlar sistemi tərk etdi.');
-      const logsRes = await userApi.getAuditLogs(20);
-      setAuditLogs(logsRes.data?.data?.logs || []);
+      await refreshLogs();
     } catch {
       toast.error('Sessiyalar ləğv edilərkən xəta baş verdi');
     } finally {
@@ -429,6 +510,8 @@ function SecurityTab() {
     '2fa_enabled': '🛡️ 2FA aktivləşdirildi',
     '2fa_disabled': '⚠️ 2FA deaktiv edildi',
     sessions_revoked: '🚫 Sessiyalar ləğv edildi',
+    pin_set: '🔢 PIN quruldu',
+    pin_removed: '❌ PIN silindi',
   };
 
   if (loading) {
@@ -441,7 +524,8 @@ function SecurityTab() {
 
   return (
     <div className="space-y-6">
-      {/* 2FA Card */}
+
+      {/* ── 2FA Card ── */}
       <Card>
         <CardHeader>
           <CardTitle>İki Faktorlu Təsdiqləmə (2FA)</CardTitle>
@@ -449,7 +533,7 @@ function SecurityTab() {
         <CardContent className="space-y-4">
           <div className="flex items-center justify-between rounded-lg border p-4">
             <div>
-              <p className="font-medium">İki faktorlu təsdiq</p>
+              <p className="font-medium">Google Authenticator ilə 2FA</p>
               <p className="text-sm text-muted-foreground">
                 {twoFAEnabled ? '✅ Aktiv — hesabınız qorunur.' : 'Hesab təhlükəsizliyini artırın.'}
               </p>
@@ -465,34 +549,43 @@ function SecurityTab() {
             )}
           </div>
 
-          {/* QR Code setup flow */}
-          {showQR && qrData && (
+          {/* 2FA Setup — no QR, manual secret only */}
+          {showSetup && setupSecret && (
             <div className="space-y-4 rounded-lg border p-4 bg-muted/30">
-              <p className="text-sm font-medium">Google Authenticator tətbiqini açın və QR kodu skan edin:</p>
-              <div className="flex justify-center">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={qrData.qrCodeUrl} alt="2FA QR Code" className="rounded-lg border" width={180} height={180} />
+              <div className="space-y-2">
+                <p className="text-sm font-semibold">📱 Addım 1 — Google Authenticator tətbiqini açın</p>
+                <p className="text-sm text-muted-foreground">
+                  Tətbiqdə <strong>"+"</strong> → <strong>"Açarı əl ilə daxil et"</strong> seçin və aşağıdakı gizli açarı kopyalayın:
+                </p>
+                <div className="rounded-lg border bg-background p-3 text-center">
+                  <p className="font-mono text-sm font-bold tracking-widest select-all break-all">{setupSecret}</p>
+                  <p className="text-xs text-muted-foreground mt-1">(Yalnız Google Authenticator tətbiqinə daxil edilir, bu sahəyə yox)</p>
+                </div>
               </div>
-              <p className="text-xs text-muted-foreground text-center">
-                Skan edə bilmirsinizsə, bu kodu əl ilə daxil edin: <span className="font-mono font-bold">{qrData.secret}</span>
-              </p>
-              <div className="flex gap-2">
-                <Input
-                  id="otp-token"
-                  placeholder="6 rəqəmli kodu daxil edin"
-                  value={otpToken}
-                  onChange={e => setOtpToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  maxLength={6}
-                  className="text-center text-lg tracking-widest"
-                />
-                <Button onClick={handleEnable2FA} disabled={enabling2FA || otpToken.length !== 6}>
-                  {enabling2FA ? 'Yoxlanılır...' : 'Təsdiqlə'}
-                </Button>
+              <div className="border-t" />
+              <div className="space-y-2">
+                <p className="text-sm font-semibold">🔢 Addım 2 — Tətbiqin yaratdığı 6 rəqəmli kodu daxil edin:</p>
+                <div className="flex gap-2">
+                  <Input
+                    id="otp-token"
+                    placeholder="Məs: 123456"
+                    value={otpToken}
+                    onChange={e => setOtpToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    maxLength={6}
+                    className="text-center text-lg tracking-widest"
+                  />
+                  <Button onClick={handleEnable2FA} disabled={enabling2FA || otpToken.length !== 6}>
+                    {enabling2FA ? 'Yoxlanılır...' : 'Təsdiqlə'}
+                  </Button>
+                  <Button variant="outline" onClick={() => { setShowSetup(false); setSetupSecret(''); setOtpToken(''); }}>
+                    Ləğv et
+                  </Button>
+                </div>
               </div>
             </div>
           )}
 
-          {/* Disable 2FA modal */}
+          {/* Disable 2FA */}
           {showDisableModal && (
             <div className="space-y-3 rounded-lg border border-destructive/40 bg-destructive/5 p-4">
               <p className="text-sm font-medium text-destructive">2FA-nı deaktiv etmək üçün şifrənizi daxil edin:</p>
@@ -516,7 +609,111 @@ function SecurityTab() {
         </CardContent>
       </Card>
 
-      {/* Session Management Card */}
+      {/* ── PIN Code Card ── */}
+      <Card>
+        <CardHeader>
+          <CardTitle>🔢 Əməliyyat PIN Kodu</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between rounded-lg border p-4">
+            <div>
+              <p className="font-medium">Sürətli PIN təsdiqi</p>
+              <p className="text-sm text-muted-foreground">
+                {hasPin
+                  ? '✅ PIN qurulub — həssas əməliyyatlarda tələb olunur.'
+                  : '4-6 rəqəmli PIN ilə həssas əməliyyatları (sessiya ləğvi və s.) təsdiqləyin.'}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              {hasPin ? (
+                <>
+                  <Button size="sm" variant="outline" onClick={() => setShowPinSetup(true)}>Dəyiş</Button>
+                  <Button size="sm" variant="destructive" onClick={() => setShowRemovePin(true)}>Sil</Button>
+                </>
+              ) : (
+                <Button size="sm" onClick={() => setShowPinSetup(true)}>PIN Qur</Button>
+              )}
+            </div>
+          </div>
+
+          {/* PIN Setup form */}
+          {showPinSetup && (
+            <div className="space-y-3 rounded-lg border p-4 bg-muted/30">
+              <p className="text-sm font-semibold">{hasPin ? 'PIN-i dəyiş' : 'Yeni PIN qur'}</p>
+              <div className="grid gap-3 md:grid-cols-3">
+                <div>
+                  <Label htmlFor="new-pin">Yeni PIN (4-6 rəqəm)</Label>
+                  <Input
+                    id="new-pin"
+                    type="password"
+                    inputMode="numeric"
+                    placeholder="••••"
+                    value={newPin}
+                    onChange={e => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    maxLength={6}
+                    className="text-center tracking-widest"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="confirm-pin">PIN təkrarı</Label>
+                  <Input
+                    id="confirm-pin"
+                    type="password"
+                    inputMode="numeric"
+                    placeholder="••••"
+                    value={confirmPin}
+                    onChange={e => setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    maxLength={6}
+                    className="text-center tracking-widest"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="pin-password">Cari şifrəniz</Label>
+                  <Input
+                    id="pin-password"
+                    type="password"
+                    placeholder="Şifrə"
+                    value={pinPassword}
+                    onChange={e => setPinPassword(e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={handleSetPin} disabled={settingPin}>
+                  {settingPin ? 'Saxlanılır...' : 'PIN-i Saxla'}
+                </Button>
+                <Button variant="outline" onClick={() => { setShowPinSetup(false); setNewPin(''); setConfirmPin(''); setPinPassword(''); }}>
+                  Ləğv et
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Remove PIN form */}
+          {showRemovePin && (
+            <div className="space-y-3 rounded-lg border border-destructive/40 bg-destructive/5 p-4">
+              <p className="text-sm font-medium text-destructive">PIN-i silmək üçün cari şifrənizi daxil edin:</p>
+              <div className="flex gap-2">
+                <Input
+                  id="remove-pin-password"
+                  type="password"
+                  placeholder="Cari şifrəniz"
+                  value={removePinPassword}
+                  onChange={e => setRemovePinPassword(e.target.value)}
+                />
+                <Button variant="destructive" onClick={handleRemovePin} disabled={removingPin}>
+                  {removingPin ? '...' : 'PIN-i sil'}
+                </Button>
+                <Button variant="outline" onClick={() => { setShowRemovePin(false); setRemovePinPassword(''); }}>
+                  Ləğv et
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── Session Management Card ── */}
       <Card>
         <CardHeader>
           <CardTitle>Sessiya İdarəsi</CardTitle>
@@ -525,20 +722,38 @@ function SecurityTab() {
           <div className="rounded-lg border p-4">
             <p className="font-medium">Bütün sessiyaları ləğv et</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Bu, cari cihazınız xaricindəki bütün aktiv sessiyaları (digər kompüterlər, telefonlar) dərhal bağlayacaq. Hesabınıza icazəsiz giriş olduğunu düşünürsünüzsə bunu istifadə edin.
+              Cari cihazınız xaricindəki bütün aktiv sessiyaları (digər kompüterlər, telefonlar) dərhal bağlayacaq.
+              {hasPin && <span className="font-medium text-foreground"> PIN tələb olunacaq.</span>}
             </p>
           </div>
-          <Button
-            variant="destructive"
-            onClick={handleRevokeAllSessions}
-            disabled={revokingSession}
-          >
+          <Button variant="destructive" onClick={handleRevokeAllSessions} disabled={revokingSession}>
             {revokingSession ? 'Ləğv edilir...' : '🚫 Bütün sessiyaları bağla'}
           </Button>
+
+          {/* PIN confirmation for revoke */}
+          {showRevokeConfirm && (
+            <div className="space-y-3 rounded-lg border border-amber-500/40 bg-amber-50/30 p-4">
+              <p className="text-sm font-semibold">🔢 Bu əməliyyatı təsdiqləmək üçün PIN-inizi daxil edin:</p>
+              <div className="flex gap-2">
+                <Input
+                  id="revoke-pin"
+                  type="password"
+                  inputMode="numeric"
+                  placeholder="PIN"
+                  value={revokePin}
+                  onChange={e => setRevokePin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  maxLength={6}
+                  className="text-center tracking-widest max-w-[140px]"
+                />
+                <Button variant="destructive" onClick={handleRevokeWithPin}>Təsdiqlə</Button>
+                <Button variant="outline" onClick={() => { setShowRevokeConfirm(false); setRevokePin(''); }}>Ləğv et</Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* Audit Log Card */}
+      {/* ── Audit Log Card ── */}
       <Card>
         <CardHeader>
           <CardTitle>Fəaliyyət Tarixçəsi (Audit Log)</CardTitle>
@@ -575,6 +790,8 @@ function SecurityTab() {
     </div>
   );
 }
+
+
 
 function ProfileTab() {
   const [loading, setLoading] = useState(true);
