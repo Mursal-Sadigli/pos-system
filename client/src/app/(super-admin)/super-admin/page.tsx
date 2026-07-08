@@ -44,7 +44,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/useToast';
-import api from '@/lib/api';
+import api, { storeApi } from '@/lib/api';
 
 const roleColors = {
   SUPER_ADMIN: 'bg-red-600',
@@ -92,7 +92,8 @@ export default function SuperAdminUsersPage() {
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserRecord | null>(null);
-  const [editForm, setEditForm] = useState({ name: '', email: '', role: '', status: '' });
+  const [editForm, setEditForm] = useState({ name: '', email: '', role: '', status: '', storeId: '' });
+  const [stores, setStores] = useState<any[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -111,8 +112,12 @@ export default function SuperAdminUsersPage() {
 
       try {
         setLoading(true);
-        const response = await api.get('/users');
-        const payload = response?.data?.data;
+        const [usersRes, storesRes] = await Promise.all([
+          api.get('/users'),
+          storeApi.getStores().catch(() => null)
+        ]);
+
+        const payload = usersRes?.data?.data;
         const rawUsers = Array.isArray(payload)
           ? payload
           : payload?.users ?? payload?.rows ?? payload?.items ?? [];
@@ -120,6 +125,11 @@ export default function SuperAdminUsersPage() {
           ? rawUsers.map((user) => ({ ...user, status: String(user?.status || 'active').toLowerCase() }))
           : [];
         setUsers(normalizedUsers);
+
+        if (storesRes?.data?.data) {
+          const storesData = storesRes.data.data.stores || storesRes.data.data;
+          setStores(Array.isArray(storesData) ? storesData : []);
+        }
       } catch (error) {
         console.error('Failed to load users', error);
         setUsers([]);
@@ -191,6 +201,7 @@ export default function SuperAdminUsersPage() {
       email: user.email,
       role: user.role,
       status: user.status,
+      storeId: user.store_id || user.storeId || '',
     });
     setEditDialogOpen(true);
   };
@@ -198,12 +209,16 @@ export default function SuperAdminUsersPage() {
   const handleSaveEdit = async () => {
     if (!selectedUser) return;
     try {
-      const payload = {
+      const payload: any = {
         name: editForm.name,
         email: editForm.email,
         role: editForm.role,
         status: editForm.status.toLowerCase(),
       };
+      if (editForm.storeId) {
+        payload.store_id = editForm.storeId;
+      }
+      
       const response = await api.put(`/users/${selectedUser.id}`, payload);
       const updatedUser = response?.data?.data;
       setUsers((prev) => prev.map((u) => (u.id === selectedUser.id ? { ...u, ...updatedUser, status: String(updatedUser?.status || u.status || 'active').toLowerCase() } : u)));
@@ -556,6 +571,21 @@ export default function SuperAdminUsersPage() {
                 <option value="suspended">Dayandırılıb</option>
               </select>
             </div>
+            {stores.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Mağaza</label>
+                <select
+                  className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+                  value={editForm.storeId}
+                  onChange={(e) => setEditForm((prev) => ({ ...prev, storeId: e.target.value }))}
+                >
+                  <option value="">-- Dəyişdirilməsin --</option>
+                  {stores.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Ləğv et</Button>
