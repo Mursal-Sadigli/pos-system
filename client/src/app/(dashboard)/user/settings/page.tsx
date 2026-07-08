@@ -338,6 +338,7 @@ function SecurityTab() {
   const [loading, setLoading] = useState(true);
   const [showSetup, setShowSetup] = useState(false);
   const [setupSecret, setSetupSecret] = useState('');
+  const [qrUrl, setQrUrl] = useState('');
   const [otpToken, setOtpToken] = useState('');
   const [enabling2FA, setEnabling2FA] = useState(false);
   const [showDisableModal, setShowDisableModal] = useState(false);
@@ -379,6 +380,7 @@ function SecurityTab() {
     try {
       const res = await userApi.generate2FA();
       setSetupSecret(res.data?.data?.secret || '');
+      setQrUrl(res.data?.data?.qrCodeUrl || '');
       setShowSetup(true);
     } catch {
       toast.error('2FA yaradılarkən xəta baş verdi');
@@ -393,6 +395,7 @@ function SecurityTab() {
       setTwoFAEnabled(true);
       setShowSetup(false);
       setSetupSecret('');
+      setQrUrl('');
       setOtpToken('');
       toast.success('2FA uğurla aktivləşdirildi!');
       await refreshLogs();
@@ -466,18 +469,19 @@ function SecurityTab() {
             )}
           </div>
 
-          {/* 2FA Setup — no QR, manual secret only */}
+          {/* 2FA Setup */}
           {showSetup && setupSecret && (
             <div className="space-y-4 rounded-lg border p-4 bg-muted/30">
               <div className="space-y-2">
                 <p className="text-sm font-semibold">📱 1-ci addım — Google Authenticator tətbiqini açın</p>
                 <p className="text-sm text-muted-foreground">
-                  Tətbiqdə <strong>"+"</strong> → <strong>"Açarı əl ilə daxil et"</strong> seçin və aşağıdakı gizli açarı kopyalayın:
+                  Tətbiqdə <strong>"+"</strong> düyməsinə basın və <strong>"QR kodu skan et"</strong> seçərək aşağıdakı kodu oxudun:
                 </p>
-                <div className="rounded-lg border bg-background p-3 text-center">
-                  <p className="font-mono text-sm font-bold tracking-widest select-all break-all">{setupSecret}</p>
-                  <p className="text-xs text-muted-foreground mt-1">(Yalnız Google Authenticator tətbiqinə daxil edilir, bu sahəyə yox)</p>
-                </div>
+                {qrUrl && (
+                  <div className="flex justify-center p-4 bg-white rounded-xl border max-w-fit mx-auto">
+                    <img src={qrUrl} alt="2FA QR Code" className="w-40 h-40 object-contain" />
+                  </div>
+                )}
               </div>
               <div className="border-t" />
               <div className="space-y-2">
@@ -494,7 +498,7 @@ function SecurityTab() {
                   <Button onClick={handleEnable2FA} disabled={enabling2FA || otpToken.length !== 6}>
                     {enabling2FA ? 'Yoxlanılır...' : 'Təsdiqlə'}
                   </Button>
-                  <Button variant="outline" onClick={() => { setShowSetup(false); setSetupSecret(''); setOtpToken(''); }}>
+                  <Button variant="outline" onClick={() => { setShowSetup(false); setSetupSecret(''); setQrUrl(''); setOtpToken(''); }}>
                     Ləğv et
                   </Button>
                 </div>
