@@ -4,7 +4,7 @@ import { io, type Socket } from 'socket.io-client';
 const SOCKET_URL =
   (typeof process !== 'undefined' &&
     (process.env.NEXT_PUBLIC_SOCKET_URL || process.env.NEXT_PUBLIC_API_URL)) ||
-  'http://localhost:5000';
+  'http://localhost:5001';
 
 let socket: Socket | null = null;
 
