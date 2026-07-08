@@ -46,7 +46,14 @@ export class HelpService {
       version: process.env.npm_package_version || '2.1.4',
       status: 'Əla',
       uptime: `${days} gün, ${hours} saat, ${minutes} dəqiqə`,
-      lastUpdate: new Date().toLocaleDateString('az-AZ'),
+      lastUpdate: new Date().toLocaleString('az-AZ', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      }),
       releaseNotes: [
         'Dinamik Yardım və Dəstək Mərkəzi əlavə edildi',
         'Təhlükəsizlik və Log sistemi optimallaşdırıldı',
