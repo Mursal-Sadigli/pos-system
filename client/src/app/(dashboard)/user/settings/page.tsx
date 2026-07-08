@@ -341,21 +341,8 @@ function SecurityTab() {
   const [disablePassword, setDisablePassword] = useState('');
   const [disabling2FA, setDisabling2FA] = useState(false);
 
-  // ── PIN state ──────────────────────────────────────────────────────
-  const [hasPin, setHasPin] = useState(false);
-  const [showPinSetup, setShowPinSetup] = useState(false);
-  const [newPin, setNewPin] = useState('');
-  const [confirmPin, setConfirmPin] = useState('');
-  const [pinPassword, setPinPassword] = useState('');
-  const [settingPin, setSettingPin] = useState(false);
-  const [showRemovePin, setShowRemovePin] = useState(false);
-  const [removePinPassword, setRemovePinPassword] = useState('');
-  const [removingPin, setRemovingPin] = useState(false);
-
-  // ── Session / PIN confirm for revoke ──────────────────────────────
+  // ── Session ────────────────────────────────────────────────────────
   const [revokingSession, setRevokingSession] = useState(false);
-  const [showRevokeConfirm, setShowRevokeConfirm] = useState(false);
-  const [revokePin, setRevokePin] = useState('');
 
   // ── Audit log state ───────────────────────────────────────────────
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
@@ -369,13 +356,11 @@ function SecurityTab() {
   useEffect(() => {
     (async () => {
       try {
-        const [statusRes, pinRes, logsRes] = await Promise.all([
+        const [statusRes, logsRes] = await Promise.all([
           userApi.get2FAStatus(),
-          userApi.getPinStatus(),
           userApi.getAuditLogs(20),
         ]);
         setTwoFAEnabled(statusRes.data?.data?.enabled || false);
-        setHasPin(pinRes.data?.data?.hasPin || false);
         setAuditLogs(logsRes.data?.data?.logs || []);
       } catch {
         // silently ignore
@@ -432,66 +417,9 @@ function SecurityTab() {
     }
   };
 
-  // ── PIN handlers ──────────────────────────────────────────────────
-  const handleSetPin = async () => {
-    if (!/^\d{4,6}$/.test(newPin)) return toast.error('PIN 4-6 rəqəmdən ibarət olmalıdır');
-    if (newPin !== confirmPin) return toast.error('PIN-lər uyğun gəlmir');
-    if (!pinPassword) return toast.error('Cari şifrənizi daxil edin');
-    setSettingPin(true);
-    try {
-      await userApi.setPin(newPin, pinPassword);
-      setHasPin(true);
-      setShowPinSetup(false);
-      setNewPin(''); setConfirmPin(''); setPinPassword('');
-      toast.success('PIN uğurla quruldu!');
-      await refreshLogs();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Xəta baş verdi');
-    } finally {
-      setSettingPin(false);
-    }
-  };
-
-  const handleRemovePin = async () => {
-    if (!removePinPassword) return toast.error('Cari şifrənizi daxil edin');
-    setRemovingPin(true);
-    try {
-      await userApi.removePin(removePinPassword);
-      setHasPin(false);
-      setShowRemovePin(false);
-      setRemovePinPassword('');
-      toast.success('PIN silindi');
-      await refreshLogs();
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Şifrə yanlışdır');
-    } finally {
-      setRemovingPin(false);
-    }
-  };
-
-  // ── Session revoke (PIN required if PIN is set) ───────────────────
+  // ── Session revoke ────────────────────────────────────────────────────
   const handleRevokeAllSessions = async () => {
-    if (hasPin) {
-      setShowRevokeConfirm(true);
-      return;
-    }
     if (!confirm('Bütün digər cihaz və brauzerlərinizdəki sessiyalar ləğv ediləcək. Davam etmək istəyirsiniz?')) return;
-    await doRevoke();
-  };
-
-  const handleRevokeWithPin = async () => {
-    if (!revokePin) return toast.error('PIN daxil edin');
-    try {
-      await userApi.verifyPin(revokePin);
-    } catch {
-      return toast.error('PIN yanlışdır');
-    }
-    setShowRevokeConfirm(false);
-    setRevokePin('');
-    await doRevoke();
-  };
-
-  const doRevoke = async () => {
     setRevokingSession(true);
     try {
       await userApi.revokeAllSessions();
@@ -504,14 +432,13 @@ function SecurityTab() {
     }
   };
 
+
   const ACTION_LABELS: Record<string, string> = {
     login: '🔑 Sistemə giriş',
     password_changed: '🔒 Şifrə dəyişdirildi',
     '2fa_enabled': '🛡️ 2FA aktivləşdirildi',
     '2fa_disabled': '⚠️ 2FA deaktiv edildi',
     sessions_revoked: '🚫 Sessiyalar ləğv edildi',
-    pin_set: '🔢 PIN quruldu',
-    pin_removed: '❌ PIN silindi',
   };
 
   if (loading) {
@@ -610,109 +537,6 @@ function SecurityTab() {
         </CardContent>
       </Card>
 
-      {/* ── PIN Code Card ── */}
-      <Card>
-        <CardHeader>
-          <CardTitle>🔢 Əməliyyat PIN Kodu</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <div>
-              <p className="font-medium">Sürətli PIN təsdiqi</p>
-              <p className="text-sm text-muted-foreground">
-                {hasPin
-                  ? '✅ PIN qurulub — həssas əməliyyatlarda tələb olunur.'
-                  : '4-6 rəqəmli PIN ilə həssas əməliyyatları (sessiya ləğvi və s.) təsdiqləyin.'}
-              </p>
-            </div>
-            <div className="flex gap-2">
-              {hasPin ? (
-                <>
-                  <Button size="sm" variant="outline" onClick={() => setShowPinSetup(true)}>Dəyiş</Button>
-                  <Button size="sm" variant="destructive" onClick={() => setShowRemovePin(true)}>Sil</Button>
-                </>
-              ) : (
-                <Button size="sm" onClick={() => setShowPinSetup(true)}>PIN Qur</Button>
-              )}
-            </div>
-          </div>
-
-          {/* PIN Setup form */}
-          {showPinSetup && (
-            <div className="space-y-3 rounded-lg border p-4 bg-muted/30">
-              <p className="text-sm font-semibold">{hasPin ? 'PIN-i dəyiş' : 'Yeni PIN qur'}</p>
-              <div className="grid gap-3 md:grid-cols-3">
-                <div>
-                  <Label htmlFor="new-pin">Yeni PIN (4-6 rəqəm)</Label>
-                  <Input
-                    id="new-pin"
-                    type="password"
-                    inputMode="numeric"
-                    placeholder="••••"
-                    value={newPin}
-                    onChange={e => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    maxLength={6}
-                    className="text-center tracking-widest"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="confirm-pin">PIN təkrarı</Label>
-                  <Input
-                    id="confirm-pin"
-                    type="password"
-                    inputMode="numeric"
-                    placeholder="••••"
-                    value={confirmPin}
-                    onChange={e => setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    maxLength={6}
-                    className="text-center tracking-widest"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="pin-password">Cari şifrəniz</Label>
-                  <Input
-                    id="pin-password"
-                    type="password"
-                    placeholder="Şifrə"
-                    value={pinPassword}
-                    onChange={e => setPinPassword(e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <Button onClick={handleSetPin} disabled={settingPin}>
-                  {settingPin ? 'Saxlanılır...' : 'PIN-i Saxla'}
-                </Button>
-                <Button variant="outline" onClick={() => { setShowPinSetup(false); setNewPin(''); setConfirmPin(''); setPinPassword(''); }}>
-                  Ləğv et
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* Remove PIN form */}
-          {showRemovePin && (
-            <div className="space-y-3 rounded-lg border border-destructive/40 bg-destructive/5 p-4">
-              <p className="text-sm font-medium text-destructive">PIN-i silmək üçün cari şifrənizi daxil edin:</p>
-              <div className="flex gap-2">
-                <Input
-                  id="remove-pin-password"
-                  type="password"
-                  placeholder="Cari şifrəniz"
-                  value={removePinPassword}
-                  onChange={e => setRemovePinPassword(e.target.value)}
-                />
-                <Button variant="destructive" onClick={handleRemovePin} disabled={removingPin}>
-                  {removingPin ? '...' : 'PIN-i sil'}
-                </Button>
-                <Button variant="outline" onClick={() => { setShowRemovePin(false); setRemovePinPassword(''); }}>
-                  Ləğv et
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       </div>
 
@@ -727,33 +551,11 @@ function SecurityTab() {
             <p className="font-medium">Bütün sessiyaları ləğv et</p>
             <p className="text-sm text-muted-foreground mt-1">
               Cari cihazınız xaricindəki bütün aktiv sessiyaları (digər kompüterlər, telefonlar) dərhal bağlayacaq.
-              {hasPin && <span className="font-medium text-foreground"> PIN tələb olunacaq.</span>}
             </p>
           </div>
           <Button variant="destructive" onClick={handleRevokeAllSessions} disabled={revokingSession}>
             {revokingSession ? 'Ləğv edilir...' : '🚫 Bütün sessiyaları bağla'}
           </Button>
-
-          {/* PIN confirmation for revoke */}
-          {showRevokeConfirm && (
-            <div className="space-y-3 rounded-lg border border-amber-500/40 bg-amber-50/30 p-4">
-              <p className="text-sm font-semibold">🔢 Bu əməliyyatı təsdiqləmək üçün PIN-inizi daxil edin:</p>
-              <div className="flex gap-2">
-                <Input
-                  id="revoke-pin"
-                  type="password"
-                  inputMode="numeric"
-                  placeholder="PIN"
-                  value={revokePin}
-                  onChange={e => setRevokePin(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                  maxLength={6}
-                  className="text-center tracking-widest max-w-[140px]"
-                />
-                <Button variant="destructive" onClick={handleRevokeWithPin}>Təsdiqlə</Button>
-                <Button variant="outline" onClick={() => { setShowRevokeConfirm(false); setRevokePin(''); }}>Ləğv et</Button>
-              </div>
-            </div>
-          )}
         </CardContent>
       </Card>
 

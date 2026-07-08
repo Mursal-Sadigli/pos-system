@@ -74,7 +74,6 @@ export const connectDB = async () => {
     await pool.query(`ALTER TABLE ${schemaQualified}.users ADD COLUMN IF NOT EXISTS two_factor_secret VARCHAR(255)`);
     await pool.query(`ALTER TABLE ${schemaQualified}.users ADD COLUMN IF NOT EXISTS two_factor_enabled BOOLEAN DEFAULT FALSE`);
     await pool.query(`ALTER TABLE ${schemaQualified}.users ADD COLUMN IF NOT EXISTS token_version INTEGER DEFAULT 0`);
-    await pool.query(`ALTER TABLE ${schemaQualified}.users ADD COLUMN IF NOT EXISTS pin_code VARCHAR(255)`);
     // Audit logs table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS ${schemaQualified}.audit_logs (

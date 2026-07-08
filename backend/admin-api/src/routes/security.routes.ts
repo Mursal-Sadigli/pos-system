@@ -19,10 +19,4 @@ router.post('/revoke-sessions', SecurityController.revokeAllSessions);
 // Audit logs
 router.get('/audit-logs', SecurityController.getAuditLogs);
 
-// PIN
-router.get('/pin/status', SecurityController.getPinStatus);
-router.post('/pin/set', SecurityController.setPin);
-router.post('/pin/verify', SecurityController.verifyPin);
-router.delete('/pin', SecurityController.removePin);
-
 export default router;

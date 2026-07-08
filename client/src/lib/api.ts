@@ -128,11 +128,6 @@ export const userApi = {
   disable2FA: (password: string) => adminApi.post('/security/2fa/disable', { password }),
   revokeAllSessions: () => adminApi.post('/security/revoke-sessions'),
   getAuditLogs: (limit?: number) => adminApi.get('/security/audit-logs', { params: { limit } }),
-  // Security - PIN
-  getPinStatus: () => adminApi.get('/security/pin/status'),
-  setPin: (pin: string, currentPassword: string) => adminApi.post('/security/pin/set', { pin, currentPassword }),
-  verifyPin: (pin: string) => adminApi.post('/security/pin/verify', { pin }),
-  removePin: (currentPassword: string) => adminApi.delete('/security/pin', { data: { currentPassword } }),
 };
 
 // ==================== PRODUCT API ====================

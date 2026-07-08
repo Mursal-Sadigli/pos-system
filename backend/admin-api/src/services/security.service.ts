@@ -121,44 +121,4 @@ export class SecurityService {
     return result.rows;
   }
 
-  // ─── PIN Code ────────────────────────────────────────────────────────
-  static async getPinStatus(userId: string) {
-    const result = await query(
-      `SELECT pin_code IS NOT NULL AS has_pin FROM ${schemaQualified}.users WHERE id = $1`,
-      [userId]
-    );
-    return { hasPin: result.rows[0]?.has_pin || false };
-  }
-
-  static async setPin(userId: string, pin: string, currentPassword: string): Promise<void> {
-    if (!/^\d{4,6}$/.test(pin)) throw new Error('PIN 4-6 rəqəmdən ibarət olmalıdır.');
-
-    // Verify current password first
-    const res = await query(`SELECT password FROM ${schemaQualified}.users WHERE id = $1`, [userId]);
-    const valid = await comparePassword(currentPassword, res.rows[0]?.password || '');
-    if (!valid) throw new Error('Cari şifrə yanlışdır.');
-
-    const hashed = await hashPassword(pin);
-    await query(
-      `UPDATE ${schemaQualified}.users SET pin_code = $1 WHERE id = $2`,
-      [hashed, userId]
-    );
-  }
-
-  static async verifyPin(userId: string, pin: string): Promise<boolean> {
-    const res = await query(
-      `SELECT pin_code FROM ${schemaQualified}.users WHERE id = $1`,
-      [userId]
-    );
-    const stored = res.rows[0]?.pin_code;
-    if (!stored) throw new Error('PIN qurulmayıb.');
-    return comparePassword(pin, stored);
-  }
-
-  static async removePin(userId: string, currentPassword: string): Promise<void> {
-    const res = await query(`SELECT password FROM ${schemaQualified}.users WHERE id = $1`, [userId]);
-    const valid = await comparePassword(currentPassword, res.rows[0]?.password || '');
-    if (!valid) throw new Error('Cari şifrə yanlışdır.');
-    await query(`UPDATE ${schemaQualified}.users SET pin_code = NULL WHERE id = $1`, [userId]);
-  }
 }
