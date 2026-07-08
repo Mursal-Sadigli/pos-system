@@ -17,8 +17,6 @@ const tabs = [
   { value: 'general', label: '🏠 Ümumi' },
   { value: 'profile', label: '👤 Profil' },
   { value: 'users', label: '👥 İstifadəçilər' },
-  { value: 'store', label: '🏪 Mağaza' },
-  { value: 'payment', label: '💳 Ödəniş' },
   { value: 'notifications', label: '🔔 Bildirişlər' },
   { value: 'reports', label: '📊 Hesabatlar' },
   { value: 'security', label: '🔒 Təhlükəsizlik' },
@@ -176,7 +174,10 @@ function GeneralTab() {
     manager_name: '',
     work_start: '',
     work_end: '',
-    work_days: [] as string[]
+    work_days: [] as string[],
+    currency: 'AZN',
+    language: 'az',
+    tax_rate: 0
   });
 
   useEffect(() => {
@@ -199,7 +200,10 @@ function GeneralTab() {
           manager_name: store.manager_name || '',
           work_start: store.work_start || '',
           work_end: store.work_end || '',
-          work_days: store.work_days ? (typeof store.work_days === 'string' ? JSON.parse(store.work_days) : store.work_days) : ['Bazar ertəsi - Cümə']
+          work_days: store.work_days ? (typeof store.work_days === 'string' ? JSON.parse(store.work_days) : store.work_days) : ['Bazar ertəsi - Cümə'],
+          currency: store.currency || 'AZN',
+          language: store.language || 'az',
+          tax_rate: store.tax_rate !== undefined && store.tax_rate !== null ? Number(store.tax_rate) : 0
         });
       }
     } catch (error) {
@@ -255,6 +259,36 @@ function GeneralTab() {
           <div>
             <Label htmlFor="store-phone">Telefon</Label>
             <Input id="store-phone" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="+994 50 123 45 67" />
+          </div>
+          <div>
+            <Label htmlFor="currency">Valyuta</Label>
+            <select
+              id="currency"
+              value={formData.currency}
+              onChange={e => setFormData({...formData, currency: e.target.value})}
+              className="mt-2 block w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none focus:border-ring focus:ring-1 focus:ring-ring"
+            >
+              <option value="AZN">AZN</option>
+              <option value="USD">USD</option>
+              <option value="EUR">EUR</option>
+            </select>
+          </div>
+          <div>
+            <Label htmlFor="language">Dil</Label>
+            <select
+              id="language"
+              value={formData.language}
+              onChange={e => setFormData({...formData, language: e.target.value})}
+              className="mt-2 block w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none focus:border-ring focus:ring-1 focus:ring-ring"
+            >
+              <option value="az">Azərbaycanca</option>
+              <option value="en">English</option>
+              <option value="ru">Русский</option>
+            </select>
+          </div>
+          <div>
+            <Label htmlFor="tax-rate">Vergi faizi (%)</Label>
+            <Input id="tax-rate" type="number" step="0.01" value={formData.tax_rate} onChange={e => setFormData({...formData, tax_rate: parseFloat(e.target.value) || 0})} placeholder="18" />
           </div>
         </CardContent>
       </Card>
@@ -679,93 +713,7 @@ export default function SettingsPage() {
             <UsersTab currentUser={user} />
           )}
 
-          {activeTab === 'store' && (
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Mağaza parametrləri</CardTitle>
-                </CardHeader>
-                <CardContent className="grid gap-4 md:grid-cols-2">
-                  <div>
-                    <Label htmlFor="currency">Valyuta</Label>
-                    <select
-                      id="currency"
-                      className="mt-2 block w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none focus:border-ring focus:ring-1 focus:ring-ring"
-                    >
-                      <option>AZN</option>
-                      <option>USD</option>
-                      <option>EUR</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label htmlFor="tax-rate">Vergi faizi</Label>
-                    <Input id="tax-rate" placeholder="18%" />
-                  </div>
-                </CardContent>
-              </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Valyuta ayarları</CardTitle>
-                </CardHeader>
-                <CardContent className="grid gap-4 md:grid-cols-2">
-                  <div>
-                    <Label htmlFor="decimal-separator">Ondalıq ayırıcısı</Label>
-                    <Input id="decimal-separator" placeholder="." />
-                  </div>
-                  <div>
-                    <Label htmlFor="thousands-separator">Minlik ayırıcısı</Label>
-                    <Input id="thousands-separator" placeholder="," />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-
-          {activeTab === 'payment' && (
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Stripe ayarları</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="stripe-key">API açarı</Label>
-                    <Input id="stripe-key" placeholder="sk_test_..." />
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg border p-4">
-                    <div>
-                      <p className="font-medium">Aktivasiya</p>
-                      <p className="text-sm text-muted-foreground">Stripe ödəniş sistemi aktiv olsun.</p>
-                    </div>
-                    <Switch id="stripe-status" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Ödəniş üsulları</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div className="flex items-center justify-between rounded-lg border p-4">
-                    <div>
-                      <p className="font-medium">Nağd</p>
-                      <p className="text-sm text-muted-foreground">Kassa üçün nağd ödəniş.</p>
-                    </div>
-                    <Switch id="cash-payment" />
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg border p-4">
-                    <div>
-                      <p className="font-medium">Kart</p>
-                      <p className="text-sm text-muted-foreground">POS terminalı ilə ödəniş.</p>
-                    </div>
-                    <Switch id="card-payment" />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
 
           {activeTab === 'notifications' && (
             <div className="space-y-6">

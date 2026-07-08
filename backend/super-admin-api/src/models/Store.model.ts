@@ -11,6 +11,7 @@ export interface Store {
   timezone: string;
   currency: string;
   language: string;
+  tax_rate: number | null;
   business_type: string | null;
   website: string | null;
   store_code: string | null;
@@ -35,6 +36,7 @@ export interface CreateStoreData {
   timezone?: string;
   currency?: string;
   language?: string;
+  tax_rate?: number;
   business_type?: string;
   website?: string;
   store_code?: string;
@@ -160,6 +162,7 @@ export class StoreModel {
       timezone: 'timezone',
       currency: 'currency',
       language: 'language',
+      tax_rate: 'tax_rate',
       business_type: 'business_type',
       website: 'website',
       store_code: 'store_code',

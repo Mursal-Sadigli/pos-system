@@ -13,12 +13,19 @@ export const dbSchema = (() => {
 
 export const schemaQualified = `"${dbSchema.replace(/"/g, '""')}"`;
 
+// Remove ?schema=... from connectionString for Neon compatibility
+const cleanConnectionString = (url: string) => url.replace(/[?&]schema=[^&]*/g, '').replace(/[?&]$/, '');
+
+const rawUrl = process.env.DATABASE_URL || '';
+const isNeon = rawUrl.includes('neon.tech');
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: cleanConnectionString(rawUrl),
   max: parseInt(process.env.DB_POOL_MAX || '10', 10),
   min: parseInt(process.env.DB_POOL_MIN || '2', 10),
   idleTimeoutMillis: parseInt(process.env.DB_IDLE_TIMEOUT || '30000', 10),
-  connectionTimeoutMillis: parseInt(process.env.DB_CONNECTION_TIMEOUT || '2000', 10),
+  connectionTimeoutMillis: parseInt(process.env.DB_CONNECTION_TIMEOUT || '10000', 10),
+  ssl: isNeon ? { rejectUnauthorized: false } : undefined,
 });
 
 pool.on('connect', () => logger.info('🗄️  Admin API database connected'));
@@ -50,8 +57,14 @@ export const connectDB = async () => {
     await pool.query('SELECT 1');
     await pool.query(`ALTER TABLE ${schemaQualified}.users ADD COLUMN IF NOT EXISTS last_name VARCHAR(255)`);
     await pool.query(`ALTER TABLE ${schemaQualified}.users ADD COLUMN IF NOT EXISTS phone VARCHAR(50)`);
+    await pool.query(`ALTER TABLE ${schemaQualified}.stores ADD COLUMN IF NOT EXISTS role_permissions JSONB DEFAULT '{"MANAGER": ["sales_view", "inventory_manage", "store_settings"], "CASHIER": ["pos_access", "sales_view_own"], "VIEWER": ["sales_view", "inventory_view"]}'::jsonb`);
+    await pool.query(`ALTER TABLE ${schemaQualified}.stores ADD COLUMN IF NOT EXISTS tax_rate DECIMAL(5,2) DEFAULT 0`);
     logger.info('✅ Admin API database connection successful');
-  } catch (error) {
+  } catch (error: any) {
+    if (error?.code === '42501' || error?.message?.includes('permission denied')) {
+      logger.warn('⚠️ Could not alter stores table - missing permission. Continuing...');
+      return;
+    }
     logger.error('❌ Admin API database connection failed', error);
     throw error;
   }

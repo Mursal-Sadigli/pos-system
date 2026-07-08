@@ -1,0 +1,4 @@
+- [x] Add `tax_rate` column to `public.stores` in both `admin-api` and `super-admin-api` database configs
+- [x] Add `tax_rate` field mapping and interface definition to `Store.model.ts` in both `admin-api` and `super-admin-api`
+- [x] Modify frontend settings `page.tsx` to remove "Ödəniş" and "Mağaza" tabs, and add Currency, Language, and Tax Rate to the "Ümumi" tab.
+- [x] Verify the changes by running the servers and checking store update calls.
