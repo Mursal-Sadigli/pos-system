@@ -59,6 +59,17 @@ export const connectDB = async () => {
     await pool.query(`ALTER TABLE ${schemaQualified}.users ADD COLUMN IF NOT EXISTS phone VARCHAR(50)`);
     await pool.query(`ALTER TABLE ${schemaQualified}.stores ADD COLUMN IF NOT EXISTS role_permissions JSONB DEFAULT '{"MANAGER": ["sales_view", "inventory_manage", "store_settings"], "CASHIER": ["pos_access", "sales_view_own"], "VIEWER": ["sales_view", "inventory_view"]}'::jsonb`);
     await pool.query(`ALTER TABLE ${schemaQualified}.stores ADD COLUMN IF NOT EXISTS tax_rate DECIMAL(5,2) DEFAULT 0`);
+    // Notification preferences table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS ${schemaQualified}.notification_preferences (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL UNIQUE,
+        preferences JSONB NOT NULL DEFAULT '{}',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES ${schemaQualified}.users(id) ON DELETE CASCADE
+      )
+    `);
     logger.info('✅ Admin API database connection successful');
   } catch (error: any) {
     if (error?.code === '42501' || error?.message?.includes('permission denied')) {
@@ -69,5 +80,6 @@ export const connectDB = async () => {
     throw error;
   }
 };
+
 
 export default { query, connectDB };

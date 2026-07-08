@@ -119,6 +119,8 @@ export const userApi = {
   getProfile: () => adminApi.get('/users/profile'),
   updateProfile: (payload: any) => adminApi.put('/users/profile', payload),
   updatePassword: (payload: any) => adminApi.put('/users/profile/password', payload),
+  getNotifPrefs: () => adminApi.get('/notifications/preferences'),
+  updateNotifPrefs: (prefs: any) => adminApi.put('/notifications/preferences', prefs),
 };
 
 // ==================== PRODUCT API ====================

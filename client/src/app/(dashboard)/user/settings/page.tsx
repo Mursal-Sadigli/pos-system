@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { storeApi, userApi, authApi } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,9 +9,9 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/useAuth';
+import toast from 'react-hot-toast';
 
 const tabs = [
   { value: 'general', label: '🏠 Ümumi' },
@@ -21,6 +21,180 @@ const tabs = [
   { value: 'reports', label: '📊 Hesabatlar' },
   { value: 'security', label: '🔒 Təhlükəsizlik' },
 ];
+
+// ─── Notification Preferences Tab ────────────────────────────────────────────
+type NotifPrefs = {
+  email: { new_order: boolean; daily_report: boolean };
+  sms: { updates: boolean; payment_reminder: boolean };
+  push: { new_message: boolean; account_activity: boolean };
+};
+
+const DEFAULT_PREFS: NotifPrefs = {
+  email: { new_order: false, daily_report: false },
+  sms: { updates: false, payment_reminder: false },
+  push: { new_message: false, account_activity: false },
+};
+
+function NotificationsTab() {
+  const [prefs, setPrefs] = useState<NotifPrefs>(DEFAULT_PREFS);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading(true);
+        const res = await userApi.getNotifPrefs();
+        const data = res.data?.data;
+        if (data && typeof data === 'object') {
+          setPrefs({ ...DEFAULT_PREFS, ...data });
+        }
+      } catch (err) {
+        // API yoxdursa default dəyərlər qalır
+        console.warn('[NotifPrefs] Load failed, using defaults');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const toggle = useCallback(
+    async (group: keyof NotifPrefs, key: string) => {
+      const updated = {
+        ...prefs,
+        [group]: {
+          ...(prefs[group] as any),
+          [key]: !(prefs[group] as any)[key],
+        },
+      } as NotifPrefs;
+
+      setPrefs(updated); // Optimistic update
+      setSaving(true);
+      try {
+        await userApi.updateNotifPrefs(updated);
+        toast.success('Bildiriş tənzimləməsi yadda saxlandı');
+      } catch (err) {
+        setPrefs(prefs); // Revert on error
+        toast.error('Saxlama xətası baş verdi');
+      } finally {
+        setSaving(false);
+      }
+    },
+    [prefs]
+  );
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {saving && (
+        <div className="flex items-center gap-2 rounded-lg bg-primary/10 px-4 py-2 text-sm text-primary">
+          <div className="h-3 w-3 animate-spin rounded-full border border-primary border-t-transparent" />
+          Yadda saxlanılır...
+        </div>
+      )}
+
+      {/* Email */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Email bildirişləri</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center justify-between rounded-lg border p-4">
+            <div>
+              <p className="text-sm font-medium">Yeni sifariş</p>
+              <p className="text-xs text-muted-foreground">Hər yeni sifarişdə email göndər</p>
+            </div>
+            <Switch
+              id="email-new-order"
+              checked={prefs.email.new_order}
+              onCheckedChange={() => toggle('email', 'new_order')}
+            />
+          </div>
+          <div className="flex items-center justify-between rounded-lg border p-4">
+            <div>
+              <p className="text-sm font-medium">Gündəlik hesabat</p>
+              <p className="text-xs text-muted-foreground">Hər gün satış hesabatı al</p>
+            </div>
+            <Switch
+              id="email-daily-report"
+              checked={prefs.email.daily_report}
+              onCheckedChange={() => toggle('email', 'daily_report')}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* SMS */}
+      <Card>
+        <CardHeader>
+          <CardTitle>SMS bildirişləri</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center justify-between rounded-lg border p-4">
+            <div>
+              <p className="text-sm font-medium">Yeniliklər</p>
+              <p className="text-xs text-muted-foreground">Sistem yenilikləri haqqında SMS al</p>
+            </div>
+            <Switch
+              id="sms-updates"
+              checked={prefs.sms.updates}
+              onCheckedChange={() => toggle('sms', 'updates')}
+            />
+          </div>
+          <div className="flex items-center justify-between rounded-lg border p-4">
+            <div>
+              <p className="text-sm font-medium">Ödəniş xatırlatması</p>
+              <p className="text-xs text-muted-foreground">Vaxtı keçmiş ödənişlər üçün SMS</p>
+            </div>
+            <Switch
+              id="sms-payment-reminder"
+              checked={prefs.sms.payment_reminder}
+              onCheckedChange={() => toggle('sms', 'payment_reminder')}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Push */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Push bildirişləri</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center justify-between rounded-lg border p-4">
+            <div>
+              <p className="text-sm font-medium">Yeni mesaj</p>
+              <p className="text-xs text-muted-foreground">Yeni mesaj gəldikdə bildiriş al</p>
+            </div>
+            <Switch
+              id="push-new-message"
+              checked={prefs.push.new_message}
+              onCheckedChange={() => toggle('push', 'new_message')}
+            />
+          </div>
+          <div className="flex items-center justify-between rounded-lg border p-4">
+            <div>
+              <p className="text-sm font-medium">Hesab fəaliyyəti</p>
+              <p className="text-xs text-muted-foreground">Giriş, çıxış, şifrə dəyişiklikləri</p>
+            </div>
+            <Switch
+              id="push-account-activity"
+              checked={prefs.push.account_activity}
+              onCheckedChange={() => toggle('push', 'account_activity')}
+            />
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 function ProfileTab() {
   const [loading, setLoading] = useState(true);
@@ -716,55 +890,7 @@ export default function SettingsPage() {
 
 
           {activeTab === 'notifications' && (
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Email bildirişləri</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center justify-between rounded-lg border p-4">
-                    <span>Yeni sifariş</span>
-                    <Switch id="email-order" />
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg border p-4">
-                    <span>Gündəlik hesabat</span>
-                    <Switch id="email-report" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>SMS bildirişləri</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center justify-between rounded-lg border p-4">
-                    <span>Yeniliklər</span>
-                    <Switch id="sms-news" />
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg border p-4">
-                    <span>Ödəniş xatırlatması</span>
-                    <Switch id="sms-reminder" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Push bildirişləri</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center justify-between rounded-lg border p-4">
-                    <span>Yeni mesaj</span>
-                    <Switch id="push-message" />
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg border p-4">
-                    <span>Hesab fəaliyyəti</span>
-                    <Switch id="push-activity" />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <NotificationsTab />
           )}
 
           {activeTab === 'reports' && (
