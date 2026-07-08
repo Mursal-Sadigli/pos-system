@@ -20,7 +20,25 @@ export class AuthController {
   static async invite(req: AuthRequest, res: Response) {
     try {
       if (!req.user) return errorResponse(res, 'Authentication required', 401);
-      const { name, email, role, storeId } = req.body;
+      const { name, email, role } = req.body;
+      let { storeId } = req.body;
+
+      // 1. If not provided, try to use inviter's storeId (for managers)
+      if (!storeId && req.user.storeId && req.user.role !== 'SUPER_ADMIN') {
+        storeId = req.user.storeId;
+      }
+
+      // 2. If still no storeId and role requires a store, try to use the first store (for super admins)
+      if (!storeId && ['MANAGER', 'CASHIER', 'VIEWER'].includes(role)) {
+        const StoreService = require('../services/store.service').StoreService;
+        const storesResult = await StoreService.getStores({ limit: 1 });
+        if (storesResult.stores.length > 0) {
+          storeId = storesResult.stores[0].id;
+        } else {
+          return errorResponse(res, 'Sistemdə heç bir mağaza yoxdur. İşçi dəvət etməzdən əvvəl "Parametrlər" bölməsindən mağaza yaradın.', 400);
+        }
+      }
+
       const result = await AuthService.invite({ name, email, role, storeId, invitedBy: req.user.id });
       return successResponse(res, result, 'Dəvət göndərildi', 201);
     } catch (error: any) {

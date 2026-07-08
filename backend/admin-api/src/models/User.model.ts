@@ -82,6 +82,11 @@ export class UserModel {
     await query(`UPDATE ${schemaQualified}.users SET refresh_token = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`, [token, id]);
   }
 
+  static async updateStoreId(id: string, storeId: string) {
+    await query(`UPDATE ${schemaQualified}.users SET store_id = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`, [storeId, id]);
+  }
+
+
   static async updateLastLogin(id: string) {
     await query(`UPDATE ${schemaQualified}.users SET last_login = CURRENT_TIMESTAMP WHERE id = $1`, [id]);
   }

@@ -48,7 +48,23 @@ export class StoreController {
 				}
 			}
 			
-			if (!storeId) return errorResponse(res, 'Mağaza tapılmadı', 404);
+			// Əgər həqiqətən heç bir mağaza yoxdursa, avtomatik yarat (Super Admin üçün)
+			if (!storeId) {
+				const { name, email, phone, address, tax_number } = req.body;
+				const newStore = await StoreService.createStore({
+					name: name || 'Mənim Mağazam',
+					email: email || (req as any).user?.email || 'admin@pos.com',
+					phone: phone || '',
+					address: address || '',
+					tax_number: tax_number || ''
+				});
+				
+				// User-in store_id-sini də yeniləmək lazımdır
+				const UserModel = require('../models/User.model').UserModel;
+				await UserModel.updateStoreId((req as any).user.id, newStore.id);
+				
+				return successResponse(res, newStore, 'İlk mağazanız yaradıldı');
+			}
 			
 			const updated = await StoreService.updateStore(storeId, req.body);
 			return successResponse(res, updated, 'Mağaza məlumatları yeniləndi');
