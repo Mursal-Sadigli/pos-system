@@ -1,58 +1,91 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { userApi } from '@/lib/api';
+import toast from 'react-hot-toast';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Clock } from 'lucide-react';
 
 const tabs = [
   { value: 'help', label: '🏠 Yardım Mərkəzi' },
+  { value: 'tickets', label: '🎫 Mənim Müraciətlərim' },
   { value: 'system', label: 'ℹ️ Sistem Məlumatı' },
 ];
-
-const faqItems = [
-  {
-    question: 'Sifarişi necə izləyə bilərəm?',
-    answer: 'Sifarişlər bölməsində hər bir sifarişin statusunu izləyə bilərsiniz.',
-  },
-  {
-    question: 'Məhsul stokunu necə yeniləyim?',
-    answer: 'Məhsullar bölümündə istədiyiniz məhsulu seçərək stok miqdarını yeniləyin.',
-  },
-  {
-    question: 'Hesabatları necə ixrac edim?',
-    answer: 'Hesabatlar bölməsində PDF və Excel formatlarında ixrac düymələrindən istifadə edin.',
-  },
-];
-
-const categories = ['Sifarişlər', 'Məhsullar', 'Müştərilər', 'Ödəniş', 'Parametrlər'];
-
-const systemInfo = {
-  version: 'v2.1.4',
-  status: 'Əla',
-  uptime: '99.98%',
-  lastUpdate: '30.06.2026',
-  releaseNotes: [
-    'Yenilənmiş POS interfeysi',
-    'Yeni hesabat filtrləri əlavə edildi',
-    'Təhlükəsizlik və sürət optimizasiyası',
-  ],
-};
 
 export default function HelpPage() {
   const [activeTab, setActiveTab] = useState('help');
   const [query, setQuery] = useState('');
+  
+  // Data states
+  const [faqs, setFaqs] = useState<any[]>([]);
+  const [tickets, setTickets] = useState<any[]>([]);
+  const [systemInfo, setSystemInfo] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  // New ticket state
+  const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
+  const [ticketForm, setTicketForm] = useState({ subject: '', message: '' });
+  const [submittingTicket, setSubmittingTicket] = useState(false);
+
+  useEffect(() => {
+    fetchData();
+  }, [activeTab]);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      if (activeTab === 'help') {
+        const res = await userApi.getFaqs();
+        setFaqs(res.data?.data || []);
+      } else if (activeTab === 'tickets') {
+        const res = await userApi.getTickets();
+        setTickets(res.data?.data || []);
+      } else if (activeTab === 'system') {
+        const res = await userApi.getSystemInfo();
+        setSystemInfo(res.data?.data || null);
+      }
+    } catch (error) {
+      toast.error('Məlumatlar yüklənərkən xəta baş verdi');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateTicket = async () => {
+    if (!ticketForm.subject || !ticketForm.message) {
+      toast.error('Mövzu və mesaj mütləqdir');
+      return;
+    }
+    
+    try {
+      setSubmittingTicket(true);
+      await userApi.createTicket(ticketForm);
+      toast.success('Müraciətiniz uğurla göndərildi!');
+      setIsTicketModalOpen(false);
+      setTicketForm({ subject: '', message: '' });
+      fetchData(); // refresh tickets
+    } catch (error) {
+      toast.error('Müraciət göndərilərkən xəta baş verdi');
+    } finally {
+      setSubmittingTicket(false);
+    }
+  };
 
   const filteredFaq = useMemo(() => {
-    return faqItems.filter(
+    return faqs.filter(
       (item) =>
         item.question.toLowerCase().includes(query.toLowerCase()) ||
         item.answer.toLowerCase().includes(query.toLowerCase())
     );
-  }, [query]);
+  }, [query, faqs]);
+
+  const categories = Array.from(new Set(faqs.map(f => f.category).filter(Boolean)));
 
   return (
     <div className="space-y-6">
@@ -61,7 +94,7 @@ export default function HelpPage() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Yardım</h1>
             <p className="text-sm text-muted-foreground">
-              Suallarınızı cavablandırmaq və sistem məlumatlarını göstermek üçün.
+              Sistemlə bağlı suallarınıza cavab tapın və ya texniki dəstək istəyin.
             </p>
           </div>
 
@@ -79,7 +112,7 @@ export default function HelpPage() {
         </div>
       </div>
 
-      {activeTab === 'help' ? (
+      {activeTab === 'help' && (
         <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
           <Card>
             <CardHeader>
@@ -97,7 +130,7 @@ export default function HelpPage() {
                   />
                 </div>
                 <div>
-                  <Label>Kategoriyalar</Label>
+                  <Label>Kateqoriyalar</Label>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {categories.map((category) => (
                       <Badge key={category} variant="secondary">
@@ -109,9 +142,10 @@ export default function HelpPage() {
               </div>
 
               <div className="space-y-3">
-                {filteredFaq.map((item) => (
+                {loading && <p className="text-sm text-muted-foreground">Yüklənir...</p>}
+                {!loading && filteredFaq.map((item) => (
                   <div
-                    key={item.question}
+                    key={item.id}
                     className="rounded-lg border bg-muted p-4"
                   >
                     <h3 className="font-semibold">{item.question}</h3>
@@ -121,7 +155,7 @@ export default function HelpPage() {
                   </div>
                 ))}
 
-                {filteredFaq.length === 0 && (
+                {!loading && filteredFaq.length === 0 && (
                   <div className="rounded-lg border bg-muted p-4 text-sm text-muted-foreground">
                     Axtarışınıza uyğun nəticə tapılmadı.
                   </div>
@@ -132,22 +166,67 @@ export default function HelpPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Axtarış və təkliflər</CardTitle>
+              <CardTitle>Dəstək</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Buradan sual axtara və kateqoriyalara hızlı keçid edə bilərsiniz.
+                Sualınızın cavabını tapa bilmədiniz? Texniki dəstək komandamıza müraciət edin.
               </p>
               <div className="space-y-3">
-                <Button className="w-full">Yeni sual əlavə et</Button>
-                <Button variant="outline" className="w-full">
-                  Dəstək xidməti ilə əlaqə
+                <Button 
+                  className="w-full" 
+                  onClick={() => {
+                    setActiveTab('tickets');
+                    setIsTicketModalOpen(true);
+                  }}
+                >
+                  Yeni Müraciət Yarat
                 </Button>
               </div>
             </CardContent>
           </Card>
         </div>
-      ) : (
+      )}
+
+      {activeTab === 'tickets' && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <CardTitle>Mənim Müraciətlərim</CardTitle>
+            <Button onClick={() => setIsTicketModalOpen(true)}>Yeni Müraciət</Button>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {loading && <p className="text-sm text-muted-foreground">Yüklənir...</p>}
+              {!loading && tickets.length === 0 && (
+                <div className="rounded-lg border bg-muted p-8 text-center text-sm text-muted-foreground">
+                  Hələ heç bir dəstək müraciətiniz yoxdur.
+                </div>
+              )}
+              {!loading && tickets.map((ticket) => (
+                <div key={ticket.id} className="rounded-lg border p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-muted/50 transition-colors">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-semibold">{ticket.subject}</h3>
+                      <Badge variant={ticket.status === 'open' ? 'warning' : 'success'}>
+                        {ticket.status === 'open' ? 'Açıq' : 'Həll Olundu'}
+                      </Badge>
+                    </div>
+                    <p className="mt-1 text-sm text-muted-foreground line-clamp-2">
+                      {ticket.message}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
+                    <Clock className="h-3 w-3" />
+                    {ticket.created_at}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {activeTab === 'system' && systemInfo && (
         <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
           <Card>
             <CardHeader>
@@ -167,16 +246,12 @@ export default function HelpPage() {
                     </Badge>
                   </div>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    Uptime: {systemInfo.uptime}
+                    Uptime (Kəsintisiz işləmə): {systemInfo.uptime}
                   </p>
                 </div>
                 <div className="rounded-lg border bg-muted p-4">
-                  <p className="text-sm text-muted-foreground">Yeniliklər</p>
-                  <ul className="mt-2 list-inside list-disc text-sm text-muted-foreground">
-                    {systemInfo.releaseNotes.map((note) => (
-                      <li key={note}>{note}</li>
-                    ))}
-                  </ul>
+                  <p className="text-sm text-muted-foreground">Ən son yenilənmə</p>
+                  <p className="mt-1 text-sm">{systemInfo.lastUpdate}</p>
                 </div>
               </div>
             </CardContent>
@@ -184,17 +259,51 @@ export default function HelpPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Axtarış və texniki dəstək</CardTitle>
+              <CardTitle>Son Yeniliklər (Release Notes)</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Sistem yenilikləri və statusu ilə bağlı ən son məlumatlar.
-              </p>
-              <Button className="w-full">Dəstək komandası ilə əlaqə</Button>
+              <ul className="mt-2 space-y-2 text-sm text-muted-foreground list-disc list-inside">
+                {systemInfo.releaseNotes?.map((note: string, idx: number) => (
+                  <li key={idx}>{note}</li>
+                ))}
+              </ul>
             </CardContent>
           </Card>
         </div>
       )}
+
+      <Dialog open={isTicketModalOpen} onOpenChange={setIsTicketModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Yeni Dəstək Müraciəti (Ticket)</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Mövzu</Label>
+              <Input 
+                placeholder="Problemin qısa xülasəsi (məs: Printer qoşulmur)" 
+                value={ticketForm.subject}
+                onChange={e => setTicketForm({...ticketForm, subject: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Mesajınız</Label>
+              <Textarea 
+                placeholder="Probleminizi ətraflı şəkildə izah edin..." 
+                className="min-h-[100px]"
+                value={ticketForm.message}
+                onChange={e => setTicketForm({...ticketForm, message: e.target.value})}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsTicketModalOpen(false)}>Ləğv et</Button>
+            <Button onClick={handleCreateTicket} disabled={submittingTicket}>
+              {submittingTicket ? 'Göndərilir...' : 'Göndər'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

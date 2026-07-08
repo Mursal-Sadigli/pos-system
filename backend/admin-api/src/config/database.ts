@@ -117,6 +117,50 @@ export const connectDB = async () => {
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_audit_logs_store_id ON ${schemaQualified}.audit_logs(store_id)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON ${schemaQualified}.audit_logs(action)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON ${schemaQualified}.audit_logs(created_at DESC)`);
+
+    // FAQs table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS ${schemaQualified}.faqs (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        question TEXT NOT NULL,
+        answer TEXT NOT NULL,
+        category VARCHAR(100),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Support tickets table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS ${schemaQualified}.support_tickets (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        store_id UUID NOT NULL REFERENCES ${schemaQualified}.stores(id) ON DELETE CASCADE,
+        user_id UUID NOT NULL REFERENCES ${schemaQualified}.users(id) ON DELETE CASCADE,
+        subject VARCHAR(255) NOT NULL,
+        message TEXT NOT NULL,
+        status VARCHAR(50) DEFAULT 'open',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Seed some initial FAQs if table is empty
+    const faqsCount = await pool.query(`SELECT COUNT(*) FROM ${schemaQualified}.faqs`);
+    if (parseInt(faqsCount.rows[0].count, 10) === 0) {
+      const initialFaqs = [
+        ['Sifarişi necə ləğv edə bilərəm?', 'Sifarişlər bölməsinə daxil olun, müvafiq sifarişi seçin və "Ləğv et" düyməsini sıxın.', 'Sifarişlər'],
+        ['Məhsulun stokunu necə yeniləyim?', 'Məhsullar bölməsində məhsulun üzərinə klikləyin, düzəliş et (Edit) edərək stok miqdarını dəyişin və yadda saxlayın.', 'Məhsullar'],
+        ['Yeni istifadəçi (kassir) necə əlavə edim?', 'İstifadəçilər (Users) bölməsinə keçid edib, "Yeni istifadəçi əlavə et" düyməsindən istifadə edə bilərsiniz.', 'İstifadəçilər'],
+        ['Hesabatları necə ixrac edim?', 'Hesabatlar bölməsində Excel və ya PDF ikonlarına basaraq cari hesabatı kompüterinizə yükləyə bilərsiniz.', 'Hesabatlar'],
+      ];
+      for (const faq of initialFaqs) {
+        await pool.query(
+          `INSERT INTO ${schemaQualified}.faqs (question, answer, category) VALUES ($1, $2, $3)`,
+          [faq[0], faq[1], faq[2]]
+        );
+      }
+    }
+
     logger.info('✅ Admin API database connection successful');
   } catch (error: any) {
     if (error?.code === '42501' || error?.message?.includes('permission denied')) {

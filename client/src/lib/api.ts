@@ -138,6 +138,12 @@ export const userApi = {
   verifyPasskeyRegistration: (body: any) => adminApi.post('/security/passkey/verify-registration', body),
   getPasskeyAuthenticationOptions: () => adminApi.get('/security/passkey/generate-authentication-options'),
   verifyPasskeyAuthentication: (body: any) => adminApi.post('/security/passkey/verify-authentication', body),
+
+  // Help & Support
+  getFaqs: () => adminApi.get('/help/faqs'),
+  getSystemInfo: () => adminApi.get('/help/system-info'),
+  getTickets: () => adminApi.get('/help/tickets'),
+  createTicket: (data: { subject: string; message: string }) => adminApi.post('/help/tickets', data),
 };
 
 // ==================== PRODUCT API ====================
