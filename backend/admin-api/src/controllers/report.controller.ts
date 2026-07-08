@@ -3,6 +3,19 @@ import { ReportService } from '../services/report.service';
 import { successResponse, errorResponse } from '../utils/response';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { EmailService } from '../services/email.service';
+import { query, schemaQualified } from '../config/database';
+
+/** Istifadəçinin storeId-ni JWT-dən və ya DB-dən götürür */
+async function resolveStoreId(req: AuthRequest): Promise<string | null> {
+  if (req.user?.storeId) return req.user.storeId;
+  if (!req.user?.id) return null;
+  // SUPER_ADMIN üçün DB-dən mağaza tap
+  const userRow = await query(`SELECT store_id FROM ${schemaQualified}.users WHERE id = $1`, [req.user.id]);
+  if (userRow.rows[0]?.store_id) return userRow.rows[0].store_id;
+  // Hər iki halda olmadıqda ilk mağazanı götür
+  const storeRow = await query(`SELECT id FROM ${schemaQualified}.stores LIMIT 1`);
+  return storeRow.rows[0]?.id || null;
+}
 
 export class ReportController {
   /**
@@ -10,17 +23,14 @@ export class ReportController {
    */
   static async getSalesSummary(req: AuthRequest, res: Response) {
     try {
-      const storeId = req.user?.storeId;
-      if (!storeId) {
-        return errorResponse(res, 'Mağaza ID tapılmadı', 400);
-      }
+      const storeId = await resolveStoreId(req);
 
       const { startDate, endDate } = req.query as { startDate?: string; endDate?: string };
 
       const result = await ReportService.getSalesSummary({
         startDate,
         endDate,
-        storeId,
+        storeId: storeId || undefined,
       });
 
       return successResponse(res, result, 'Hesabat xülasəsi uğurla gətirildi');
@@ -34,17 +44,14 @@ export class ReportController {
    */
   static async getTopProducts(req: AuthRequest, res: Response) {
     try {
-      const storeId = req.user?.storeId;
-      if (!storeId) {
-        return errorResponse(res, 'Mağaza ID tapılmadı', 400);
-      }
+      const storeId = await resolveStoreId(req);
 
       const { startDate, endDate, limit } = req.query as { startDate?: string; endDate?: string; limit?: string };
 
       const result = await ReportService.getTopProducts({
         startDate,
         endDate,
-        storeId,
+        storeId: storeId || undefined,
         limit: limit ? parseInt(limit, 10) : 10,
       });
 
@@ -59,17 +66,14 @@ export class ReportController {
    */
   static async getByCategory(req: AuthRequest, res: Response) {
     try {
-      const storeId = req.user?.storeId;
-      if (!storeId) {
-        return errorResponse(res, 'Mağaza ID tapılmadı', 400);
-      }
+      const storeId = await resolveStoreId(req);
 
       const { startDate, endDate } = req.query as { startDate?: string; endDate?: string };
 
       const result = await ReportService.getByCategory({
         startDate,
         endDate,
-        storeId,
+        storeId: storeId || undefined,
       });
 
       return successResponse(res, result, 'Kateqoriya hesabatı gətirildi');
@@ -83,12 +87,9 @@ export class ReportController {
    */
   static async getInventoryReport(req: AuthRequest, res: Response) {
     try {
-      const storeId = req.user?.storeId;
-      if (!storeId) {
-        return errorResponse(res, 'Mağaza ID tapılmadı', 400);
-      }
+      const storeId = await resolveStoreId(req);
 
-      const result = await ReportService.getInventoryReport(storeId);
+      const result = await ReportService.getInventoryReport(storeId || '');
       return successResponse(res, result, 'İnventar hesabatı gətirildi');
     } catch (error: any) {
       return errorResponse(res, error.message || 'İnventar hesabatı gətirilə bilmədi', 500);
@@ -100,9 +101,9 @@ export class ReportController {
    */
   static async sendReportEmail(req: AuthRequest, res: Response) {
     try {
-      const storeId = req.user?.storeId;
+      const storeId = await resolveStoreId(req);
       const userEmail = req.user?.email;
-      if (!storeId || !userEmail) {
+      if (!userEmail) {
         return errorResponse(res, 'İstifadəçi məlumatları tapılmadı', 400);
       }
 
@@ -112,7 +113,7 @@ export class ReportController {
       let subject = 'POS Sistemi - Hesabat';
 
       if (type === 'sales') {
-        const data = await ReportService.getSalesSummary({ startDate, endDate, storeId });
+        const data = await ReportService.getSalesSummary({ startDate, endDate, storeId: storeId || undefined });
         subject = `POS Sistemi - Satış Hesabatı (${startDate || 'Bütün Dövr'} - ${endDate || 'Bugün'})`;
         emailContent = `
           <h2>Satış Hesabatı</h2>
@@ -126,7 +127,7 @@ export class ReportController {
           <p>Daha ətraflı idarəetmə panelinə daxil olub baxa bilərsiniz.</p>
         `;
       } else if (type === 'inventory') {
-        const data = await ReportService.getInventoryReport(storeId);
+        const data = await ReportService.getInventoryReport(storeId || '');
         subject = `POS Sistemi - İnventar/Stok Hesabatı`;
         emailContent = `
           <h2>Stok Hesabatı</h2>
@@ -138,33 +139,11 @@ export class ReportController {
             <li><strong>Az Qalan Məhsul Sayı:</strong> ${data.lowStock.length}</li>
             <li><strong>Bitmiş Məhsul Sayı:</strong> ${data.outOfStock.length}</li>
           </ul>
-          <h3>Az Qalan Məhsullar</h3>
-          <table border="1" style="border-collapse: collapse; width: 100%;">
-            <thead>
-              <tr style="background-color: #f2f2f2;">
-                <th>Məhsul</th>
-                <th>SKU</th>
-                <th>Mövcud Stok</th>
-                <th>Min. Limit</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${data.lowStock.map(p => `
-                <tr>
-                  <td>${p.name}</td>
-                  <td>${p.sku}</td>
-                  <td>${p.stock}</td>
-                  <td>${p.min_stock}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
         `;
       } else {
         return errorResponse(res, 'Keçərsiz hesabat növü', 400);
       }
 
-      // Email göndərilməsi
       await EmailService.sendEmail({
         to: userEmail,
         subject: subject,
