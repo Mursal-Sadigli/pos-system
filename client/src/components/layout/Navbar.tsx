@@ -187,18 +187,8 @@ export function Navbar() {
           </nav>
         </div>
 
-        {/* Orta — Global axtarış */}
-        <div className="hidden flex-1 justify-center md:flex">
-          <div className="relative w-full max-w-xl">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              ref={searchRef}
-              className="pl-10"
-              placeholder="Axtar... (Ctrl + K)"
-              aria-label="Global axtarış"
-            />
-          </div>
-        </div>
+        {/* Orta hissə boş qala bilər və ya logo mərkəzə çəkilə bilər, amma hələki boş buraxırıq */}
+        <div className="hidden flex-1 md:flex"></div>
 
         {/* Sağ tərəf */}
         <div className="ml-auto flex items-center gap-1 sm:gap-2">
@@ -328,14 +318,14 @@ export function Navbar() {
                   )}
                 </div>
                 <Link
-                  href="/settings/profile"
+                  href={user?.role === 'super-admin' ? '/super-admin/settings/general' : '/user/settings/profile'}
                   className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-primary/10"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Profil
                 </Link>
                 <Link
-                  href="/settings"
+                  href={user?.role === 'super-admin' ? '/super-admin/settings' : '/user/settings'}
                   className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-primary/10"
                   onClick={() => setIsMenuOpen(false)}
                 >
