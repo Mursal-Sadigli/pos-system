@@ -7,13 +7,14 @@ import type { LoginRequest, LoginResponse } from '@/types/user';
 let baseURL = process.env.NEXT_PUBLIC_SUPER_ADMIN_API ?? '/api';
 let adminBaseURL = process.env.NEXT_PUBLIC_ADMIN_API ?? '/api/admin';
 
-// Vercel-də env yazarkən /api və ya /api/admin əlavə etməyi unutmusunuzsa və ya yalnız /api yazmısınızsa, səliqəyə salmaq:
+// Vercel-də env yazarkən /api əlavə etməyi unutmusunuzsa, avtomatik əlavə edir:
 try {
   if (baseURL.startsWith('http')) {
     baseURL = new URL('/api', new URL(baseURL).origin).toString();
   }
   if (adminBaseURL.startsWith('http')) {
-    adminBaseURL = new URL('/api/admin', new URL(adminBaseURL).origin).toString();
+    // Admin API mikroservisi də kök olaraq '/api'-də işləyir (app.use('/api', routes))
+    adminBaseURL = new URL('/api', new URL(adminBaseURL).origin).toString();
   }
 } catch (e) {
   // Əgər URL formatı düzgün deyilsə (məsələn /api kimi relativdirsə) olduğu kimi saxla
