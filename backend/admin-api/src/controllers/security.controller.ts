@@ -158,7 +158,9 @@ export class SecurityController {
   static async generateRegistrationOptions(req: AuthRequest, res: Response) {
     try {
       if (!req.user) return errorResponse(res, 'Authentication required', 401);
-      const options = await SecurityService.generateRegistrationOptions(req.user.id, req.user.email);
+      const expectedOrigin = req.headers.origin || 'http://localhost:3000';
+      const rpID = new URL(expectedOrigin).hostname;
+      const options = await SecurityService.generateRegistrationOptions(req.user.id, req.user.email, rpID);
       return successResponse(res, options);
     } catch (error: any) {
       return errorResponse(res, error.message, 500);
@@ -168,7 +170,9 @@ export class SecurityController {
   static async verifyRegistrationResponse(req: AuthRequest, res: Response) {
     try {
       if (!req.user) return errorResponse(res, 'Authentication required', 401);
-      const verified = await SecurityService.verifyRegistrationResponse(req.user.id, req.body);
+      const expectedOrigin = req.headers.origin || 'http://localhost:3000';
+      const rpID = new URL(expectedOrigin).hostname;
+      const verified = await SecurityService.verifyRegistrationResponse(req.user.id, req.body, expectedOrigin, rpID);
       if (verified) {
         await SecurityService.createAuditLog({
           userId: req.user.id,
@@ -188,7 +192,9 @@ export class SecurityController {
   static async generateAuthenticationOptions(req: AuthRequest, res: Response) {
     try {
       if (!req.user) return errorResponse(res, 'Authentication required', 401);
-      const options = await SecurityService.generateAuthenticationOptions(req.user.id);
+      const expectedOrigin = req.headers.origin || 'http://localhost:3000';
+      const rpID = new URL(expectedOrigin).hostname;
+      const options = await SecurityService.generateAuthenticationOptions(req.user.id, rpID);
       return successResponse(res, options);
     } catch (error: any) {
       return errorResponse(res, error.message, 500);
@@ -198,7 +204,9 @@ export class SecurityController {
   static async verifyAuthenticationResponse(req: AuthRequest, res: Response) {
     try {
       if (!req.user) return errorResponse(res, 'Authentication required', 401);
-      const verified = await SecurityService.verifyAuthenticationResponse(req.user.id, req.body);
+      const expectedOrigin = req.headers.origin || 'http://localhost:3000';
+      const rpID = new URL(expectedOrigin).hostname;
+      const verified = await SecurityService.verifyAuthenticationResponse(req.user.id, req.body, expectedOrigin, rpID);
       if (verified) {
         return successResponse(res, { verified: true }, 'Təsdiqləndi');
       }
@@ -215,7 +223,10 @@ export class SecurityController {
       const { assertion } = req.body;
       if (!assertion) return errorResponse(res, 'Passkey assertion tələb olunur', 400);
 
-      const verified = await SecurityService.verifyAuthenticationResponse(req.user.id, assertion);
+      const expectedOrigin = req.headers.origin || 'http://localhost:3000';
+      const rpID = new URL(expectedOrigin).hostname;
+
+      const verified = await SecurityService.verifyAuthenticationResponse(req.user.id, assertion, expectedOrigin, rpID);
       if (!verified) return errorResponse(res, 'Passkey təsdiqlənmədi', 400);
 
       // Perform revocation

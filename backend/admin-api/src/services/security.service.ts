@@ -10,8 +10,6 @@ import {
 } from '@simplewebauthn/server';
 
 const rpName = 'POS System';
-const rpID = process.env.NODE_ENV === 'production' ? process.env.DOMAIN || 'localhost' : 'localhost';
-const expectedOrigin = process.env.NODE_ENV === 'production' ? `https://${rpID}` : 'http://localhost:3000';
 
 export class SecurityService {
   // ─── 2FA ────────────────────────────────────────────────────────────
@@ -192,7 +190,7 @@ export class SecurityService {
     );
   }
 
-  static async generateRegistrationOptions(userId: string, email: string) {
+  static async generateRegistrationOptions(userId: string, email: string, rpID: string) {
     const userPasskeys = await query(
       `SELECT id, transports FROM ${schemaQualified}.passkeys WHERE user_id = $1`,
       [userId]
@@ -224,7 +222,7 @@ export class SecurityService {
     return options;
   }
 
-  static async verifyRegistrationResponse(userId: string, body: any) {
+  static async verifyRegistrationResponse(userId: string, body: any, expectedOrigin: string, rpID: string) {
     const userRes = await query(
       `SELECT current_challenge FROM ${schemaQualified}.users WHERE id = $1`,
       [userId]
@@ -271,7 +269,7 @@ export class SecurityService {
     return false;
   }
 
-  static async generateAuthenticationOptions(userId: string) {
+  static async generateAuthenticationOptions(userId: string, rpID: string) {
     const userPasskeys = await query(
       `SELECT id, transports FROM ${schemaQualified}.passkeys WHERE user_id = $1`,
       [userId]
@@ -300,7 +298,7 @@ export class SecurityService {
     return options;
   }
 
-  static async verifyAuthenticationResponse(userId: string, body: any) {
+  static async verifyAuthenticationResponse(userId: string, body: any, expectedOrigin: string, rpID: string) {
     const userRes = await query(
       `SELECT current_challenge FROM ${schemaQualified}.users WHERE id = $1`,
       [userId]
