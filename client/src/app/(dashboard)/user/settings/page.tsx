@@ -523,7 +523,8 @@ function SecurityTab() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="grid gap-6 lg:grid-cols-2 items-start">
+      <div className="space-y-6">
 
       {/* ── 2FA Card ── */}
       <Card>
@@ -713,6 +714,9 @@ function SecurityTab() {
         </CardContent>
       </Card>
 
+      </div>
+
+      <div className="space-y-6">
       {/* ── Session Management Card ── */}
       <Card>
         <CardHeader>
@@ -787,6 +791,7 @@ function SecurityTab() {
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }
