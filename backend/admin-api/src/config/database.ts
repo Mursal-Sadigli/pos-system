@@ -96,6 +96,7 @@ export const connectDB = async () => {
       CREATE TABLE IF NOT EXISTS ${schemaQualified}.audit_logs (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         user_id UUID NOT NULL,
+        store_id UUID REFERENCES ${schemaQualified}.stores(id) ON DELETE CASCADE,
         action VARCHAR(100) NOT NULL,
         description TEXT,
         ip_address VARCHAR(45),
@@ -104,7 +105,17 @@ export const connectDB = async () => {
         FOREIGN KEY (user_id) REFERENCES ${schemaQualified}.users(id) ON DELETE CASCADE
       )
     `);
+    
+    // In case the table already exists, add the column
+    try {
+      await pool.query(`ALTER TABLE ${schemaQualified}.audit_logs ADD COLUMN IF NOT EXISTS store_id UUID REFERENCES ${schemaQualified}.stores(id) ON DELETE CASCADE`);
+    } catch (e) {
+      // Ignore if it already exists and syntax fails
+    }
+
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON ${schemaQualified}.audit_logs(user_id)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_audit_logs_store_id ON ${schemaQualified}.audit_logs(store_id)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON ${schemaQualified}.audit_logs(action)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON ${schemaQualified}.audit_logs(created_at DESC)`);
     logger.info('✅ Admin API database connection successful');
   } catch (error: any) {

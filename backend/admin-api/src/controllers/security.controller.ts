@@ -103,6 +103,27 @@ export class SecurityController {
     }
   }
 
+  // GET /api/security/system-logs
+  static async getSystemLogs(req: AuthRequest, res: Response) {
+    try {
+      if (!req.user || !req.user.storeId) return errorResponse(res, 'Store ID required', 401);
+      
+      // Only Admins and Managers should see system logs
+      if (req.user.role !== 'admin' && req.user.role !== 'manager') {
+        return errorResponse(res, 'Səlahiyyətiniz yoxdur', 403);
+      }
+
+      const limit = parseInt(req.query.limit as string || '50', 10);
+      const offset = parseInt(req.query.offset as string || '0', 10);
+      const search = (req.query.search as string) || '';
+
+      const data = await SecurityService.getSystemLogs(req.user.storeId, search, limit, offset);
+      return successResponse(res, data);
+    } catch (error: any) {
+      return errorResponse(res, error.message, 500);
+    }
+  }
+
   // ─── WebAuthn / Passkeys ──────────────────────────────────────────
 
   static async getPasskeyStatus(req: AuthRequest, res: Response) {

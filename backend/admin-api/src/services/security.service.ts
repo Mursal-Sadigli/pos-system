@@ -93,18 +93,26 @@ export class SecurityService {
   // ─── Audit Logs ─────────────────────────────────────────────────────
   static async createAuditLog(data: {
     userId: string;
+    storeId?: string;
     action: string;
     description?: string;
     ipAddress?: string;
     userAgent?: string;
   }) {
     try {
+      let storeId = data.storeId;
+      if (!storeId) {
+        const u = await query(`SELECT store_id FROM ${schemaQualified}.users WHERE id = $1`, [data.userId]);
+        storeId = u.rows[0]?.store_id || null;
+      }
+
       await query(
         `INSERT INTO ${schemaQualified}.audit_logs 
-         (user_id, action, description, ip_address, user_agent)
-         VALUES ($1, $2, $3, $4, $5)`,
+         (user_id, store_id, action, description, ip_address, user_agent)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
         [
           data.userId,
+          storeId,
           data.action,
           data.description || null,
           data.ipAddress || null,
@@ -129,6 +137,42 @@ export class SecurityService {
       [userId, limit]
     );
     return result.rows;
+  }
+
+  static async getSystemLogs(storeId: string, search: string = '', limit = 50, offset = 0) {
+    const params: any[] = [storeId];
+    let queryStr = `
+       SELECT l.id, l.action, l.description, l.ip_address, l.user_agent,
+              to_char(l.created_at, 'DD/MM/YYYY HH24:MI') AS timestamp,
+              u.first_name, u.last_name, u.role
+       FROM ${schemaQualified}.audit_logs l
+       JOIN ${schemaQualified}.users u ON l.user_id = u.id
+       WHERE l.store_id = $1
+    `;
+
+    if (search) {
+      queryStr += ` AND (l.action ILIKE $2 OR l.description ILIKE $2 OR u.first_name ILIKE $2 OR u.last_name ILIKE $2)`;
+      params.push(`%${search}%`);
+    }
+
+    queryStr += ` ORDER BY l.created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    params.push(limit, offset);
+
+    const result = await query(queryStr, params);
+    
+    // Total count query
+    let countQuery = `SELECT COUNT(*) FROM ${schemaQualified}.audit_logs l JOIN ${schemaQualified}.users u ON l.user_id = u.id WHERE l.store_id = $1`;
+    const countParams = [storeId];
+    if (search) {
+      countQuery += ` AND (l.action ILIKE $2 OR l.description ILIKE $2 OR u.first_name ILIKE $2 OR u.last_name ILIKE $2)`;
+      countParams.push(`%${search}%`);
+    }
+    const countResult = await query(countQuery, countParams);
+
+    return {
+      logs: result.rows,
+      total: parseInt(countResult.rows[0].count, 10)
+    };
   }
 
   // ─── WebAuthn / Passkeys ──────────────────────────────────────────

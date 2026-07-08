@@ -18,6 +18,7 @@ router.post('/revoke-sessions', SecurityController.revokeAllSessions);
 
 // Audit logs
 router.get('/audit-logs', SecurityController.getAuditLogs);
+router.get('/system-logs', SecurityController.getSystemLogs);
 
 // WebAuthn / Passkeys
 router.get('/passkey/status', SecurityController.getPasskeyStatus);

@@ -129,6 +129,7 @@ export const userApi = {
   revokeAllSessions: () => adminApi.post('/security/revoke-sessions'),
   revokeSessionsWithPasskey: (assertion: any) => adminApi.post('/security/revoke-sessions-with-passkey', { assertion }),
   getAuditLogs: (limit?: number) => adminApi.get('/security/audit-logs', { params: { limit } }),
+  getSystemLogs: (params?: { search?: string; limit?: number; offset?: number }) => adminApi.get('/security/system-logs', { params }),
   
   // Security - Passkey
   getPasskeyStatus: () => adminApi.get('/security/passkey/status'),
