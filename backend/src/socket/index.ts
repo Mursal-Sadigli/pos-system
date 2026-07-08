@@ -23,9 +23,13 @@ export const io = new SocketIOServer(httpServer, {
       callback(new Error('Socket origin not allowed: ' + origin));
     },
     credentials: true,
+    methods: ['GET', 'POST'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
   },
-  pingTimeout: 60000,
-  pingInterval: 25000,
+  pingTimeout: 20000,
+  pingInterval: 10000,
+  // Allow both polling and websocket
+  transports: ['polling', 'websocket'],
 });
 
 // ─── Connection handler ────────────────────────────────────────────────────────
