@@ -4,6 +4,7 @@ import usersRoutes from './users.routes';
 import storesRoutes from './stores.routes';
 import notificationsRoutes from './notifications.routes';
 import reportsRoutes from './reports.routes';
+import securityRoutes from './security.routes';
 
 const router = Router();
 
@@ -12,5 +13,7 @@ router.use('/users', usersRoutes);
 router.use('/stores', storesRoutes);
 router.use('/notifications', notificationsRoutes);
 router.use('/reports', reportsRoutes);
+router.use('/security', securityRoutes);
 
 export default router;
+

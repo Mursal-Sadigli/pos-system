@@ -13,6 +13,7 @@ export interface TokenPayload {
   email: string;
   role: string;
   storeId?: string;
+  tokenVersion?: number;
 }
 
 const secretOrKey = JWT_SECRET as jwt.Secret;

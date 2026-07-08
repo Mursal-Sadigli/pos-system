@@ -121,6 +121,13 @@ export const userApi = {
   updatePassword: (payload: any) => adminApi.put('/users/profile/password', payload),
   getNotifPrefs: () => adminApi.get('/notifications/preferences'),
   updateNotifPrefs: (prefs: any) => adminApi.put('/notifications/preferences', prefs),
+  // Security
+  get2FAStatus: () => adminApi.get('/security/2fa/status'),
+  generate2FA: () => adminApi.post('/security/2fa/generate'),
+  enable2FA: (token: string) => adminApi.post('/security/2fa/enable', { token }),
+  disable2FA: (password: string) => adminApi.post('/security/2fa/disable', { password }),
+  revokeAllSessions: () => adminApi.post('/security/revoke-sessions'),
+  getAuditLogs: (limit?: number) => adminApi.get('/security/audit-logs', { params: { limit } }),
 };
 
 // ==================== PRODUCT API ====================

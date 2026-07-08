@@ -22,18 +22,146 @@ const tabs = [
   { value: 'security', label: '🔒 Təhlükəsizlik' },
 ];
 
-// ─── Notification Preferences Tab ────────────────────────────────────────────
+// ─── Notification & Report Preferences Tab ─────────────────────────────────────
 type NotifPrefs = {
   email: { new_order: boolean; daily_report: boolean };
   sms: { updates: boolean; payment_reminder: boolean };
   push: { new_message: boolean; account_activity: boolean };
+  reports: { auto_daily: boolean; auto_weekly: boolean; format: string; frequency: string };
 };
 
 const DEFAULT_PREFS: NotifPrefs = {
   email: { new_order: false, daily_report: false },
   sms: { updates: false, payment_reminder: false },
   push: { new_message: false, account_activity: false },
+  reports: { auto_daily: false, auto_weekly: false, format: 'Excel', frequency: 'Gündəlik' },
 };
+
+// ─── Reports Tab Component ─────────────────────────────────────────────────────
+function ReportsTab() {
+  const [prefs, setPrefs] = useState<NotifPrefs>(DEFAULT_PREFS);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        setLoading(true);
+        const res = await userApi.getNotifPrefs();
+        const data = res.data?.data;
+        if (data && typeof data === 'object') {
+          setPrefs({ ...DEFAULT_PREFS, ...data });
+        }
+      } catch (err) {
+        console.warn('[NotifPrefs] Load failed, using defaults');
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  const updateReportPref = async (key: keyof NotifPrefs['reports'], value: any) => {
+    const updated = {
+      ...prefs,
+      reports: {
+        ...prefs.reports,
+        [key]: value,
+      },
+    } as NotifPrefs;
+
+    setPrefs(updated);
+    setSaving(true);
+    try {
+      await userApi.updateNotifPrefs(updated);
+      if (value === true || typeof value === 'string') {
+        toast.success('Hesabat tənzimləməsi yadda saxlandı');
+      }
+    } catch (err) {
+      setPrefs(prefs);
+      toast.error('Saxlama xətası baş verdi');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {saving && (
+        <div className="flex items-center gap-2 rounded-lg bg-primary/10 px-4 py-2 text-sm text-primary">
+          <div className="h-3 w-3 animate-spin rounded-full border border-primary border-t-transparent" />
+          Yadda saxlanılır...
+        </div>
+      )}
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Hesabat ayarları</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <Label htmlFor="report-frequency">Hesabat tezliyi</Label>
+              <select
+                id="report-frequency"
+                className="mt-2 block w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none focus:border-ring focus:ring-1 focus:ring-ring"
+                value={prefs.reports?.frequency || 'Gündəlik'}
+                onChange={(e) => updateReportPref('frequency', e.target.value)}
+              >
+                <option>Gündəlik</option>
+                <option>Həftəlik</option>
+                <option>Aylıq</option>
+              </select>
+            </div>
+            <div>
+              <Label htmlFor="report-format">Format</Label>
+              <select
+                id="report-format"
+                className="mt-2 block w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none focus:border-ring focus:ring-1 focus:ring-ring"
+                value={prefs.reports?.format || 'Excel'}
+                onChange={(e) => updateReportPref('format', e.target.value)}
+              >
+                <option>PDF</option>
+                <option>Excel</option>
+              </select>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Avtomatik hesabatlar</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <span>Gündəlik satış</span>
+              <Switch 
+                id="auto-daily-report" 
+                checked={prefs.reports?.auto_daily || false}
+                onCheckedChange={(c) => updateReportPref('auto_daily', c)}
+              />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <span>Həftəlik inventar</span>
+              <Switch 
+                id="auto-weekly-inventory" 
+                checked={prefs.reports?.auto_weekly || false}
+                onCheckedChange={(c) => updateReportPref('auto_weekly', c)}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
 
 function NotificationsTab() {
   const [prefs, setPrefs] = useState<NotifPrefs>(DEFAULT_PREFS);
@@ -60,11 +188,12 @@ function NotificationsTab() {
 
   const toggle = useCallback(
     async (group: keyof NotifPrefs, key: string) => {
+      const newValue = !(prefs[group] as any)[key];
       const updated = {
         ...prefs,
         [group]: {
           ...(prefs[group] as any),
-          [key]: !(prefs[group] as any)[key],
+          [key]: newValue,
         },
       } as NotifPrefs;
 
@@ -72,7 +201,9 @@ function NotificationsTab() {
       setSaving(true);
       try {
         await userApi.updateNotifPrefs(updated);
-        toast.success('Bildiriş tənzimləməsi yadda saxlandı');
+        if (newValue === true) {
+          toast.success('Bildiriş tənzimləməsi yadda saxlandı');
+        }
       } catch (err) {
         setPrefs(prefs); // Revert on error
         toast.error('Saxlama xətası baş verdi');
@@ -100,96 +231,345 @@ function NotificationsTab() {
         </div>
       )}
 
-      {/* Email */}
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        {/* Email */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Email bildirişləri</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <div>
+                <p className="text-sm font-medium">Yeni sifariş</p>
+                <p className="text-xs text-muted-foreground">Hər yeni sifarişdə email göndər</p>
+              </div>
+              <Switch
+                id="email-new-order"
+                checked={prefs.email.new_order}
+                onCheckedChange={() => toggle('email', 'new_order')}
+              />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <div>
+                <p className="text-sm font-medium">Gündəlik hesabat</p>
+                <p className="text-xs text-muted-foreground">Hər gün satış hesabatı al</p>
+              </div>
+              <Switch
+                id="email-daily-report"
+                checked={prefs.email.daily_report}
+                onCheckedChange={() => toggle('email', 'daily_report')}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* SMS */}
+        <Card>
+          <CardHeader>
+            <CardTitle>SMS bildirişləri</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <div>
+                <p className="text-sm font-medium">Yeniliklər</p>
+                <p className="text-xs text-muted-foreground">Sistem yenilikləri haqqında SMS al</p>
+              </div>
+              <Switch
+                id="sms-updates"
+                checked={prefs.sms.updates}
+                onCheckedChange={() => toggle('sms', 'updates')}
+              />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <div>
+                <p className="text-sm font-medium">Ödəniş xatırlatması</p>
+                <p className="text-xs text-muted-foreground">Vaxtı keçmiş ödənişlər üçün SMS</p>
+              </div>
+              <Switch
+                id="sms-payment-reminder"
+                checked={prefs.sms.payment_reminder}
+                onCheckedChange={() => toggle('sms', 'payment_reminder')}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Push */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Push bildirişləri</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <div>
+                <p className="text-sm font-medium">Yeni mesaj</p>
+                <p className="text-xs text-muted-foreground">Yeni mesaj gəldikdə bildiriş al</p>
+              </div>
+              <Switch
+                id="push-new-message"
+                checked={prefs.push.new_message}
+                onCheckedChange={() => toggle('push', 'new_message')}
+              />
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-4">
+              <div>
+                <p className="text-sm font-medium">Hesab hərəkətləri</p>
+                <p className="text-xs text-muted-foreground">Hesabınıza giriş edildikdə</p>
+              </div>
+              <Switch
+                id="push-account-activity"
+                checked={prefs.push.account_activity}
+                onCheckedChange={() => toggle('push', 'account_activity')}
+              />
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}
+
+function SecurityTab() {
+  const [twoFAEnabled, setTwoFAEnabled] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [showQR, setShowQR] = useState(false);
+  const [qrData, setQrData] = useState<{ qrCodeUrl: string; secret: string } | null>(null);
+  const [otpToken, setOtpToken] = useState('');
+  const [enabling2FA, setEnabling2FA] = useState(false);
+  const [showDisableModal, setShowDisableModal] = useState(false);
+  const [disablePassword, setDisablePassword] = useState('');
+  const [disabling2FA, setDisabling2FA] = useState(false);
+  const [revokingSession, setRevokingSession] = useState(false);
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [logsLoading, setLogsLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [statusRes, logsRes] = await Promise.all([
+          userApi.get2FAStatus(),
+          userApi.getAuditLogs(20),
+        ]);
+        setTwoFAEnabled(statusRes.data?.data?.enabled || false);
+        setAuditLogs(logsRes.data?.data?.logs || []);
+      } catch {
+        // silently ignore
+      } finally {
+        setLoading(false);
+        setLogsLoading(false);
+      }
+    })();
+  }, []);
+
+  const handleGenerate2FA = async () => {
+    try {
+      const res = await userApi.generate2FA();
+      setQrData(res.data?.data);
+      setShowQR(true);
+    } catch {
+      toast.error('QR kod yaradılarkən xəta baş verdi');
+    }
+  };
+
+  const handleEnable2FA = async () => {
+    if (!otpToken.trim()) return toast.error('Kod daxil edin');
+    setEnabling2FA(true);
+    try {
+      await userApi.enable2FA(otpToken);
+      setTwoFAEnabled(true);
+      setShowQR(false);
+      setQrData(null);
+      setOtpToken('');
+      toast.success('2FA uğurla aktivləşdirildi!');
+      const logsRes = await userApi.getAuditLogs(20);
+      setAuditLogs(logsRes.data?.data?.logs || []);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Kod yanlışdır');
+    } finally {
+      setEnabling2FA(false);
+    }
+  };
+
+  const handleDisable2FA = async () => {
+    if (!disablePassword) return toast.error('Şifrənizi daxil edin');
+    setDisabling2FA(true);
+    try {
+      await userApi.disable2FA(disablePassword);
+      setTwoFAEnabled(false);
+      setShowDisableModal(false);
+      setDisablePassword('');
+      toast.success('2FA deaktiv edildi');
+      const logsRes = await userApi.getAuditLogs(20);
+      setAuditLogs(logsRes.data?.data?.logs || []);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || 'Şifrə yanlışdır');
+    } finally {
+      setDisabling2FA(false);
+    }
+  };
+
+  const handleRevokeAllSessions = async () => {
+    if (!confirm('Bütün digər cihaz və brauzerlərinizdəki sessiyalar ləğv ediləcək. Davam etmək istəyirsiniz?')) return;
+    setRevokingSession(true);
+    try {
+      await userApi.revokeAllSessions();
+      toast.success('Bütün sessiyalar ləğv edildi. Digər cihazlar sistemi tərk etdi.');
+      const logsRes = await userApi.getAuditLogs(20);
+      setAuditLogs(logsRes.data?.data?.logs || []);
+    } catch {
+      toast.error('Sessiyalar ləğv edilərkən xəta baş verdi');
+    } finally {
+      setRevokingSession(false);
+    }
+  };
+
+  const ACTION_LABELS: Record<string, string> = {
+    login: '🔑 Sistemə giriş',
+    password_changed: '🔒 Şifrə dəyişdirildi',
+    '2fa_enabled': '🛡️ 2FA aktivləşdirildi',
+    '2fa_disabled': '⚠️ 2FA deaktiv edildi',
+    sessions_revoked: '🚫 Sessiyalar ləğv edildi',
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* 2FA Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Email bildirişləri</CardTitle>
+          <CardTitle>İki Faktorlu Təsdiqləmə (2FA)</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4">
           <div className="flex items-center justify-between rounded-lg border p-4">
             <div>
-              <p className="text-sm font-medium">Yeni sifariş</p>
-              <p className="text-xs text-muted-foreground">Hər yeni sifarişdə email göndər</p>
+              <p className="font-medium">İki faktorlu təsdiq</p>
+              <p className="text-sm text-muted-foreground">
+                {twoFAEnabled ? '✅ Aktiv — hesabınız qorunur.' : 'Hesab təhlükəsizliyini artırın.'}
+              </p>
             </div>
-            <Switch
-              id="email-new-order"
-              checked={prefs.email.new_order}
-              onCheckedChange={() => toggle('email', 'new_order')}
-            />
+            {twoFAEnabled ? (
+              <Button variant="destructive" size="sm" onClick={() => setShowDisableModal(true)}>
+                Deaktiv et
+              </Button>
+            ) : (
+              <Button size="sm" onClick={handleGenerate2FA}>
+                Aktivləşdir
+              </Button>
+            )}
           </div>
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <div>
-              <p className="text-sm font-medium">Gündəlik hesabat</p>
-              <p className="text-xs text-muted-foreground">Hər gün satış hesabatı al</p>
+
+          {/* QR Code setup flow */}
+          {showQR && qrData && (
+            <div className="space-y-4 rounded-lg border p-4 bg-muted/30">
+              <p className="text-sm font-medium">Google Authenticator tətbiqini açın və QR kodu skan edin:</p>
+              <div className="flex justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={qrData.qrCodeUrl} alt="2FA QR Code" className="rounded-lg border" width={180} height={180} />
+              </div>
+              <p className="text-xs text-muted-foreground text-center">
+                Skan edə bilmirsinizsə, bu kodu əl ilə daxil edin: <span className="font-mono font-bold">{qrData.secret}</span>
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  id="otp-token"
+                  placeholder="6 rəqəmli kodu daxil edin"
+                  value={otpToken}
+                  onChange={e => setOtpToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  maxLength={6}
+                  className="text-center text-lg tracking-widest"
+                />
+                <Button onClick={handleEnable2FA} disabled={enabling2FA || otpToken.length !== 6}>
+                  {enabling2FA ? 'Yoxlanılır...' : 'Təsdiqlə'}
+                </Button>
+              </div>
             </div>
-            <Switch
-              id="email-daily-report"
-              checked={prefs.email.daily_report}
-              onCheckedChange={() => toggle('email', 'daily_report')}
-            />
-          </div>
+          )}
+
+          {/* Disable 2FA modal */}
+          {showDisableModal && (
+            <div className="space-y-3 rounded-lg border border-destructive/40 bg-destructive/5 p-4">
+              <p className="text-sm font-medium text-destructive">2FA-nı deaktiv etmək üçün şifrənizi daxil edin:</p>
+              <div className="flex gap-2">
+                <Input
+                  id="disable-2fa-password"
+                  type="password"
+                  placeholder="Cari şifrəniz"
+                  value={disablePassword}
+                  onChange={e => setDisablePassword(e.target.value)}
+                />
+                <Button variant="destructive" onClick={handleDisable2FA} disabled={disabling2FA}>
+                  {disabling2FA ? '...' : 'Deaktiv et'}
+                </Button>
+                <Button variant="outline" onClick={() => { setShowDisableModal(false); setDisablePassword(''); }}>
+                  Ləğv et
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {/* SMS */}
+      {/* Session Management Card */}
       <Card>
         <CardHeader>
-          <CardTitle>SMS bildirişləri</CardTitle>
+          <CardTitle>Sessiya İdarəsi</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <div>
-              <p className="text-sm font-medium">Yeniliklər</p>
-              <p className="text-xs text-muted-foreground">Sistem yenilikləri haqqında SMS al</p>
-            </div>
-            <Switch
-              id="sms-updates"
-              checked={prefs.sms.updates}
-              onCheckedChange={() => toggle('sms', 'updates')}
-            />
+          <div className="rounded-lg border p-4">
+            <p className="font-medium">Bütün sessiyaları ləğv et</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Bu, cari cihazınız xaricindəki bütün aktiv sessiyaları (digər kompüterlər, telefonlar) dərhal bağlayacaq. Hesabınıza icazəsiz giriş olduğunu düşünürsünüzsə bunu istifadə edin.
+            </p>
           </div>
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <div>
-              <p className="text-sm font-medium">Ödəniş xatırlatması</p>
-              <p className="text-xs text-muted-foreground">Vaxtı keçmiş ödənişlər üçün SMS</p>
-            </div>
-            <Switch
-              id="sms-payment-reminder"
-              checked={prefs.sms.payment_reminder}
-              onCheckedChange={() => toggle('sms', 'payment_reminder')}
-            />
-          </div>
+          <Button
+            variant="destructive"
+            onClick={handleRevokeAllSessions}
+            disabled={revokingSession}
+          >
+            {revokingSession ? 'Ləğv edilir...' : '🚫 Bütün sessiyaları bağla'}
+          </Button>
         </CardContent>
       </Card>
 
-      {/* Push */}
+      {/* Audit Log Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Push bildirişləri</CardTitle>
+          <CardTitle>Fəaliyyət Tarixçəsi (Audit Log)</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <div>
-              <p className="text-sm font-medium">Yeni mesaj</p>
-              <p className="text-xs text-muted-foreground">Yeni mesaj gəldikdə bildiriş al</p>
+        <CardContent>
+          {logsLoading ? (
+            <div className="flex items-center justify-center py-6">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary border-t-transparent" />
             </div>
-            <Switch
-              id="push-new-message"
-              checked={prefs.push.new_message}
-              onCheckedChange={() => toggle('push', 'new_message')}
-            />
-          </div>
-          <div className="flex items-center justify-between rounded-lg border p-4">
-            <div>
-              <p className="text-sm font-medium">Hesab fəaliyyəti</p>
-              <p className="text-xs text-muted-foreground">Giriş, çıxış, şifrə dəyişiklikləri</p>
+          ) : auditLogs.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4 text-center">Hələ heç bir fəaliyyət qeyd edilməyib.</p>
+          ) : (
+            <div className="space-y-2">
+              {auditLogs.map((log) => (
+                <div key={log.id} className="flex items-start justify-between rounded-lg border p-3 gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">{ACTION_LABELS[log.action] || log.action}</p>
+                    {log.description && (
+                      <p className="text-xs text-muted-foreground">{log.description}</p>
+                    )}
+                    {log.ip_address && (
+                      <p className="text-xs text-muted-foreground">IP: {log.ip_address}</p>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground whitespace-nowrap">
+                    {log.created_at}
+                  </p>
+                </div>
+              ))}
             </div>
-            <Switch
-              id="push-account-activity"
-              checked={prefs.push.account_activity}
-              onCheckedChange={() => toggle('push', 'account_activity')}
-            />
-          </div>
+          )}
         </CardContent>
       </Card>
     </div>
@@ -894,98 +1274,11 @@ export default function SettingsPage() {
           )}
 
           {activeTab === 'reports' && (
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Hesabat ayarları</CardTitle>
-                </CardHeader>
-                <CardContent className="grid gap-4 md:grid-cols-2">
-                  <div>
-                    <Label htmlFor="report-frequency">Hesabat tezliyi</Label>
-                    <select
-                      id="report-frequency"
-                      className="mt-2 block w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none focus:border-ring focus:ring-1 focus:ring-ring"
-                    >
-                      <option>Gündəlik</option>
-                      <option>Həftəlik</option>
-                      <option>Aylıq</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label htmlFor="report-format">Format</Label>
-                    <select
-                      id="report-format"
-                      className="mt-2 block w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none focus:border-ring focus:ring-1 focus:ring-ring"
-                    >
-                      <option>PDF</option>
-                      <option>Excel</option>
-                    </select>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Avtomatik hesabatlar</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center justify-between rounded-lg border p-4">
-                    <span>Gündəlik satış</span>
-                    <Switch id="auto-daily-report" />
-                  </div>
-                  <div className="flex items-center justify-between rounded-lg border p-4">
-                    <span>Həftəlik inventar</span>
-                    <Switch id="auto-weekly-inventory" />
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <ReportsTab />
           )}
 
           {activeTab === 'security' && (
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>2FA ayarları</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-center justify-between rounded-lg border p-4">
-                    <div>
-                      <p className="font-medium">İki faktorlu təsdiq</p>
-                      <p className="text-sm text-muted-foreground">Hesab təhlükəsizliyini artırın.</p>
-                    </div>
-                    <Switch id="two-factor" />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Sessiya idarəsi</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="rounded-lg border p-4">
-                    <p className="font-medium">Aktiv sessiyalar</p>
-                    <p className="text-sm text-muted-foreground">Brauzer / cihazlara nəzarət.</p>
-                  </div>
-                  <Button variant="outline">Bütün sessiyaları bağla</Button>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Audit log</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <p className="text-sm text-muted-foreground">
-                    Təhlükəsizlik və əməliyyat qeydiyyatını izləyin.
-                  </p>
-                  <div className="rounded-lg border p-4">
-                    <p className="text-sm">Son fəaliyyət: 30.06.2026 12:45</p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <SecurityTab />
           )}
         </div>
       </div>

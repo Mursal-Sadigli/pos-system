@@ -70,6 +70,25 @@ export const connectDB = async () => {
         FOREIGN KEY (user_id) REFERENCES ${schemaQualified}.users(id) ON DELETE CASCADE
       )
     `);
+    // Security columns on users
+    await pool.query(`ALTER TABLE ${schemaQualified}.users ADD COLUMN IF NOT EXISTS two_factor_secret VARCHAR(255)`);
+    await pool.query(`ALTER TABLE ${schemaQualified}.users ADD COLUMN IF NOT EXISTS two_factor_enabled BOOLEAN DEFAULT FALSE`);
+    await pool.query(`ALTER TABLE ${schemaQualified}.users ADD COLUMN IF NOT EXISTS token_version INTEGER DEFAULT 0`);
+    // Audit logs table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS ${schemaQualified}.audit_logs (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        user_id UUID NOT NULL,
+        action VARCHAR(100) NOT NULL,
+        description TEXT,
+        ip_address VARCHAR(45),
+        user_agent TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (user_id) REFERENCES ${schemaQualified}.users(id) ON DELETE CASCADE
+      )
+    `);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_audit_logs_user_id ON ${schemaQualified}.audit_logs(user_id)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON ${schemaQualified}.audit_logs(created_at DESC)`);
     logger.info('✅ Admin API database connection successful');
   } catch (error: any) {
     if (error?.code === '42501' || error?.message?.includes('permission denied')) {
@@ -80,6 +99,7 @@ export const connectDB = async () => {
     throw error;
   }
 };
+
 
 
 export default { query, connectDB };

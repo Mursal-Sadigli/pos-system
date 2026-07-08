@@ -2,9 +2,11 @@ import { UserModel } from '../models/User.model';
 import { comparePassword } from '../utils/bcrypt';
 import { generateToken, generateRefreshToken } from '../utils/jwt';
 import { InvitationService } from './invitation.service';
+import { SecurityService } from './security.service';
+import { query, schemaQualified } from '../config/database';
 
 export class AuthService {
-  static async login(email: string, password: string) {
+  static async login(email: string, password: string, meta?: { ip?: string; userAgent?: string }) {
     const user = await UserModel.findByEmail(email);
     if (!user) {
       throw new Error('E-poçt və ya şifrə yanlışdır');
@@ -19,10 +21,32 @@ export class AuthService {
       throw new Error('Hesabınız deaktiv edilib');
     }
 
-    const token = generateToken({ id: user.id, email: user.email, role: user.role, storeId: user.store_id || undefined });
+    // Fetch current token_version so the JWT carries it
+    const tvResult = await query(
+      `SELECT COALESCE(token_version, 0) AS token_version FROM ${schemaQualified}.users WHERE id = $1`,
+      [user.id]
+    );
+    const tokenVersion: number = tvResult.rows[0]?.token_version ?? 0;
+
+    const token = generateToken({
+      id: user.id,
+      email: user.email,
+      role: user.role,
+      storeId: user.store_id || undefined,
+      tokenVersion,
+    });
     const refreshToken = generateRefreshToken({ id: user.id });
     await UserModel.updateRefreshToken(user.id, refreshToken);
     await UserModel.updateLastLogin(user.id);
+
+    // Write audit log
+    await SecurityService.createAuditLog({
+      userId: user.id,
+      action: 'login',
+      description: 'Sistemə daxil olundu',
+      ipAddress: meta?.ip,
+      userAgent: meta?.userAgent,
+    });
 
     return { user, token, refreshToken };
   }

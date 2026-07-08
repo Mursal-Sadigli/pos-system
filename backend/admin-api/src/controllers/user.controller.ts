@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { UserService } from '../services/user.service';
 import { successResponse, errorResponse } from '../utils/response';
+import { SecurityService } from '../services/security.service';
 
 export class UserController {
   static async getUsers(req: Request, res: Response) {
@@ -134,6 +135,16 @@ export class UserController {
       // Hash new password
       const hashedPassword = await hashPassword(newPassword);
       await UserService.updateUser(userId, { password: hashedPassword });
+
+      // Audit log
+      await SecurityService.createAuditLog({
+        userId,
+        action: 'password_changed',
+        description: 'Şifrə dəyişdirildi',
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+
       return successResponse(res, null, 'Şifrə yeniləndi');
     } catch (error: any) {
       return errorResponse(res, error.message || 'Şifrə yenilənə bilmədi', 500);

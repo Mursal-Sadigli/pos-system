@@ -7,7 +7,10 @@ export class AuthController {
   static async login(req: Request, res: Response) {
     try {
       const { email, password } = req.body;
-      const result = await AuthService.login(email, password);
+      const result = await AuthService.login(email, password, {
+        ip: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
       return successResponse(res, result, 'Giriş uğurla həyata keçirildi');
     } catch (error: any) {
       return errorResponse(res, error.message, 401);
