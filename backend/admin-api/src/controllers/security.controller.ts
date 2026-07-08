@@ -106,7 +106,8 @@ export class SecurityController {
   // GET /api/security/system-logs
   static async getSystemLogs(req: AuthRequest, res: Response) {
     try {
-      if (!req.user || !req.user.storeId) return errorResponse(res, 'Store ID required', 401);
+      if (!req.user) return errorResponse(res, 'Authentication required', 401);
+      if (!req.user.storeId) return errorResponse(res, 'Store ID required', 403);
       
       // Only Admins and Managers should see system logs
       if (req.user.role !== 'admin' && req.user.role !== 'manager') {
