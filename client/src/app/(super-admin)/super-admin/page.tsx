@@ -201,7 +201,7 @@ export default function SuperAdminUsersPage() {
       email: user.email,
       role: user.role,
       status: user.status,
-      storeId: user.store_id || user.storeId || '',
+      storeId: (user as any).store_id || (user as any).storeId || '',
     });
     setEditDialogOpen(true);
   };
