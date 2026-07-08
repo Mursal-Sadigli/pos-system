@@ -22,17 +22,28 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useUIStore } from '@/store/uiStore';
 import { useAuth } from '@/hooks/useAuth';
 
-const navigation = [
-  { name: 'İdarə paneli', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'POS', href: '/user/pos', icon: ShoppingCart },
-  { name: 'Məhsullar', href: '/user/products', icon: Package },
-  { name: 'Sifarişlər', href: '/user/orders', icon: FileText },
-  { name: 'Müştərilər', href: '/user/customers', icon: Users },
-  { name: 'Hesabatlar', href: '/user/reports', icon: BarChart3 },
-  { name: 'Parametrlər', href: '/user/settings', icon: Settings },
-  { name: 'Loglar', href: '/user/logs', icon: FileText },
-  { name: 'Yardım', href: '/user/help', icon: HelpCircle },
-];
+const getNavigation = (role?: string) => {
+  const allNav = [
+    { name: 'İdarə paneli', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'POS', href: '/user/pos', icon: ShoppingCart },
+    { name: 'Məhsullar', href: '/user/products', icon: Package },
+    { name: 'Sifarişlər', href: '/user/orders', icon: FileText },
+    { name: 'Müştərilər', href: '/user/customers', icon: Users },
+    { name: 'Hesabatlar', href: '/user/reports', icon: BarChart3 },
+    { name: 'Parametrlər', href: '/user/settings', icon: Settings },
+    { name: 'Loglar', href: '/user/logs', icon: FileText },
+    { name: 'Yardım', href: '/user/help', icon: HelpCircle },
+  ];
+
+  if (role === 'SUPER_ADMIN' || role === 'ADMIN') {
+    return allNav;
+  }
+
+  return [
+    { name: 'POS', href: '/user/pos', icon: ShoppingCart },
+    { name: 'Yardım', href: '/user/help', icon: HelpCircle },
+  ];
+};
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -77,7 +88,7 @@ export function Sidebar() {
 
       <ScrollArea className="flex-1 px-3 py-4">
         <nav className="space-y-1">
-          {navigation.map((item) => {
+          {getNavigation(user?.role).map((item) => {
             const isActive =
               pathname === item.href || pathname.startsWith(item.href + '/');
 

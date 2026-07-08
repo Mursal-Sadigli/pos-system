@@ -65,7 +65,7 @@ export default function LoginPage() {
             } else if (role === 'ADMIN') {
               router.push('/admin');
             } else {
-              router.push('/dashboard');
+              router.push('/user/pos');
             }
         }catch(error: any){
             console.error('Login xətası:', error);

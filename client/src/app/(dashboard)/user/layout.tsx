@@ -1,7 +1,7 @@
 'use client';
 
 import { ReactNode, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { Navbar } from '@/components/layout/Navbar';
 import { Sidebar } from '@/components/layout/Sidebar';
@@ -9,13 +9,19 @@ import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, isLoading } = useAuth();
 
   useEffect(() => {
     if (!isLoading && !user) {
       router.push('/login');
+    } else if (!isLoading && user && user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN') {
+      const allowedPaths = ['/user/pos', '/user/help'];
+      if (!allowedPaths.some(p => pathname.startsWith(p))) {
+        router.push('/user/pos');
+      }
     }
-  }, [user, isLoading, router]);
+  }, [user, isLoading, router, pathname]);
 
   if (isLoading) {
     return <LoadingSpinner />;

@@ -2,9 +2,18 @@
 
 import { useAuth } from '@/hooks/useAuth';
 import { LogOut, User, Store } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 export default function DashboardPage() {
   const { user, logout } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (user && user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN') {
+      router.push('/user/pos');
+    }
+  }, [user, router]);
 
   return (
     <div className="space-y-6">
