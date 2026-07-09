@@ -70,7 +70,7 @@ export class InvitationService {
       invited_by: invitation.invited_by,
       is_verified: true,
       must_change_password: true,
-      isPasswordHashed: true,
+      isPasswordHashed: false,
     });
 
     await InvitationModel.updateStatus(invitation.id, 'ACCEPTED');
