@@ -257,4 +257,12 @@ export const storeApi = {
 };
 
 
+// ==================== BACKUP API ====================
+export const backupApi = {
+  getBackups: () => adminApi.get('/settings/backups'),
+  createBackup: () => adminApi.post('/settings/backups'),
+  deleteBackup: (id: string) => adminApi.delete(`/settings/backups/${id}`),
+  downloadBackupUrl: (id: string) => `${adminBaseURL}/settings/backups/${id}/download`,
+};
+
 export default api;
