@@ -68,6 +68,27 @@ export default function GeneralSettingsPage() {
     }
   };
 
+  const handleToggleChange = async (key: keyof GeneralSettings, checked: boolean) => {
+    const updatedSettings = { ...generalSettings, [key]: checked };
+    setGeneralSettings(updatedSettings);
+
+    if (checked) {
+      let msg = '';
+      if (key === 'maintenanceMode') msg = 'Baxım Rejimi aktivləşdirildi';
+      if (key === 'allowRegistration') msg = 'Öz-özünə qeydiyyat aktivləşdirildi';
+      if (key === 'enableEmailNotifications') msg = 'Email bildirişləri aktivləşdirildi';
+      toast({ title: '✅ Bildiriş', description: msg });
+    }
+
+    try {
+      await superAdminService.updateGeneralSettings(updatedSettings);
+    } catch (error) {
+      console.error('Failed to auto-save toggle:', error);
+      setGeneralSettings(generalSettings); // revert
+      toast({ title: '❌ Xəta', description: 'Dəyişiklik yadda saxlanıla bilmədi', variant: 'destructive' });
+    }
+  };
+
   if (isFetching) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -163,7 +184,7 @@ export default function GeneralSettingsPage() {
             </div>
             <Switch
               checked={generalSettings.maintenanceMode}
-              onCheckedChange={(checked) => setGeneralSettings({ ...generalSettings, maintenanceMode: checked })}
+              onCheckedChange={(checked) => handleToggleChange('maintenanceMode', checked)}
             />
           </div>
           <div className="flex items-center justify-between">
@@ -175,7 +196,7 @@ export default function GeneralSettingsPage() {
             </div>
             <Switch
               checked={generalSettings.allowRegistration}
-              onCheckedChange={(checked) => setGeneralSettings({ ...generalSettings, allowRegistration: checked })}
+              onCheckedChange={(checked) => handleToggleChange('allowRegistration', checked)}
             />
           </div>
           <div className="flex items-center justify-between">
@@ -187,7 +208,7 @@ export default function GeneralSettingsPage() {
             </div>
             <Switch
               checked={generalSettings.enableEmailNotifications}
-              onCheckedChange={(checked) => setGeneralSettings({ ...generalSettings, enableEmailNotifications: checked })}
+              onCheckedChange={(checked) => handleToggleChange('enableEmailNotifications', checked)}
             />
           </div>
         </div>

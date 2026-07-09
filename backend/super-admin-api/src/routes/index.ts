@@ -7,6 +7,7 @@ import storesRoutes from './stores.routes';
 import productRoutes from './product.routes';
 import orderRoutes from './order.routes';
 import reportRoutes from './report.routes';
+import settingsRoutes from './settings.routes';
 
 const router = Router();
 
@@ -19,5 +20,6 @@ router.use('/stores', storesRoutes);
 router.use('/products', productRoutes);
 router.use('/orders', orderRoutes);
 router.use('/reports', reportRoutes);
+router.use('/super-admin/settings', settingsRoutes);
 
 export default router;

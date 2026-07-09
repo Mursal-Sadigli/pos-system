@@ -7,6 +7,7 @@ import dotenv from 'dotenv';
 import authRoutes from './routes/auth.routes';
 import notificationRoutes from './routes/notification.routes';
 import superAdminRoutes from './routes/superAdmin.routes';
+import { maintenanceMiddleware } from './middleware/maintenance.middleware';
 
 dotenv.config();
 
@@ -14,6 +15,7 @@ const app = express();
 
 // ==================== MIDDLEWARE ====================
 app.use(helmet());
+app.use(maintenanceMiddleware);
 export const allowedOrigins = [
   'http://localhost:3000',
   'http://127.0.0.1:3000',

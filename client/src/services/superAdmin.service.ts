@@ -31,6 +31,13 @@ export interface GeneralSettings {
   enableEmailNotifications: boolean;
 }
 
+export interface SecuritySettings {
+  twoFactorAuth: boolean;
+  passwordComplexity: boolean;
+  sessionTimeout: number;
+  maxLoginAttempts: number;
+}
+
 export const superAdminService = {
   // General Settings
   getGeneralSettings: () => {
@@ -39,6 +46,15 @@ export const superAdminService = {
   
   updateGeneralSettings: (data: Partial<GeneralSettings>) => {
     return api.put<GeneralSettings>('/super-admin/settings/general', data);
+  },
+
+  // Security Settings
+  getSecuritySettings: () => {
+    return api.get<SecuritySettings>('/super-admin/settings/security');
+  },
+
+  updateSecuritySettings: (data: Partial<SecuritySettings>) => {
+    return api.put<SecuritySettings>('/super-admin/settings/security', data);
   },
 
   // Bütün adminləri gətir

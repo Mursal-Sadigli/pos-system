@@ -8,7 +8,17 @@ export class AuthController{
     // ============= Register =========== //
     static async register(req: Request, res: Response){
         try {
-            throw new Error('Açıq qeydiyyat deaktiv edilib. Yeni istifadəçi üçün admin dəvəti gözləyin.');
+            const { GeneralSettingModel } = require('../models/GeneralSetting.model');
+            const settings = await GeneralSettingModel.getSettings();
+            
+            if (settings && !settings.allowRegistration) {
+                throw new Error('Açıq qeydiyyat deaktiv edilib. Yeni istifadəçi üçün admin dəvəti gözləyin.');
+            }
+            
+            // Allow registration if setting is enabled
+            const { AuthService } = require('../services/auth.service');
+            const result = await AuthService.register(req.body);
+            return successResponse(res, result, 'Uğurla qeydiyyatdan keçdiniz.');
         } catch (error) {
             return errorResponse(res, error instanceof Error ? error.message : 'Qeydiyyat uğursuz oldu.', 400);
         }

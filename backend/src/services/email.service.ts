@@ -35,6 +35,13 @@ export class EmailService {
     from?: string;
   }): Promise<void> {
     try {
+      const { GeneralSettingModel } = require('../models/GeneralSetting.model');
+      const settings = await GeneralSettingModel.getSettings();
+      if (settings && !settings.enableEmailNotifications) {
+        console.log('📧 Email sending disabled by general settings');
+        return;
+      }
+
       const recipients = Array.isArray(to) ? to : [to];
       console.log('📧 Sending email', { to: recipients, subject, from, frontendUrl: process.env.FRONTEND_URL });
 
