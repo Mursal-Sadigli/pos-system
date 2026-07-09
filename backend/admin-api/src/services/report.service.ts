@@ -283,7 +283,11 @@ export class ReportService {
     const orderQuery = `
       SELECT 
         COALESCE(SUM(amount), 0) as total_sales,
-        COUNT(id) as total_orders
+        COUNT(id) as total_orders,
+        COALESCE(SUM(CASE WHEN created_at >= DATE_TRUNC('month', CURRENT_DATE) THEN amount ELSE 0 END), 0) as current_month_rev,
+        COALESCE(SUM(CASE WHEN created_at >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '1 month' AND created_at < DATE_TRUNC('month', CURRENT_DATE) THEN amount ELSE 0 END), 0) as last_month_rev,
+        COUNT(CASE WHEN created_at >= DATE_TRUNC('month', CURRENT_DATE) THEN id END) as current_month_orders,
+        COUNT(CASE WHEN created_at >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '1 month' AND created_at < DATE_TRUNC('month', CURRENT_DATE) THEN id END) as last_month_orders
       FROM "${schemaQualified.replace(/"/g, '')}".pos_orders
       WHERE status != 'cancelled'
     `;
@@ -303,18 +307,25 @@ export class ReportService {
     const totalSales = Number(summary.total_sales);
     const totalOrders = Number(summary.total_orders);
 
+    const currRev = Number(summary.current_month_rev);
+    const lastRev = Number(summary.last_month_rev);
+    const salesGrowth = lastRev > 0 ? Math.round(((currRev - lastRev) / lastRev) * 100) : (currRev > 0 ? 100 : 0);
+
+    const currOrd = Number(summary.current_month_orders);
+    const lastOrd = Number(summary.last_month_orders);
+    const ordersGrowth = lastOrd > 0 ? Math.round(((currOrd - lastOrd) / lastOrd) * 100) : (currOrd > 0 ? 100 : 0);
+
     return {
       total_sales: totalSales,
       total_orders: totalOrders,
       total_users: totalUsers,
       total_stores: totalStores,
       avg_order: totalOrders > 0 ? totalSales / totalOrders : 0,
-      // Hardcoded mock percentages for now, calculating real previous month requires more complex queries
-      sales_growth: 12.5,
-      orders_growth: 8.3,
-      stores_growth: 2,
-      users_growth: 8,
-      avg_order_growth: 4.2
+      sales_growth: salesGrowth,
+      orders_growth: ordersGrowth,
+      stores_growth: 0, // Not typically tracked month-over-month for small scale
+      users_growth: 0, 
+      avg_order_growth: 0
     };
   }
 
@@ -404,7 +415,9 @@ export class ReportService {
         s.is_active as status,
         COALESCE(SUM(o.amount), 0) as revenue,
         COUNT(DISTINCT o.id) as orders,
-        COUNT(DISTINCT p.id) as products
+        COUNT(DISTINCT p.id) as products,
+        COALESCE(SUM(CASE WHEN o.created_at >= DATE_TRUNC('month', CURRENT_DATE) THEN o.amount ELSE 0 END), 0) as current_month_rev,
+        COALESCE(SUM(CASE WHEN o.created_at >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '1 month' AND o.created_at < DATE_TRUNC('month', CURRENT_DATE) THEN o.amount ELSE 0 END), 0) as last_month_rev
       FROM "${schemaQualified.replace(/"/g, '')}".stores s
       LEFT JOIN "${schemaQualified.replace(/"/g, '')}".pos_orders o 
         ON s.id = o.store_id AND o.status != 'cancelled'
@@ -418,17 +431,23 @@ export class ReportService {
     // Assign random colors and mock growth for now, since we don't have historical comparison built into this query
     const colors = ['#4F46E5', '#7C3AED', '#10B981', '#F59E0B', '#EC4899', '#06B6D4', '#8B5CF6'];
     
-    return result.rows.map((row, index) => ({
-      id: row.id,
-      name: row.name,
-      status: row.status === true || row.status === 'true' || row.status === 't' ? 'active' : 'inactive',
-      revenue: Number(row.revenue),
-      orders: Number(row.orders),
-      products: Number(row.products),
-      customers: Number(row.orders), // Fallback: assuming each order is a customer interaction
-      growth: Math.round((Math.random() * 20) - 5), // Mock growth
-      color: colors[index % colors.length]
-    }));
+    return result.rows.map((row, index) => {
+      const curr = Number(row.current_month_rev);
+      const last = Number(row.last_month_rev);
+      const calculatedGrowth = last > 0 ? Math.round(((curr - last) / last) * 100) : (curr > 0 ? 100 : 0);
+
+      return {
+        id: row.id,
+        name: row.name,
+        status: row.status === true || row.status === 'true' || row.status === 't' ? 'active' : 'inactive',
+        revenue: Number(row.revenue),
+        orders: Number(row.orders),
+        products: Number(row.products),
+        customers: Number(row.orders), // Fallback
+        growth: calculatedGrowth,
+        color: colors[index % colors.length]
+      };
+    });
   }
 
   /**
