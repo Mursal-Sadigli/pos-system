@@ -98,11 +98,36 @@ export const authApi = {
   logout: () => api.post('/auth/logout'),
   getMe: () => api.get('/auth/me'),
   refreshToken: (refreshToken: string) => api.post('/auth/refresh-token', { refreshToken }),
-  forgotPassword: (email: string) => api.post('/auth/forgot-password', { email }),
-  resetPassword: (token: string, newPassword: string) => 
-    api.post('/auth/reset-password', { token, newPassword }),
-  changePassword: (currentPassword: string, newPassword: string) =>
-    api.post('/auth/change-password', { currentPassword, newPassword }),
+  forgotPassword: async (email: string) => {
+    try {
+      return await api.post('/auth/forgot-password', { email });
+    } catch (error: any) {
+      if (error?.response?.status === 404 || error?.response?.status === 400 || error?.status === 400 || error?.status === 404) {
+        return await adminApi.post('/auth/forgot-password', { email });
+      }
+      throw error;
+    }
+  },
+  resetPassword: async (token: string, newPassword: string) => {
+    try {
+      return await api.post('/auth/reset-password', { token, newPassword });
+    } catch (error: any) {
+      if (error?.response?.status === 400 || error?.status === 400) {
+        return await adminApi.post('/auth/reset-password', { token, newPassword });
+      }
+      throw error;
+    }
+  },
+  changePassword: async (currentPassword: string, newPassword: string) => {
+    try {
+      return await api.post('/auth/change-password', { currentPassword, newPassword });
+    } catch (error: any) {
+      if (error?.response?.status === 400 || error?.response?.status === 401 || error?.status === 400 || error?.status === 401) {
+        return await adminApi.post('/auth/change-password', { currentPassword, newPassword });
+      }
+      throw error;
+    }
+  },
   acceptInvitation: async (token: string) => {
     try {
       return await api.post('/auth/accept-invite', { token });
