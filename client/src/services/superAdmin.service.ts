@@ -21,7 +21,26 @@ export interface Admin {
   createdAt: string;
 }
 
+export interface GeneralSettings {
+  systemName: string;
+  defaultLanguage: string;
+  defaultTimezone: string;
+  defaultCurrency: string;
+  maintenanceMode: boolean;
+  allowRegistration: boolean;
+  enableEmailNotifications: boolean;
+}
+
 export const superAdminService = {
+  // General Settings
+  getGeneralSettings: () => {
+    return api.get<GeneralSettings>('/super-admin/settings/general');
+  },
+  
+  updateGeneralSettings: (data: Partial<GeneralSettings>) => {
+    return api.put<GeneralSettings>('/super-admin/settings/general', data);
+  },
+
   // Bütün adminləri gətir
   getAdmins: (params?: { page?: number; limit?: number; search?: string; status?: string }) => {
     return api.get('/super-admin/admins', { params });

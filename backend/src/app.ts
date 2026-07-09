@@ -6,6 +6,7 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth.routes';
 import notificationRoutes from './routes/notification.routes';
+import superAdminRoutes from './routes/superAdmin.routes';
 
 dotenv.config();
 
@@ -52,6 +53,7 @@ app.use(morgan('dev'));
 // ==================== ROUTES ====================
 app.use('/api/auth', authRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/super-admin', superAdminRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
