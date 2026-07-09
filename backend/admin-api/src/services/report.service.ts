@@ -584,9 +584,9 @@ export class ReportService {
         email,
         role,
         is_active,
-        TO_CHAR(created_at, 'DD.MM.YYYY') as date,
-        TO_CHAR(created_at, 'DD.MM.YYYY HH24:MI:SS') as created_at_detailed,
-        TO_CHAR(last_login, 'DD.MM.YYYY HH24:MI:SS') as last_login_detailed
+        TO_CHAR(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Baku', 'DD.MM.YYYY') as date,
+        TO_CHAR(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Baku', 'DD.MM.YYYY HH24:MI:SS') as created_at_detailed,
+        TO_CHAR(last_login AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Baku', 'DD.MM.YYYY HH24:MI:SS') as last_login_detailed
       FROM "${schemaQualified.replace(/"/g, '')}".users
       ORDER BY created_at DESC
       LIMIT 50
