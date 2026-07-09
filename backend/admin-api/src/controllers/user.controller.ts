@@ -62,6 +62,17 @@ export class UserController {
       if (!user) {
         return errorResponse(res, 'İstifadəçi tapılmadı və ya yenilənə bilmədi', 404);
       }
+
+      try {
+        await SecurityService.createAuditLog({
+          userId: userReq.id || id,
+          action: 'UPDATE_USER',
+          description: `${id} ID-li istifadəçi yeniləndi`,
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent']
+        });
+      } catch (e) {}
+
       return successResponse(res, user, 'İstifadəçi yeniləndi');
     } catch (error: any) {
       return errorResponse(res, error.message || 'İstifadəçi yenilənə bilmədi', 500);
@@ -84,6 +95,17 @@ export class UserController {
       if (!success) {
         return errorResponse(res, 'İstifadəçi tapılmadı və ya silinə bilmədi', 404);
       }
+
+      try {
+        await SecurityService.createAuditLog({
+          userId: userReq.id || id,
+          action: 'DELETE_USER',
+          description: `${id} ID-li istifadəçi silindi`,
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent']
+        });
+      } catch (e) {}
+
       return successResponse(res, null, 'İstifadəçi silindi');
     } catch (error: any) {
       return errorResponse(res, error.message || 'İstifadəçi silinə bilmədi', 500);

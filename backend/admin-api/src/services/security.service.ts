@@ -461,4 +461,83 @@ export class SecurityService {
       }
     };
   }
+
+  static async getUserManagementLogs(options: { search?: string; limit?: number; offset?: number; action?: string; role?: string; status?: string }) {
+    const limit = options.limit || 50;
+    const offset = options.offset || 0;
+    
+    const auditRes = await query(`
+      SELECT 
+        al.id,
+        al.action as event,
+        COALESCE(u.name || ' ' || u.last_name, u.name, u.email, 'Bilinmir') as user_name,
+        u.email,
+        COALESCE(u.role, 'Bilinmir') as role,
+        al.ip_address as ip,
+        al.user_agent as device,
+        true as is_successful,
+        al.description as details,
+        TO_CHAR(al.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Baku', 'YYYY-MM-DD HH24:MI:SS') as timestamp
+      FROM ${schemaQualified}.audit_logs al
+      LEFT JOIN ${schemaQualified}.users u ON al.user_id = u.id
+      WHERE al.action IN ('CREATE_USER', 'UPDATE_USER', 'DELETE_USER', 'INVITE_USER', 'DEACTIVATE_USER', 'UPDATE_USER_ROLE')
+      ORDER BY al.created_at DESC
+    `);
+
+    let logs = auditRes.rows.map(log => ({
+      id: log.id,
+      action: log.event === 'CREATE_USER' ? 'İstifadəçi Yaradıldı' :
+             log.event === 'UPDATE_USER' ? 'İstifadəçi Yeniləndi' :
+             log.event === 'DELETE_USER' ? 'İstifadəçi Silindi' :
+             log.event === 'INVITE_USER' ? 'Dəvət Göndərildi' :
+             log.event === 'DEACTIVATE_USER' ? 'Deaktiv Edildi' :
+             log.event === 'UPDATE_USER_ROLE' ? 'Rol Dəyişdirildi' : log.event,
+      user: log.user_name,
+      email: log.email || 'email@yoxdur.com',
+      role: log.role,
+      status: log.is_successful ? 'success' : 'failed',
+      ip: log.ip || '-',
+      details: log.details,
+      timestamp: log.timestamp,
+      device: log.device || '-'
+    }));
+
+    // Search filter
+    if (options.search) {
+      const s = options.search.toLowerCase();
+      logs = logs.filter(l => 
+        (l.user && l.user.toLowerCase().includes(s)) ||
+        (l.email && l.email.toLowerCase().includes(s)) ||
+        (l.action && l.action.toLowerCase().includes(s)) ||
+        (l.details && l.details.toLowerCase().includes(s))
+      );
+    }
+
+    // Action filter
+    if (options.action && options.action !== 'all') {
+      logs = logs.filter(l => l.action === options.action);
+    }
+
+    // Role filter
+    if (options.role && options.role !== 'all') {
+      logs = logs.filter(l => l.role === options.role);
+    }
+
+    // Status filter
+    if (options.status && options.status !== 'all') {
+      logs = logs.filter(l => l.status === options.status);
+    }
+
+    const pagedLogs = logs.slice(offset, offset + limit);
+
+    return {
+      logs: pagedLogs,
+      stats: {
+        total: logs.length,
+        success: logs.filter(l => l.status === 'success').length,
+        failed: logs.filter(l => l.status === 'failed').length,
+        activeUsers: logs.filter(l => l.action === 'Dəvət Göndərildi' || l.action === 'İstifadəçi Yaradıldı').length
+      }
+    };
+  }
 }

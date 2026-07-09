@@ -298,4 +298,23 @@ export class ReportController {
       return errorResponse(res, error.message || 'Təhlükəsizlik logları gətirilə bilmədi', 500);
     }
   }
+
+  static async getUserLogs(req: AuthRequest, res: Response) {
+    try {
+      if (req.user?.role !== 'SUPER_ADMIN') return errorResponse(res, 'İcazəniz yoxdur', 403);
+      
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+      const search = req.query.search as string;
+      const action = req.query.action as string;
+      const role = req.query.role as string;
+      const status = req.query.status as string;
+
+      // We use SecurityService to fetch audit logs, but specifically for user management
+      const data = await SecurityService.getUserManagementLogs({ limit, offset, search, action, role, status });
+      return successResponse(res, data, 'İstifadəçi logları gətirildi');
+    } catch (error: any) {
+      return errorResponse(res, error.message || 'İstifadəçi logları gətirilə bilmədi', 500);
+    }
+  }
 }

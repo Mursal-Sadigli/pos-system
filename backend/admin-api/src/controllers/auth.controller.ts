@@ -55,6 +55,17 @@ export class AuthController {
       }
 
       const result = await AuthService.invite({ name, email, role, storeId, invitedBy: req.user.id });
+      
+      try {
+        await require('../services/security.service').SecurityService.createAuditLog({
+          userId: req.user.id,
+          action: 'INVITE_USER',
+          description: `${email} (${role}) istifadəçisinə dəvət göndərildi`,
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent']
+        });
+      } catch (e) {}
+
       return successResponse(res, result, 'Dəvət göndərildi', 201);
     } catch (error: any) {
       return errorResponse(res, error.message, 400);

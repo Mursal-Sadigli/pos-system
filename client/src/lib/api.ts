@@ -245,6 +245,7 @@ export const reportsApi = {
   getRecentUsers: () => adminApi.get('/reports/system/users/recent'),
   getSystemLogs: (params?: { search?: string; type?: string; status?: string; limit?: number; offset?: number }) => adminApi.get('/reports/system/logs', { params }),
   getSecurityLogs: (params?: { search?: string; status?: string; severity?: string; timeRange?: string; limit?: number; offset?: number }) => adminApi.get('/reports/system/security-logs', { params }),
+  getUserLogs: (params?: { search?: string; action?: string; role?: string; status?: string; limit?: number; offset?: number }) => adminApi.get('/reports/system/user-logs', { params }),
 };
 
 // ==================== STORE API ====================

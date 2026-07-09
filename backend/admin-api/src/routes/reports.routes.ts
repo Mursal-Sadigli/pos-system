@@ -24,5 +24,6 @@ router.get('/system/users/growth', authenticate, ReportController.getSuperAdminU
 router.get('/system/users/recent', authenticate, ReportController.getSuperAdminRecentUsers);
 router.get('/system/logs', authenticate, ReportController.getSystemLogs);
 router.get('/system/security-logs', authenticate, ReportController.getSecurityLogs);
+router.get('/system/user-logs', authenticate, ReportController.getUserLogs);
 
 export default router;
