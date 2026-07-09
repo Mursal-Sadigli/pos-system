@@ -530,7 +530,7 @@ export class ReportService {
       { name: 'Manager', value: stats.managers, color: '#4F46E5' },
       { name: 'Cashier', value: stats.cashiers, color: '#10B981' },
       { name: 'Viewer', value: stats.viewers, color: '#F59E0B' },
-    ];
+    ].filter(r => r.value > 0);
 
     // Mock activity for now
     const userActivityData = [
