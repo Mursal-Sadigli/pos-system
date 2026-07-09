@@ -176,7 +176,7 @@ export const userApi = {
   revokeAllSessions: () => adminApi.post('/security/revoke-sessions'),
   revokeSessionsWithPasskey: (assertion: any) => adminApi.post('/security/revoke-sessions-with-passkey', { assertion }),
   getAuditLogs: (limit?: number) => adminApi.get('/security/audit-logs', { params: { limit } }),
-  getSystemLogs: (params?: { search?: string; limit?: number; offset?: number }) => adminApi.get('/security/system-logs', { params }),
+  getStoreAuditLogs: (params?: { search?: string; limit?: number; offset?: number }) => adminApi.get('/security/system-logs', { params }),
   
   // Security - Passkey
   getPasskeyStatus: () => adminApi.get('/security/passkey/status'),
@@ -243,6 +243,8 @@ export const reportsApi = {
   getUserDetailedStats: () => adminApi.get('/reports/system/users/stats'),
   getUserDetailedGrowth: () => adminApi.get('/reports/system/users/growth'),
   getRecentUsers: () => adminApi.get('/reports/system/users/recent'),
+  getSystemLogs: (params?: { search?: string; type?: string; status?: string; limit?: number; offset?: number }) => adminApi.get('/reports/system/logs', { params }),
+  getSecurityLogs: (params?: { search?: string; status?: string; severity?: string; timeRange?: string; limit?: number; offset?: number }) => adminApi.get('/reports/system/security-logs', { params }),
 };
 
 // ==================== STORE API ====================

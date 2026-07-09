@@ -348,4 +348,117 @@ export class SecurityService {
     }
     return false;
   }
+
+  static async getSecurityLogs(options: { search?: string; limit?: number; offset?: number; status?: string; severity?: string; timeRange?: string }) {
+    const limit = options.limit || 50;
+    const offset = options.offset || 0;
+    
+    // login_history
+    const loginHistoryRes = await query(`
+      SELECT 
+        lh.id, 
+        'Giriş Cəhdi' as event,
+        COALESCE(u.name || ' ' || u.last_name, u.name, u.email, 'Bilinmir') as user_name,
+        lh.ip_address as ip,
+        lh.user_agent as device,
+        lh.is_successful,
+        lh.failure_reason as details,
+        TO_CHAR(lh.login_time AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Baku', 'YYYY-MM-DD HH24:MI:SS') as timestamp,
+        lh.login_time as sort_time
+      FROM public.login_history lh
+      LEFT JOIN ${schemaQualified}.users u ON lh.user_id = u.id
+      ORDER BY lh.login_time DESC LIMIT 200
+    `);
+
+    // audit_logs (security related)
+    const auditRes = await query(`
+      SELECT 
+        al.id,
+        al.action as event,
+        COALESCE(u.name || ' ' || u.last_name, u.name, u.email, 'Bilinmir') as user_name,
+        al.ip_address as ip,
+        al.user_agent as device,
+        true as is_successful,
+        al.description as details,
+        TO_CHAR(al.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Baku', 'YYYY-MM-DD HH24:MI:SS') as timestamp,
+        al.created_at as sort_time
+      FROM ${schemaQualified}.audit_logs al
+      LEFT JOIN ${schemaQualified}.users u ON al.user_id = u.id
+      WHERE al.action IN ('ACCOUNT_LOCKED', 'CHANGE_PASSWORD', 'RESET_PASSWORD', 'ENABLE_2FA', 'DISABLE_2FA')
+      ORDER BY al.created_at DESC LIMIT 200
+    `);
+
+    let combined: any[] = [];
+
+    // format login logs
+    for (const log of loginHistoryRes.rows) {
+      combined.push({
+        id: log.id,
+        event: log.event,
+        user: log.user_name,
+        ip: log.ip,
+        details: log.details || (log.is_successful ? 'Uğurlu giriş' : 'Uğursuz cəhd'),
+        severity: log.is_successful ? 'low' : 'high',
+        status: log.is_successful ? 'success' : 'failed',
+        timestamp: log.timestamp,
+        sort_time: new Date(log.sort_time).getTime(),
+        device: log.device,
+      });
+    }
+
+    // format audit logs
+    for (const log of auditRes.rows) {
+      let eventName = log.event;
+      let severity = 'medium';
+      let status = 'success';
+      
+      if (log.event === 'ACCOUNT_LOCKED') { eventName = 'Hesab Bloklandı'; severity = 'critical'; status = 'blocked'; }
+      if (log.event === 'CHANGE_PASSWORD') { eventName = 'Şifrə Dəyişdirildi'; }
+      if (log.event === 'RESET_PASSWORD') { eventName = 'Şifrə Sıfırlandı'; }
+      if (log.event === 'ENABLE_2FA') { eventName = '2FA Aktivləşdirildi'; }
+      if (log.event === 'DISABLE_2FA') { eventName = '2FA Deaktiv Edildi'; severity = 'high'; status = 'warning'; }
+
+      combined.push({
+        id: log.id,
+        event: eventName,
+        user: log.user_name,
+        ip: log.ip,
+        details: log.details,
+        severity,
+        status,
+        timestamp: log.timestamp,
+        sort_time: new Date(log.sort_time).getTime(),
+        device: log.device,
+      });
+    }
+
+    // Sort combined by sort_time DESC
+    combined.sort((a, b) => b.sort_time - a.sort_time);
+
+    // Apply search/filters
+    if (options.search) {
+      const s = options.search.toLowerCase();
+      combined = combined.filter(c => c.event.toLowerCase().includes(s) || c.user.toLowerCase().includes(s) || (c.details && c.details.toLowerCase().includes(s)));
+    }
+    if (options.status && options.status !== 'all') {
+      combined = combined.filter(c => c.status === options.status);
+    }
+    if (options.severity && options.severity !== 'all') {
+      combined = combined.filter(c => c.severity === options.severity);
+    }
+
+    const total = combined.length;
+    const paginated = combined.slice(offset, offset + limit);
+
+    return {
+      logs: paginated,
+      total,
+      stats: {
+        total,
+        critical: combined.filter(l => l.severity === 'critical').length,
+        high: combined.filter(l => l.severity === 'high').length,
+        failed: combined.filter(l => l.status === 'failed' || l.status === 'blocked').length,
+      }
+    };
+  }
 }

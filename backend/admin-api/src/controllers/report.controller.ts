@@ -5,6 +5,8 @@ import { AuthRequest } from '../middleware/auth.middleware';
 import { EmailService } from '../services/email.service';
 import { query, schemaQualified } from '../config/database';
 import { SystemHealthService } from '../services/system-health.service';
+import { SystemLogService } from '../services/system-log.service';
+import { SecurityService } from '../services/security.service';
 
 /** Istifadəçinin storeId-ni JWT-dən və ya DB-dən götürür */
 async function resolveStoreId(req: AuthRequest): Promise<string | null> {
@@ -259,6 +261,41 @@ export class ReportController {
       return successResponse(res, result, 'Ən son istifadəçilər gətirildi');
     } catch (error: any) {
       return errorResponse(res, error.message || 'Ən son istifadəçilər gətirilə bilmədi', 500);
+    }
+  }
+
+  static async getSystemLogs(req: AuthRequest, res: Response) {
+    try {
+      if (req.user?.role !== 'SUPER_ADMIN') return errorResponse(res, 'İcazəniz yoxdur', 403);
+      
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+      const search = req.query.search as string;
+      const type = req.query.type as string;
+      const status = req.query.status as string;
+
+      const data = await SystemLogService.getLogs({ limit, offset, search, type, status });
+      return successResponse(res, data, 'Sistem logları gətirildi');
+    } catch (error: any) {
+      return errorResponse(res, error.message || 'Sistem logları gətirilə bilmədi', 500);
+    }
+  }
+
+  static async getSecurityLogs(req: AuthRequest, res: Response) {
+    try {
+      if (req.user?.role !== 'SUPER_ADMIN') return errorResponse(res, 'İcazəniz yoxdur', 403);
+      
+      const limit = parseInt(req.query.limit as string) || 50;
+      const offset = parseInt(req.query.offset as string) || 0;
+      const search = req.query.search as string;
+      const status = req.query.status as string;
+      const severity = req.query.severity as string;
+      const timeRange = req.query.timeRange as string;
+
+      const data = await SecurityService.getSecurityLogs({ limit, offset, search, status, severity, timeRange });
+      return successResponse(res, data, 'Təhlükəsizlik logları gətirildi');
+    } catch (error: any) {
+      return errorResponse(res, error.message || 'Təhlükəsizlik logları gətirilə bilmədi', 500);
     }
   }
 }

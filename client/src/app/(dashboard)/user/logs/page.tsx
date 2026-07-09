@@ -42,7 +42,7 @@ export default function LogsPage() {
   const fetchLogs = async () => {
     try {
       setLoading(true);
-      const res = await userApi.getSystemLogs({ search: searchQuery, limit, offset });
+      const res = await userApi.getStoreAuditLogs({ search: searchQuery, limit, offset });
       setLogs(res.data?.data?.logs || []);
       setTotal(res.data?.data?.total || 0);
     } catch (error: any) {

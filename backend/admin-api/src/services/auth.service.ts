@@ -8,17 +8,72 @@ import { query, schemaQualified } from '../config/database';
 export class AuthService {
   static async login(email: string, password: string, meta?: { ip?: string; userAgent?: string }) {
     const user = await UserModel.findByEmail(email);
-    if (!user) {
-      throw new Error('E-poçt və ya şifrə yanlışdır');
-    }
+    
+    // Log function for login_history
+    const logAttempt = async (userId: string | null, isSuccessful: boolean, failureReason: string | null) => {
+      try {
+        await query(
+          `INSERT INTO public.login_history (user_id, ip_address, user_agent, login_time, is_successful, failure_reason) 
+           VALUES ($1, $2, $3, NOW(), $4, $5)`,
+          [userId, meta?.ip || null, meta?.userAgent || null, isSuccessful, failureReason]
+        );
+      } catch (e) {
+        console.error('Failed to log login_history:', e);
+      }
+    };
 
-    const valid = await comparePassword(password, user.password);
-    if (!valid) {
+    if (!user) {
+      await logAttempt(null, false, 'İstifadəçi tapılmadı');
       throw new Error('E-poçt və ya şifrə yanlışdır');
     }
 
     if (!user.is_active) {
+      await logAttempt(user.id, false, 'Hesab deaktiv edilib');
       throw new Error('Hesabınız deaktiv edilib');
+    }
+
+    // Check if account is locked
+    if (user.locked_until && new Date(user.locked_until) > new Date()) {
+      await logAttempt(user.id, false, 'Hesab bloklanıb');
+      throw new Error('Hesabınız çox sayda uğursuz girişə görə bloklanıb. Zəhmət olmasa bir qədər sonra yenidən cəhd edin.');
+    }
+
+    const valid = await comparePassword(password, user.password);
+    if (!valid) {
+      // Increment failed attempts
+      const failedAttempts = (user.failed_login_attempts || 0) + 1;
+      let lockedUntil: Date | null = null;
+      
+      if (failedAttempts >= 5) {
+        lockedUntil = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes lock
+        await SecurityService.createAuditLog({
+          userId: user.id,
+          action: 'ACCOUNT_LOCKED',
+          description: '5 dəfə yanlış şifrəyə görə hesab 15 dəqiqəlik bloklandı',
+          ipAddress: meta?.ip,
+          userAgent: meta?.userAgent,
+        });
+      }
+      
+      await query(
+        `UPDATE ${schemaQualified}.users SET failed_login_attempts = $1, locked_until = $2 WHERE id = $3`,
+        [failedAttempts, lockedUntil, user.id]
+      );
+      
+      await logAttempt(user.id, false, 'Yanlış şifrə');
+      
+      if (failedAttempts >= 5) {
+        throw new Error('Hesabınız 5 dəfə yanlış şifrə yığıldığı üçün 15 dəqiqəlik bloklandı.');
+      }
+      throw new Error('E-poçt və ya şifrə yanlışdır');
+    }
+
+    // Successful login: reset failed attempts
+    if (user.failed_login_attempts > 0 || user.locked_until) {
+      await query(
+        `UPDATE ${schemaQualified}.users SET failed_login_attempts = 0, locked_until = NULL WHERE id = $1`,
+        [user.id]
+      );
     }
 
     // Fetch current token_version so the JWT carries it
@@ -38,6 +93,7 @@ export class AuthService {
     const refreshToken = generateRefreshToken({ id: user.id });
     await UserModel.updateRefreshToken(user.id, refreshToken);
     await UserModel.updateLastLogin(user.id);
+    await logAttempt(user.id, true, null);
 
     // Write audit log
     await SecurityService.createAuditLog({

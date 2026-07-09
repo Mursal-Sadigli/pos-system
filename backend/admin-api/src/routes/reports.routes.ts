@@ -22,5 +22,7 @@ router.get('/system/stores/trends', authenticate, ReportController.getSuperAdmin
 router.get('/system/users/stats', authenticate, ReportController.getSuperAdminUserDetailedStats);
 router.get('/system/users/growth', authenticate, ReportController.getSuperAdminUserDetailedGrowth);
 router.get('/system/users/recent', authenticate, ReportController.getSuperAdminRecentUsers);
+router.get('/system/logs', authenticate, ReportController.getSystemLogs);
+router.get('/system/security-logs', authenticate, ReportController.getSecurityLogs);
 
 export default router;
