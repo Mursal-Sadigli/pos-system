@@ -40,9 +40,25 @@ export class AuthController{
         try {
             const {email, password} = req.body;
             const result=await AuthService.login(email, password);
+            
+            if (result.requires2FA) {
+                return successResponse(res, result, result.message);
+            }
+
             return successResponse(res, result, 'Giriş uğurla həyata keçirildi.');
         } catch (error) {
             return errorResponse(res, error instanceof Error ? error.message : 'Giriş uğursuz oldu.', 401);
+        };
+    }
+
+    // ============== Verify 2FA =============== //
+    static async verify2FA(req: Request, res: Response){
+        try {
+            const {tempToken, otp} = req.body;
+            const result=await AuthService.verify2FA(tempToken, otp);
+            return successResponse(res, result, 'Giriş uğurla həyata keçirildi.');
+        } catch (error) {
+            return errorResponse(res, error instanceof Error ? error.message : 'Doğrulama uğursuz oldu.', 401);
         };
     }
 

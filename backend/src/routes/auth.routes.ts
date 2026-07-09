@@ -27,6 +27,9 @@ router.post("/accept-invite", validate(acceptInviteSchema), AuthController.accep
 // Login
 router.post("/login", validate(loginSchema), AuthController.login);
 
+// Verify 2FA
+router.post("/verify-2fa", AuthController.verify2FA);
+
 // Invite user (admin only)
 router.post("/invite", authenticate, authorize('SUPER_ADMIN', 'ADMIN'), validate(inviteSchema), AuthController.invite);
 

@@ -17,8 +17,8 @@ export interface TokenPayload{
 }
 
 // Genereate Access Token
-export const generateToken = (payload: TokenPayload): string => {
-    return jwt.sign(payload, JWT_SECRET, {expiresIn: JWT_EXPIRES_IN});
+export const generateToken = (payload: any, expiresIn?: string): string => {
+    return jwt.sign(payload, JWT_SECRET, {expiresIn: (expiresIn ?? JWT_EXPIRES_IN) as StringValue});
 }
 
 // Generate Refresh Token

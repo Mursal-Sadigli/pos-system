@@ -784,4 +784,41 @@ export class EmailService {
       html,
     });
   }
+
+  // ==================== OTP EMAIL ====================
+  static async sendOTPEmail(to: string, otp: string): Promise<void> {
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Sistemə Giriş Kodu</title>
+        <style>
+          body { font-family: sans-serif; background-color: #f6f9fc; padding: 20px; }
+          .container { max-width: 500px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; text-align: center; }
+          .otp { font-size: 36px; font-weight: bold; letter-spacing: 5px; color: #4F46E5; margin: 20px 0; padding: 15px; background: #f3f4f6; border-radius: 8px; }
+          .footer { margin-top: 30px; color: #6b7280; font-size: 14px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h2>🔐 İki-Mərhələli Doğrulama</h2>
+          <p>Sistemə daxil olmaq üçün aşağıdakı təsdiq kodunu daxil edin:</p>
+          <div class="otp">${otp}</div>
+          <p>Bu kod 5 dəqiqə ərzində etibarlıdır.</p>
+          <div class="footer">
+            Əgər siz giriş etməmisinizsə, dərhal şifrənizi dəyişin.
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    await this.sendEmail({
+      to,
+      subject: '🔐 POS Sistemi - Giriş Kodu',
+      html,
+    });
+  }
 }

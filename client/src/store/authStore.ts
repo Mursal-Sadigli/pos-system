@@ -28,7 +28,8 @@ interface AuthStore {
   user: User | null;
   token: string | null;
   isLoading: boolean;
-  login: (email: string, password: string) => Promise<LoginResponse>;
+  login: (email: string, password: string) => Promise<any>;
+  verify2FA: (tempToken: string, otp: string) => Promise<LoginResponse>;
   register: (data: any) => Promise<void>;
   logout: () => void;
   setUser: (user: User) => void;
@@ -44,11 +45,18 @@ export const useAuthStore = create<AuthStore>()(
       isLoading: true,
 
       // ==================== LOGIN ====================
-      login: async (email: string, password: string): Promise<LoginResponse> => {
+      login: async (email: string, password: string): Promise<any> => {
         set({ isLoading: true });
         try {
           const response = await authApi.login({ email, password });
-          const { user: rawUser, token, refreshToken } = response.data.data as LoginResponse;
+          const data = response.data.data;
+
+          if (data.requires2FA) {
+            set({ isLoading: false });
+            return data; // Return tempToken and requires2FA
+          }
+
+          const { user: rawUser, token, refreshToken } = data as LoginResponse;
 
           const user = {
             ...rawUser,
@@ -64,6 +72,30 @@ export const useAuthStore = create<AuthStore>()(
         } catch (error: any) {
           set({ isLoading: false });
           throw new Error(error?.message || 'Login failed');
+        }
+      },
+
+      // ==================== VERIFY 2FA ====================
+      verify2FA: async (tempToken: string, otp: string): Promise<LoginResponse> => {
+        set({ isLoading: true });
+        try {
+          const response = await authApi.verify2FA({ tempToken, otp });
+          const { user: rawUser, token, refreshToken } = response.data.data as LoginResponse;
+
+          const user = {
+            ...rawUser,
+            storeId: (rawUser as any).store_id || rawUser.storeId || null,
+            storeName: (rawUser as any).store_name || rawUser.storeName || null,
+          };
+
+          localStorage.setItem('token', token);
+          localStorage.setItem('refreshToken', refreshToken);
+
+          set({ user, token, isLoading: false });
+          return { user, token, refreshToken };
+        } catch (error: any) {
+          set({ isLoading: false });
+          throw new Error(error?.response?.data?.message || error?.message || '2FA Verification failed');
         }
       },
 

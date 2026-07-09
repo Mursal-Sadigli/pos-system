@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { toast } from 'react-hot-toast';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2, ShieldCheck } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,8 +25,14 @@ type LoginFormData=z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
     const router=useRouter();
-    const {login, isLoading, user}=useAuth();
+    const {login, verify2FA, isLoading, user}=useAuth();
     const [showPassword, setShowPassword]=useState(false);
+    
+    // 2FA state
+    const [requires2FA, setRequires2FA] = useState(false);
+    const [tempToken, setTempToken] = useState<string | null>(null);
+    const [otpCode, setOtpCode] = useState('');
+    const [isVerifying, setIsVerifying] = useState(false);
 
     // Artıq daxil olmuş istifadəçini yönləndir
     useEffect(() => {
@@ -52,26 +58,113 @@ export default function LoginPage() {
         },
     });
 
+    const routeUser = (userRole: string, mustChange: boolean) => {
+        if (mustChange) {
+            router.push('/change-password');
+        } else if (userRole === 'SUPER_ADMIN') {
+            router.push('/super-admin');
+        } else if (userRole === 'ADMIN') {
+            router.push('/admin');
+        } else {
+            router.push('/user/pos');
+        }
+    };
+
     const onSubmit=async(data: LoginFormData) => {
         try{
             const response = await login(data.email, data.password);
+            
+            if (response?.requires2FA) {
+                setRequires2FA(true);
+                setTempToken(response.tempToken);
+                toast.success('İki-mərhələli doğrulama kodu e-poçt ünvanınıza göndərildi.');
+                return;
+            }
+            
             toast.success('Uğurla daxil oldunuz!');
             const user = response?.user;
             const role = user?.role;
-            if (user?.must_change_password || user?.mustChangePassword) {
-              router.push('/change-password');
-            } else if (role === 'SUPER_ADMIN') {
-              router.push('/super-admin');
-            } else if (role === 'ADMIN') {
-              router.push('/admin');
-            } else {
-              router.push('/user/pos');
-            }
+            const mustChange = user?.must_change_password || user?.mustChangePassword;
+            routeUser(role, mustChange);
         }catch(error: any){
             console.error('Login xətası:', error);
             toast.error(error?.message || 'Daxil olma uğursuz oldu. Zəhmət olmasa yenidən cəhd edin.');
         }
     };
+
+    const handleVerify2FA = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!otpCode || otpCode.length !== 6 || !tempToken) {
+            toast.error('Zəhmət olmasa 6 rəqəmli kodu tam daxil edin.');
+            return;
+        }
+
+        setIsVerifying(true);
+        try {
+            const response = await verify2FA(tempToken, otpCode);
+            toast.success('Doğrulama uğurludur! Daxil oldunuz.');
+            const user = response?.user;
+            const role = user?.role;
+            const mustChange = user?.must_change_password || user?.mustChangePassword;
+            routeUser(role, mustChange);
+        } catch (error: any) {
+            toast.error(error?.message || 'Doğrulama uğursuz oldu. Kod yanlış ola bilər.');
+        } finally {
+            setIsVerifying(false);
+        }
+    };
+
+    if (requires2FA) {
+        return (
+            <div className="space-y-6">
+                <div className="text-center">
+                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 mb-4">
+                        <ShieldCheck className="h-6 w-6 text-primary" />
+                    </div>
+                    <h1 className="text-3xl font-semibold">İki-Mərhələli Doğrulama</h1>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                        E-poçt ünvanınıza göndərilən 6 rəqəmli təsdiq kodunu daxil edin.
+                    </p>
+                </div>
+
+                <form onSubmit={handleVerify2FA} className="space-y-6">
+                    <div className="space-y-2">
+                        <Label htmlFor="otp">Təsdiq Kodu</Label>
+                        <Input
+                            id="otp"
+                            type="text"
+                            placeholder="123456"
+                            maxLength={6}
+                            value={otpCode}
+                            onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
+                            className="text-center text-2xl tracking-[0.5em] h-14"
+                        />
+                    </div>
+
+                    <Button type="submit" className="w-full h-12 text-lg" disabled={isVerifying || otpCode.length !== 6}>
+                        {isVerifying ? (
+                            <>
+                                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                Yoxlanılır...
+                            </>
+                        ) : (
+                            'Təsdiqlə və Daxil Ol'
+                        )}
+                    </Button>
+                    
+                    <p className="text-center text-sm text-muted-foreground">
+                        <button 
+                            type="button" 
+                            onClick={() => { setRequires2FA(false); setTempToken(null); setOtpCode(''); }}
+                            className="text-primary hover:underline"
+                        >
+                            Geriyə (Fərqli hesabla daxil ol)
+                        </button>
+                    </p>
+                </form>
+            </div>
+        );
+    }
 
   return (
     <div className="space-y-6">

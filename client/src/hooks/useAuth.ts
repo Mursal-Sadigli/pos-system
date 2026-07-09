@@ -32,6 +32,7 @@ export function useAuth() {
     isLoading,
     isAuthenticated: !!user && !!token,
     login,
+    verify2FA: useAuthStore.getState().verify2FA,
     register,
     logout: () => {
       logout();

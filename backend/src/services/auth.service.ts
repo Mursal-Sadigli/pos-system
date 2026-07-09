@@ -68,6 +68,31 @@ export class AuthService{
             throw new Error('E-poçt və ya şifrə yanlışdır.');
         }
 
+        // Check 2FA for SUPER_ADMIN, ADMIN, MANAGER
+        if (['SUPER_ADMIN', 'ADMIN', 'MANAGER'].includes(user.role)) {
+            const { SecuritySettingModel } = require('../models/SecuritySetting.model');
+            const securitySettings = await SecuritySettingModel.getSettings();
+            
+            if (securitySettings?.twoFactorAuth) {
+                // Generate 6-digit OTP
+                const otp = Math.floor(100000 + Math.random() * 900000).toString();
+                const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+                await UserModel.updateOTP(user.id, otp, expiresAt);
+                await EmailService.sendOTPEmail(user.email, otp);
+
+                // Create a temporary token for 2FA verification
+                const tempTokenPayload = { id: user.id, requires2FA: true };
+                const tempToken = generateToken(tempTokenPayload, '5m');
+
+                return {
+                    requires2FA: true,
+                    tempToken,
+                    message: 'İki-mərhələli doğrulama kodu e-poçt ünvanınıza göndərildi.'
+                };
+            }
+        }
+
         // update last login
         await UserModel.updateLastLogin(user.id);
 
@@ -140,6 +165,63 @@ export class AuthService{
         await UserModel.updateRefreshToken(user.id, newRefreshToken);
 
         return {token: newToken, refreshToken: newRefreshToken,            
+        };
+    }
+
+    // ==================== Verify 2FA ====================
+    static async verify2FA(tempToken: string, otp: string) {
+        const decoded = verifyToken(tempToken) as any;
+        if (!decoded || !decoded.requires2FA || !decoded.id) {
+            throw new Error('Etibarsız və ya vaxtı keçmiş token.');
+        }
+
+        const user = await UserModel.findById(decoded.id);
+        if (!user) {
+            throw new Error('İstifadəçi tapılmadı.');
+        }
+
+        if (user.otpCode !== otp) {
+            throw new Error('Daxil edilən kod yanlışdır.');
+        }
+
+        if (!user.otpExpiresAt || new Date() > user.otpExpiresAt) {
+            throw new Error('Kodun istifadə müddəti bitib. Yenidən cəhd edin.');
+        }
+
+        // clear OTP
+        await UserModel.clearOTP(user.id);
+
+        // update last login
+        await UserModel.updateLastLogin(user.id);
+
+        // generate tokens
+        const tokenPayload: TokenPayload = {
+            id: user.id, email: user.email, role: user.role, storeId: user.storeId || undefined,
+        };
+
+        const token = generateToken(tokenPayload);
+        const refreshToken = generateRefreshToken({
+            id: user.id,
+            email: user.email,
+            role: user.role,
+            storeId: user.storeId || undefined,
+        });
+
+        await UserModel.updateRefreshToken(user.id, refreshToken);
+
+        return {
+            user: {
+                id: user.id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                permissions: user.permissions,
+                storeId: user.storeId,
+                status: user.status,
+                mustChangePassword: user.mustChangePassword,
+            },
+            token,
+            refreshToken,
         };
     }
 

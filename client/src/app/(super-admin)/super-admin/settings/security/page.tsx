@@ -127,7 +127,7 @@ export default function SecuritySettingsPage() {
               </p>
             </div>
             <Switch
-              checked={securitySettings.twoFactorAuth}
+              checked={securitySettings.twoFactorAuth || false}
               onCheckedChange={(checked) => handleToggleChange('twoFactorAuth', checked)}
             />
           </div>
@@ -140,7 +140,7 @@ export default function SecuritySettingsPage() {
               </p>
             </div>
             <Switch
-              checked={securitySettings.passwordComplexity}
+              checked={securitySettings.passwordComplexity || false}
               onCheckedChange={(checked) => handleToggleChange('passwordComplexity', checked)}
             />
           </div>
@@ -153,7 +153,7 @@ export default function SecuritySettingsPage() {
               id="sessionTimeout"
               type="number"
               min={1}
-              value={securitySettings.sessionTimeout}
+              value={securitySettings.sessionTimeout || 30}
               onChange={(e) => setSecuritySettings({ ...securitySettings, sessionTimeout: parseInt(e.target.value) || 30 })}
             />
             <p className="text-xs text-muted-foreground">İstifadəçi hərəkətsiz qaldıqda avtomatik çıxış edilir.</p>
@@ -165,7 +165,7 @@ export default function SecuritySettingsPage() {
               id="maxLoginAttempts"
               type="number"
               min={1}
-              value={securitySettings.maxLoginAttempts}
+              value={securitySettings.maxLoginAttempts || 5}
               onChange={(e) => setSecuritySettings({ ...securitySettings, maxLoginAttempts: parseInt(e.target.value) || 5 })}
             />
             <p className="text-xs text-muted-foreground">Maksimum həddi keçdikdə hesab müvəqqəti bloklanır.</p>

@@ -97,6 +97,7 @@ export const authApi = {
   register: (payload: any) => api.post('/auth/register', payload),
   logout: () => api.post('/auth/logout'),
   getMe: () => api.get('/auth/me'),
+  verify2FA: (payload: { tempToken: string, otp: string }) => api.post('/auth/verify-2fa', payload),
   refreshToken: (refreshToken: string) => api.post('/auth/refresh-token', { refreshToken }),
   forgotPassword: async (email: string) => {
     try {

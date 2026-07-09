@@ -18,6 +18,8 @@ export interface User{
     inviteToken: string | null;
     inviteTokenExpiresAt: Date | null;
     mustChangePassword: boolean;
+    otpCode?: string | null;
+    otpExpiresAt?: Date | null;
     createdAt: Date;
     updatedAt: Date;  
 }
@@ -53,6 +55,8 @@ export class UserModel{
             inviteToken: row.invite_token ?? row.inviteToken ?? null,
             inviteTokenExpiresAt: row.invite_token_expires_at ?? row.inviteTokenExpiresAt ?? null,
             mustChangePassword: Boolean(mustChangePassword),
+            otpCode: row.otp_code ?? null,
+            otpExpiresAt: row.otp_expires_at ?? null,
             createdAt: row.created_at ?? row.createdAt ?? new Date(),
             updatedAt: row.updated_at ?? row.updatedAt ?? new Date(),
         };
@@ -209,6 +213,22 @@ export class UserModel{
         await query(
             `UPDATE users SET is_active=$1, status=$2, updated_at=CURRENT_TIMESTAMP WHERE id=$3`,
             [true, 'ACTIVE', id]
+        );
+    }
+
+    // Update OTP
+    static async updateOTP(id: string, otpCode: string, expiresAt: Date): Promise<void> {
+        await query(
+            `UPDATE users SET otp_code=$1, otp_expires_at=$2, updated_at=CURRENT_TIMESTAMP WHERE id=$3`,
+            [otpCode, expiresAt, id]
+        );
+    }
+
+    // Clear OTP
+    static async clearOTP(id: string): Promise<void> {
+        await query(
+            `UPDATE users SET otp_code=NULL, otp_expires_at=NULL, updated_at=CURRENT_TIMESTAMP WHERE id=$1`,
+            [id]
         );
     }
 
