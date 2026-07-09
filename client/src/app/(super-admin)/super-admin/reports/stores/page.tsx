@@ -1,26 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Search,
   Download,
   RefreshCw,
   Store,
   TrendingUp,
-  TrendingDown,
-  Users,
-  DollarSign,
-  Package,
-  Calendar,
-  Filter,
-  Eye,
-  Printer,
-  Mail,
   FileText,
   BarChart3,
-  PieChart,
-  ChevronDown,
-  MoreVertical,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -50,88 +38,19 @@ import {
   ResponsiveContainer,
   LineChart,
   Line,
-  PieChart as RePieChart,
-  Pie,
-  Cell,
   Legend,
+  Cell,
 } from 'recharts';
 import { useToast } from '@/hooks/useToast';
+import { reportsApi } from '@/lib/api';
 
-// Mock Data
-const storePerformanceData = [
-  {
-    id: 'store-1',
-    name: 'Elektronika Dünyası',
-    revenue: 45600,
-    orders: 320,
-    customers: 128,
-    products: 342,
-    growth: 15.2,
-    status: 'active',
-    color: '#4F46E5',
-  },
-  {
-    id: 'store-2',
-    name: 'Moda Mərkəzi',
-    revenue: 32400,
-    orders: 280,
-    customers: 96,
-    products: 215,
-    growth: 8.7,
-    status: 'active',
-    color: '#7C3AED',
-  },
-  {
-    id: 'store-3',
-    name: 'Qida Supermarket',
-    revenue: 28500,
-    orders: 450,
-    customers: 245,
-    products: 156,
-    growth: 12.3,
-    status: 'active',
-    color: '#10B981',
-  },
-  {
-    id: 'store-4',
-    name: 'Texno Store',
-    revenue: 21500,
-    orders: 190,
-    customers: 67,
-    products: 89,
-    growth: -2.1,
-    status: 'inactive',
-    color: '#F59E0B',
-  },
-  {
-    id: 'store-5',
-    name: 'Gözəllik Salonu',
-    revenue: 18000,
-    orders: 150,
-    customers: 54,
-    products: 45,
-    growth: 5.6,
-    status: 'suspended',
-    color: '#EC4899',
-  },
-];
-
-const monthlyData = [
-  { name: 'Yan', total: 45000, elektronika: 15000, moda: 12000, qida: 18000 },
-  { name: 'Fev', total: 52000, elektronika: 18000, moda: 14000, qida: 20000 },
-  { name: 'Mar', total: 48000, elektronika: 16000, moda: 13000, qida: 19000 },
-  { name: 'Apr', total: 61000, elektronika: 22000, moda: 16000, qida: 23000 },
-  { name: 'May', total: 72000, elektronika: 26000, moda: 19000, qida: 27000 },
-  { name: 'İyn', total: 85000, elektronika: 31000, moda: 22000, qida: 32000 },
-];
-
-const statusColors = {
+const statusColors: Record<string, string> = {
   active: 'bg-green-500',
   inactive: 'bg-gray-500',
   suspended: 'bg-yellow-500',
 };
 
-const statusLabels = {
+const statusLabels: Record<string, string> = {
   active: 'Aktiv',
   inactive: 'Deaktiv',
   suspended: 'Dayandırılıb',
@@ -139,12 +58,46 @@ const statusLabels = {
 
 export default function StoresReportsPage() {
   const { toast } = useToast();
-  const [stores, setStores] = useState(storePerformanceData);
+  const [stores, setStores] = useState<any[]>([]);
+  const [monthlyData, setMonthlyData] = useState<any[]>([]);
+  
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [period, setPeriod] = useState('monthly');
   const [sortBy, setSortBy] = useState('revenue');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchData = async (showToast = false) => {
+    setIsLoading(true);
+    try {
+      const [perfRes, trendsRes] = await Promise.all([
+        reportsApi.getStorePerformance(),
+        reportsApi.getStoreTrends()
+      ]);
+
+      setStores(perfRes.data.data);
+      setMonthlyData(trendsRes.data.data);
+
+      if (showToast) {
+        toast({
+          title: '✅ Hesabat yeniləndi',
+          description: 'Mağazaların ən son performansı yükləndi',
+        });
+      }
+    } catch (error: any) {
+      toast({
+        title: '❌ Xəta',
+        description: error.response?.data?.message || 'Mağazaları yükləmək mümkün olmadı',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData(false);
+  }, []);
 
   const filteredStores = stores.filter((store) => {
     const matchesSearch = store.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -166,26 +119,44 @@ export default function StoresReportsPage() {
     totalRevenue: stores.reduce((sum, s) => sum + s.revenue, 0),
     totalOrders: stores.reduce((sum, s) => sum + s.orders, 0),
     totalCustomers: stores.reduce((sum, s) => sum + s.customers, 0),
-    averageGrowth: stores.reduce((sum, s) => sum + s.growth, 0) / stores.length,
+    averageGrowth: stores.length > 0 ? stores.reduce((sum, s) => sum + s.growth, 0) / stores.length : 0,
   };
 
   const handleExport = (format: string) => {
-    toast({
-      title: `📥 ${format.toUpperCase()} ixrac edilir`,
-      description: 'Mağaza hesabatı yüklənir...',
-    });
+    if (format === 'csv') {
+      let csvContent = "data:text/csv;charset=utf-8,";
+      csvContent += "Magaza Adi,Status,Qazanc,Sifarisler,Mehsullar,Musteriler\n";
+      
+      sortedStores.forEach(store => {
+        csvContent += `${store.name},${store.status},${store.revenue},${store.orders},${store.products},${store.customers}\n`;
+      });
+      
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "magazalar_hesabati.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: `📥 CSV ixrac edildi`,
+        description: 'Mağaza hesabatı uğurla yükləndi',
+      });
+    } else {
+      toast({
+        title: `📥 ${format.toUpperCase()} ixrac edilir`,
+        description: 'Bu format tezliklə əlavə ediləcək',
+      });
+    }
   };
 
-  const handleRefresh = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      toast({
-        title: '✅ Hesabat yeniləndi',
-        description: 'Ən son məlumatlar yükləndi',
-      });
-    }, 1500);
-  };
+  // Get dynamic keys for line chart (all unique store names present in trends data)
+  const storeNamesForChart = Array.from(new Set(
+    monthlyData.flatMap(month => Object.keys(month).filter(key => key !== 'name'))
+  ));
+
+  const lineColors = ['#4F46E5', '#7C3AED', '#10B981', '#F59E0B', '#EC4899', '#06B6D4', '#8B5CF6'];
 
   return (
     <div className="space-y-6">
@@ -201,7 +172,7 @@ export default function StoresReportsPage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={handleRefresh} className="gap-2">
+          <Button variant="outline" size="sm" onClick={() => fetchData(true)} className="gap-2" disabled={isLoading}>
             <RefreshCw className={isLoading ? 'h-4 w-4 animate-spin' : 'h-4 w-4'} />
             Yenilə
           </Button>
@@ -213,14 +184,6 @@ export default function StoresReportsPage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => handleExport('pdf')}>
-                <FileText className="h-4 w-4 mr-2" />
-                PDF
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => handleExport('excel')}>
-                <FileText className="h-4 w-4 mr-2" />
-                Excel
-              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => handleExport('csv')}>
                 <FileText className="h-4 w-4 mr-2" />
                 CSV
@@ -253,7 +216,7 @@ export default function StoresReportsPage() {
         <Card>
           <CardContent className="p-3">
             <p className="text-xs text-muted-foreground">Sifarişlər</p>
-            <p className="text-xl font-bold">{stats.totalOrders}</p>
+            <p className="text-xl font-bold">{stats.totalOrders.toLocaleString()}</p>
           </CardContent>
         </Card>
         <Card>
@@ -277,9 +240,7 @@ export default function StoresReportsPage() {
               </div>
               <Tabs value={period} onValueChange={setPeriod}>
                 <TabsList>
-                  <TabsTrigger value="weekly">Həftəlik</TabsTrigger>
                   <TabsTrigger value="monthly">Aylıq</TabsTrigger>
-                  <TabsTrigger value="yearly">İllik</TabsTrigger>
                 </TabsList>
               </Tabs>
             </div>
@@ -303,27 +264,16 @@ export default function StoresReportsPage() {
                       }}
                     />
                     <Legend />
-                    <Line
-                      type="monotone"
-                      dataKey="elektronika"
-                      stroke="#4F46E5"
-                      strokeWidth={2}
-                      name="Elektronika Dünyası"
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="moda"
-                      stroke="#7C3AED"
-                      strokeWidth={2}
-                      name="Moda Mərkəzi"
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="qida"
-                      stroke="#10B981"
-                      strokeWidth={2}
-                      name="Qida Supermarket"
-                    />
+                    {storeNamesForChart.map((storeName, idx) => (
+                      <Line
+                        key={storeName}
+                        type="monotone"
+                        dataKey={storeName}
+                        stroke={lineColors[idx % lineColors.length]}
+                        strokeWidth={2}
+                        name={storeName}
+                      />
+                    ))}
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -344,7 +294,7 @@ export default function StoresReportsPage() {
             ) : (
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={sortedStores} layout="vertical">
+                  <BarChart data={sortedStores.slice(0, 5)} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                     <XAxis type="number" className="text-xs" />
                     <YAxis dataKey="name" type="category" className="text-xs" width={120} />
@@ -355,7 +305,7 @@ export default function StoresReportsPage() {
                       }}
                     />
                     <Bar dataKey="revenue" name="Gəlir (₼)">
-                      {sortedStores.map((entry, index) => (
+                      {sortedStores.slice(0, 5).map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Bar>
@@ -398,73 +348,72 @@ export default function StoresReportsPage() {
               <SelectContent>
                 <SelectItem value="revenue">Gəlir</SelectItem>
                 <SelectItem value="orders">Sifariş</SelectItem>
-                <SelectItem value="customers">Müştəri</SelectItem>
-                <SelectItem value="growth">Artım</SelectItem>
+                <SelectItem value="customers">Müştərilər</SelectItem>
               </SelectContent>
             </Select>
-            <Button variant="outline" className="gap-2">
-              <Filter className="h-4 w-4" />
-              Filtr
-            </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Stores Table */}
+      {/* Table */}
       <Card>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b bg-muted/50">
-                  <th className="px-4 py-3 text-left text-sm font-medium">Mağaza</th>
-                  <th className="px-4 py-3 text-left text-sm font-medium">Status</th>
-                  <th className="px-4 py-3 text-right text-sm font-medium">Gəlir</th>
-                  <th className="px-4 py-3 text-right text-sm font-medium">Sifariş</th>
-                  <th className="px-4 py-3 text-right text-sm font-medium">Müştəri</th>
-                  <th className="px-4 py-3 text-right text-sm font-medium">Məhsul</th>
-                  <th className="px-4 py-3 text-right text-sm font-medium">Artım</th>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-muted/50 text-muted-foreground">
+              <tr>
+                <th className="px-4 py-3 font-medium">Mağaza</th>
+                <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium text-right">Qazanc</th>
+                <th className="px-4 py-3 font-medium text-right">Sifarişlər</th>
+                <th className="px-4 py-3 font-medium text-right">Məhsullar</th>
+                <th className="px-4 py-3 font-medium text-right">Müştərilər</th>
+                <th className="px-4 py-3 font-medium text-right">Artım</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {isLoading ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                    Yüklənir...
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {sortedStores.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
-                      Heç bir mağaza tapılmadı
+              ) : sortedStores.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                    Heç bir mağaza tapılmadı
+                  </td>
+                </tr>
+              ) : (
+                sortedStores.map((store) => (
+                  <tr key={store.id} className="hover:bg-muted/50 transition-colors">
+                    <td className="px-4 py-3 font-medium">{store.name}</td>
+                    <td className="px-4 py-3">
+                      <Badge className={statusColors[store.status]}>
+                        {statusLabels[store.status] || store.status}
+                      </Badge>
+                    </td>
+                    <td className="px-4 py-3 text-right font-medium">
+                      ₼{store.revenue.toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3 text-right">{store.orders.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-right">{store.products}</td>
+                    <td className="px-4 py-3 text-right">{store.customers.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-right">
+                      <div className={`flex items-center justify-end gap-1 ${store.growth > 0 ? 'text-green-600' : store.growth < 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                        {store.growth > 0 ? (
+                          <TrendingUp className="h-3 w-3" />
+                        ) : store.growth < 0 ? (
+                          <TrendingUp className="h-3 w-3 rotate-180" />
+                        ) : null}
+                        {Math.abs(store.growth)}%
+                      </div>
                     </td>
                   </tr>
-                ) : (
-                  sortedStores.map((store) => (
-                    <tr key={store.id} className="border-b transition-colors hover:bg-muted/50">
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full" style={{ background: `${store.color}20` }}>
-                            <Store className="h-4 w-4" style={{ color: store.color }} />
-                          </div>
-                          <span className="font-medium">{store.name}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <Badge variant={store.status === 'active' ? 'success' : store.status === 'suspended' ? 'warning' : 'secondary'}>
-                          {statusLabels[store.status as keyof typeof statusLabels]}
-                        </Badge>
-                      </td>
-                      <td className="px-4 py-3 text-right font-medium">₼{store.revenue.toLocaleString()}</td>
-                      <td className="px-4 py-3 text-right">{store.orders}</td>
-                      <td className="px-4 py-3 text-right">{store.customers}</td>
-                      <td className="px-4 py-3 text-right">{store.products}</td>
-                      <td className="px-4 py-3 text-right">
-                        <Badge variant={store.growth > 0 ? 'success' : 'destructive'}>
-                          {store.growth > 0 ? '+' : ''}{store.growth}%
-                        </Badge>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </Card>
     </div>
   );

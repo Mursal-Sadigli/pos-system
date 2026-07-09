@@ -4,6 +4,7 @@ import { successResponse, errorResponse } from '../utils/response';
 import { AuthRequest } from '../middleware/auth.middleware';
 import { EmailService } from '../services/email.service';
 import { query, schemaQualified } from '../config/database';
+import { SystemHealthService } from '../services/system-health.service';
 
 /** Istifadəçinin storeId-ni JWT-dən və ya DB-dən götürür */
 async function resolveStoreId(req: AuthRequest): Promise<string | null> {
@@ -153,6 +154,81 @@ export class ReportController {
       return successResponse(res, null, 'Hesabat email ünvanınıza göndərildi');
     } catch (error: any) {
       return errorResponse(res, error.message || 'Hesabat göndərilə bilmədi', 500);
+    }
+  }
+
+  // ==========================================
+  // SUPER ADMIN SYSTEM-WIDE REPORTS
+  // ==========================================
+
+  static async getSuperAdminSystemSummary(req: AuthRequest, res: Response) {
+    try {
+      if (req.user?.role !== 'SUPER_ADMIN') return errorResponse(res, 'İcazəniz yoxdur', 403);
+      const result = await ReportService.getSystemSummary();
+      return successResponse(res, result, 'Sistem xülasəsi gətirildi');
+    } catch (error: any) {
+      return errorResponse(res, error.message || 'Sistem xülasəsi gətirilə bilmədi', 500);
+    }
+  }
+
+  static async getSuperAdminSystemTrends(req: AuthRequest, res: Response) {
+    try {
+      if (req.user?.role !== 'SUPER_ADMIN') return errorResponse(res, 'İcazəniz yoxdur', 403);
+      const { period } = req.query as { period?: string };
+      const result = await ReportService.getSystemTrends(period);
+      return successResponse(res, result, 'Sistem trendləri gətirildi');
+    } catch (error: any) {
+      return errorResponse(res, error.message || 'Sistem trendləri gətirilə bilmədi', 500);
+    }
+  }
+
+  static async getSuperAdminTopStores(req: AuthRequest, res: Response) {
+    try {
+      if (req.user?.role !== 'SUPER_ADMIN') return errorResponse(res, 'İcazəniz yoxdur', 403);
+      const result = await ReportService.getTopStores();
+      return successResponse(res, result, 'Top mağazalar gətirildi');
+    } catch (error: any) {
+      return errorResponse(res, error.message || 'Top mağazalar gətirilə bilmədi', 500);
+    }
+  }
+
+  static async getSuperAdminUserGrowth(req: AuthRequest, res: Response) {
+    try {
+      if (req.user?.role !== 'SUPER_ADMIN') return errorResponse(res, 'İcazəniz yoxdur', 403);
+      const result = await ReportService.getUserGrowth();
+      return successResponse(res, result, 'İstifadəçi artımı gətirildi');
+    } catch (error: any) {
+      return errorResponse(res, error.message || 'İstifadəçi artımı gətirilə bilmədi', 500);
+    }
+  }
+
+  static async getSuperAdminSystemHealth(req: AuthRequest, res: Response) {
+    try {
+      if (req.user?.role !== 'SUPER_ADMIN') return errorResponse(res, 'İcazəniz yoxdur', 403);
+      const result = await SystemHealthService.getSystemHealth();
+      return successResponse(res, result, 'Sistem performansı gətirildi');
+    } catch (error: any) {
+      return errorResponse(res, error.message || 'Sistem performansı gətirilə bilmədi', 500);
+    }
+  }
+
+  static async getSuperAdminStorePerformance(req: AuthRequest, res: Response) {
+    try {
+      if (req.user?.role !== 'SUPER_ADMIN') return errorResponse(res, 'İcazəniz yoxdur', 403);
+      const result = await ReportService.getStorePerformanceList();
+      return successResponse(res, result, 'Mağazaların reytinqi gətirildi');
+    } catch (error: any) {
+      return errorResponse(res, error.message || 'Mağazaların reytinqi gətirilə bilmədi', 500);
+    }
+  }
+
+  static async getSuperAdminStoreTrends(req: AuthRequest, res: Response) {
+    try {
+      if (req.user?.role !== 'SUPER_ADMIN') return errorResponse(res, 'İcazəniz yoxdur', 403);
+      const result = await ReportService.getStoreTrendsChart();
+      return successResponse(res, result, 'Mağazaların aylıq trendi gətirildi');
+    } catch (error: any) {
+      return errorResponse(res, error.message || 'Mağazaların aylıq trendi gətirilə bilmədi', 500);
     }
   }
 }

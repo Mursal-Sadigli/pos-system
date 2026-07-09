@@ -197,6 +197,14 @@ export const reportsApi = {
     adminApi.get('/reports/inventory'),
   sendReportEmail: (payload: { type: 'sales' | 'inventory'; startDate?: string; endDate?: string }) =>
     adminApi.post('/reports/send-email', payload),
+  // Super Admin System Reports
+  getSystemSummary: () => adminApi.get('/reports/system/summary'),
+  getSystemTrends: (period?: string) => adminApi.get('/reports/system/trends', { params: { period } }),
+  getTopStores: () => adminApi.get('/reports/system/stores'),
+  getUserGrowth: () => adminApi.get('/reports/system/users'),
+  getSystemHealth: () => adminApi.get('/reports/system/health'),
+  getStorePerformance: () => adminApi.get('/reports/system/stores/performance'),
+  getStoreTrends: () => adminApi.get('/reports/system/stores/trends'),
 };
 
 // ==================== STORE API ====================

@@ -11,4 +11,13 @@ router.get('/by-category', authenticate, ReportController.getByCategory);
 router.get('/inventory', authenticate, ReportController.getInventoryReport);
 router.post('/send-email', authenticate, ReportController.sendReportEmail);
 
+// Super Admin Sistem Hesabatları
+router.get('/system/summary', authenticate, ReportController.getSuperAdminSystemSummary);
+router.get('/system/trends', authenticate, ReportController.getSuperAdminSystemTrends);
+router.get('/system/stores', authenticate, ReportController.getSuperAdminTopStores);
+router.get('/system/users', authenticate, ReportController.getSuperAdminUserGrowth);
+router.get('/system/health', authenticate, ReportController.getSuperAdminSystemHealth);
+router.get('/system/stores/performance', authenticate, ReportController.getSuperAdminStorePerformance);
+router.get('/system/stores/trends', authenticate, ReportController.getSuperAdminStoreTrends);
+
 export default router;
