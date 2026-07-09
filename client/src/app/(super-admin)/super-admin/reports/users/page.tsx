@@ -58,6 +58,15 @@ import {
   Cell,
   Legend,
 } from 'recharts';
+
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+
 import { useToast } from '@/hooks/useToast';
 import { reportsApi } from '@/lib/api';
 import { useEffect } from 'react';
@@ -94,6 +103,9 @@ export default function UsersReportsPage() {
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [period, setPeriod] = useState('monthly');
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedUserForModal, setSelectedUserForModal] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
 
 
 
@@ -498,11 +510,9 @@ export default function UsersReportsPage() {
                       </td>
                       <td className="px-4 py-3 text-sm text-muted-foreground">{user.date}</td>
                       <td className="px-4 py-3 text-center">
-                        <Link href={`/super-admin/users/${user.id}`}>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setSelectedUserForModal(user); setIsModalOpen(true); }}>
                             <Eye className="h-4 w-4" />
                           </Button>
-                        </Link>
                       </td>
                     </tr>
                   ))
@@ -512,6 +522,54 @@ export default function UsersReportsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* User Details Modal */}
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>İstifadəçi Detalları</DialogTitle>
+            <DialogDescription>
+              İstifadəçi haqqında ətraflı məlumat
+            </DialogDescription>
+          </DialogHeader>
+          {selectedUserForModal && (
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-4 items-center gap-4">
+                <span className="font-medium text-right text-muted-foreground">Ad:</span>
+                <span className="col-span-3 font-semibold">{selectedUserForModal.name}</span>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <span className="font-medium text-right text-muted-foreground">Email:</span>
+                <span className="col-span-3">{selectedUserForModal.email}</span>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <span className="font-medium text-right text-muted-foreground">Rol:</span>
+                <span className="col-span-3">
+                  <Badge variant={selectedUserForModal.role === 'ADMIN' ? 'default' : selectedUserForModal.role === 'MANAGER' ? 'secondary' : 'outline'}>
+                    {roleLabels[selectedUserForModal.role as keyof typeof roleLabels]}
+                  </Badge>
+                </span>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <span className="font-medium text-right text-muted-foreground">Status:</span>
+                <span className="col-span-3">
+                  <Badge variant={selectedUserForModal.status === 'active' ? 'success' : 'secondary'}>
+                    {statusLabels[selectedUserForModal.status as keyof typeof statusLabels]}
+                  </Badge>
+                </span>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <span className="font-medium text-right text-muted-foreground">Tarix:</span>
+                <span className="col-span-3">{selectedUserForModal.date}</span>
+              </div>
+              <div className="grid grid-cols-4 items-center gap-4">
+                <span className="font-medium text-right text-muted-foreground">ID:</span>
+                <span className="col-span-3 text-xs text-muted-foreground break-all">{selectedUserForModal.id}</span>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
