@@ -51,7 +51,7 @@ export const useAuthStore = create<AuthStore>()(
           const response = await authApi.login({ email, password });
           const data = response.data.data;
 
-          if (data.requires2FA) {
+          if ((data as any).requires2FA) {
             set({ isLoading: false });
             return data; // Return tempToken and requires2FA
           }

@@ -105,7 +105,7 @@ export default function LoginPage() {
             toast.success('Doğrulama uğurludur! Daxil oldunuz.');
             const user = response?.user;
             const role = user?.role;
-            const mustChange = user?.must_change_password || user?.mustChangePassword;
+            const mustChange = user?.must_change_password || user?.mustChangePassword || false;
             routeUser(role, mustChange);
         } catch (error: any) {
             toast.error(error?.message || 'Doğrulama uğursuz oldu. Kod yanlış ola bilər.');
