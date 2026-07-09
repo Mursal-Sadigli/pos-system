@@ -17,6 +17,21 @@ export class AuthController {
     }
   }
 
+  static async changePassword(req: AuthRequest, res: Response) {
+    try {
+      if (!req.user) {
+        return errorResponse(res, 'İstifadəçi tapılmadı', 401);
+      }
+
+      const { currentPassword, newPassword } = req.body;
+      await AuthService.changePassword(req.user.id, currentPassword, newPassword);
+
+      return successResponse(res, null, 'Şifrə uğurla dəyişdirildi');
+    } catch (error: any) {
+      return errorResponse(res, error.message || 'Şifrə dəyişdirilə bilmədi', 400);
+    }
+  }
+
   static async invite(req: AuthRequest, res: Response) {
     try {
       if (!req.user) return errorResponse(res, 'Authentication required', 401);

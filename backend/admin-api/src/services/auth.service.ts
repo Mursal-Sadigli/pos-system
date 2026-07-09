@@ -58,4 +58,25 @@ export class AuthService {
   static async acceptInvitation(token: string) {
     return InvitationService.acceptInvitation(token);
   }
+  static async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+    const user = await UserModel.findById(userId);
+    if (!user) {
+        throw new Error('İstifadəçi tapılmadı');
+    }
+
+    const isValid = await comparePassword(currentPassword, user.password);
+    if (!isValid) {
+        throw new Error('Cari şifrə yanlışdır');
+    }
+
+    await UserModel.updatePassword(user.id, newPassword);
+
+    if (user.must_change_password) {
+        // Just in case, updatePassword already sets it to false, but we can do an extra update if needed,
+        // or just let updatePassword handle it.
+        await UserModel.update(user.id, { must_change_password: false });
+    }
+
+    await UserModel.updateRefreshToken(user.id, null);
+  }
 }

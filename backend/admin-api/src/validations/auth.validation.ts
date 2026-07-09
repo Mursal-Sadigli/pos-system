@@ -27,3 +27,11 @@ export const refreshTokenSchema = z.object({
     refreshToken: z.string().min(1, 'Refresh token tələb olunur'),
   }),
 });
+
+export const changePasswordSchema = z.object({
+  body: z.object({
+    currentPassword: z.string().min(1, 'Cari şifrə tələb olunur'),
+    newPassword: z.string().min(6, 'Şifrə ən az 6 simvol olmalıdır'),
+  }),
+});
+
