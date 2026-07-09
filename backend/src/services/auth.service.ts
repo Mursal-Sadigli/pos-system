@@ -5,8 +5,23 @@ import { EmailService } from "./email.service";
 import { InvitationService } from "./invitation.service";
 
 export class AuthService{
+    // ==================== Validate Password ====================
+    private static async validatePassword(password: string) {
+        const { SecuritySettingModel } = require('../models/SecuritySetting.model');
+        const settings = await SecuritySettingModel.getSettings();
+        if (settings?.passwordComplexity) {
+            const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+            if (!regex.test(password)) {
+                throw new Error('Şifrə ən azı 8 simvol olmalı, tərkibində ən azı bir böyük hərf, bir kiçik hərf, bir rəqəm və bir xüsusi simvol (!@#$%^&*) olmalıdır.');
+            }
+        } else if (password.length < 6) {
+            throw new Error('Şifrə ən azı 6 simvoldan ibarət olmalıdır.');
+        }
+    }
+
     // ==================== Register user ====================
     static async register(data: CreateUserData){
+        await this.validatePassword(data.password);
         // check if user exists
         const existingUser=await UserModel.findByEmail(data.email);
         if(existingUser){
@@ -248,6 +263,8 @@ export class AuthService{
 
     // =================== Reset Password ====================== //
     static async resetPassword(token: string, newPassword: string): Promise<void> {
+        await this.validatePassword(newPassword);
+
         // verify token
         const decoded=verifyToken(token);
         if(!decoded){
@@ -274,6 +291,8 @@ export class AuthService{
 
     // ================= Change Password ================== //
     static async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+        await this.validatePassword(newPassword);
+
         const user = await UserModel.findById(userId);
         if (!user) {
             throw new Error('İstifadəçi tapılmadı');
