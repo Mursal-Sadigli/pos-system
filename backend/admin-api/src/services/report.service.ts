@@ -401,16 +401,16 @@ export class ReportService {
       SELECT 
         s.id,
         s.name,
-        COALESCE(s.status, 'active') as status,
+        s.is_active as status,
         COALESCE(SUM(o.amount), 0) as revenue,
         COUNT(DISTINCT o.id) as orders,
         COUNT(DISTINCT p.id) as products
       FROM "${schemaQualified.replace(/"/g, '')}".stores s
       LEFT JOIN "${schemaQualified.replace(/"/g, '')}".pos_orders o 
-        ON s.id::text = o.store_id AND o.status != 'cancelled'
+        ON s.id = o.store_id AND o.status != 'cancelled'
       LEFT JOIN "${schemaQualified.replace(/"/g, '')}".products p 
-        ON s.id::text = p.store_id
-      GROUP BY s.id, s.name, s.status
+        ON s.id = p.store_id
+      GROUP BY s.id, s.name, s.is_active
       ORDER BY revenue DESC
     `;
     const result = await query(queryStr);
@@ -421,7 +421,7 @@ export class ReportService {
     return result.rows.map((row, index) => ({
       id: row.id,
       name: row.name,
-      status: row.status === 'active' ? 'active' : 'inactive', // Map DB status to frontend status
+      status: row.status === true || row.status === 'true' || row.status === 't' ? 'active' : 'inactive',
       revenue: Number(row.revenue),
       orders: Number(row.orders),
       products: Number(row.products),
@@ -443,7 +443,7 @@ export class ReportService {
         COALESCE(SUM(o.amount), 0) as revenue
       FROM "${schemaQualified.replace(/"/g, '')}".stores s
       JOIN "${schemaQualified.replace(/"/g, '')}".pos_orders o 
-        ON s.id::text = o.store_id AND o.status != 'cancelled'
+        ON s.id = o.store_id AND o.status != 'cancelled'
       WHERE o.created_at >= NOW() - INTERVAL '6 months'
       GROUP BY s.name, DATE_TRUNC('month', o.created_at), TO_CHAR(DATE_TRUNC('month', o.created_at), 'Mon')
       ORDER BY month_date ASC
