@@ -584,23 +584,37 @@ export class ReportService {
         email,
         role,
         is_active,
-        TO_CHAR(created_at, 'YYYY-MM-DD') as date,
-        TO_CHAR(created_at, 'DD TMMon YYYY, HH24:MI:SS') as created_at_detailed,
-        TO_CHAR(last_login, 'DD TMMon YYYY, HH24:MI:SS') as last_login_detailed
+        created_at,
+        last_login
       FROM "${schemaQualified.replace(/"/g, '')}".users
       ORDER BY created_at DESC
       LIMIT 50
     `;
     const result = await query(recentQuery);
+
+    const formatDateTime = (date: Date) => {
+      if (!date) return null;
+      return new Date(date).toLocaleString('az-AZ', {
+        timeZone: 'Asia/Baku',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: false
+      }).replace(',', '');
+    };
+
     return result.rows.map(row => ({
       id: row.id,
       name: row.name,
       email: row.email,
       role: row.role,
       status: row.is_active ? 'active' : 'inactive',
-      date: row.date,
-      created_at_detailed: row.created_at_detailed,
-      last_login_detailed: row.last_login_detailed || 'Heç vaxt daxil olmayıb'
+      date: new Date(row.created_at).toLocaleString('az-AZ', { timeZone: 'Asia/Baku', day: '2-digit', month: '2-digit', year: 'numeric' }),
+      created_at_detailed: formatDateTime(row.created_at),
+      last_login_detailed: formatDateTime(row.last_login) || 'Heç vaxt daxil olmayıb'
     }));
   }
 }
