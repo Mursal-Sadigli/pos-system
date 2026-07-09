@@ -259,10 +259,10 @@ export const storeApi = {
 
 // ==================== BACKUP API ====================
 export const backupApi = {
-  getBackups: () => adminApi.get('/settings/backups'),
-  createBackup: () => adminApi.post('/settings/backups'),
-  deleteBackup: (id: string) => adminApi.delete(`/settings/backups/${id}`),
-  downloadBackupUrl: (id: string) => `${adminBaseURL}/settings/backups/${id}/download`,
+  getBackups: () => api.get('/super-admin/settings/backups'),
+  createBackup: () => api.post('/super-admin/settings/backups'),
+  deleteBackup: (id: string) => api.delete(`/super-admin/settings/backups/${id}`),
+  downloadBackupUrl: (id: string) => `${baseURL}/super-admin/settings/backups/${id}/download`,
 };
 
 export default api;
