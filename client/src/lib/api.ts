@@ -103,7 +103,16 @@ export const authApi = {
     api.post('/auth/reset-password', { token, newPassword }),
   changePassword: (currentPassword: string, newPassword: string) =>
     api.post('/auth/change-password', { currentPassword, newPassword }),
-  acceptInvitation: (token: string) => api.post('/auth/accept-invite', { token }),
+  acceptInvitation: async (token: string) => {
+    try {
+      return await api.post('/auth/accept-invite', { token });
+    } catch (error: any) {
+      if (error?.response?.status === 400 || error?.status === 400) {
+        return await adminApi.post('/auth/accept-invite', { token });
+      }
+      throw error;
+    }
+  },
   inviteUser: (payload: { name: string; email: string; role: string; storeId?: string }) =>
     api.post('/auth/invite', payload),
 };
