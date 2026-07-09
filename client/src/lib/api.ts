@@ -199,12 +199,16 @@ export const reportsApi = {
     adminApi.post('/reports/send-email', payload),
   // Super Admin System Reports
   getSystemSummary: () => adminApi.get('/reports/system/summary'),
-  getSystemTrends: (period?: string) => adminApi.get('/reports/system/trends', { params: { period } }),
+  getSystemTrends: (period?: string) => adminApi.get(`/reports/system/trends${period ? `?period=${period}` : ''}`),
   getTopStores: () => adminApi.get('/reports/system/stores'),
   getUserGrowth: () => adminApi.get('/reports/system/users'),
   getSystemHealth: () => adminApi.get('/reports/system/health'),
   getStorePerformance: () => adminApi.get('/reports/system/stores/performance'),
   getStoreTrends: () => adminApi.get('/reports/system/stores/trends'),
+  // User Reports (Super Admin)
+  getUserDetailedStats: () => adminApi.get('/reports/system/users/stats'),
+  getUserDetailedGrowth: () => adminApi.get('/reports/system/users/growth'),
+  getRecentUsers: () => adminApi.get('/reports/system/users/recent'),
 };
 
 // ==================== STORE API ====================

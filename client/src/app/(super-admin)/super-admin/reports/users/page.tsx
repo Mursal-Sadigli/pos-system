@@ -58,54 +58,19 @@ import {
   Legend,
 } from 'recharts';
 import { useToast } from '@/hooks/useToast';
+import { reportsApi } from '@/lib/api';
+import { useEffect } from 'react';
 
 // Mock Data
-const userGrowthData = [
-  { name: 'Yan', users: 45, admins: 3, managers: 8, cashiers: 34 },
-  { name: 'Fev', users: 58, admins: 4, managers: 10, cashiers: 44 },
-  { name: 'Mar', users: 72, admins: 4, managers: 12, cashiers: 56 },
-  { name: 'Apr', users: 89, admins: 5, managers: 15, cashiers: 69 },
-  { name: 'May', users: 110, admins: 5, managers: 18, cashiers: 87 },
-  { name: 'İyn', users: 156, admins: 5, managers: 22, cashiers: 129 },
-];
 
-const roleDistribution = [
-  { name: 'Admin', value: 5, color: '#7C3AED' },
-  { name: 'Manager', value: 22, color: '#4F46E5' },
-  { name: 'Cashier', value: 129, color: '#10B981' },
-  { name: 'Viewer', value: 8, color: '#F59E0B' },
-];
 
-const userActivityData = [
-  { name: 'B.e', active: 45, new: 2 },
-  { name: 'Ç.a', active: 52, new: 3 },
-  { name: 'Ç', active: 48, new: 1 },
-  { name: 'C.a', active: 58, new: 4 },
-  { name: 'C', active: 62, new: 5 },
-  { name: 'Ş', active: 55, new: 2 },
-  { name: 'B', active: 50, new: 1 },
-];
 
-const userStats = {
-  total: 156,
-  active: 132,
-  inactive: 18,
-  suspended: 6,
-  admins: 5,
-  managers: 22,
-  cashiers: 129,
-  viewers: 8,
-  newThisWeek: 8,
-  growth: 12.5,
-};
 
-const recentUsers = [
-  { name: 'Kamran Hüseynov', email: 'kamran@example.com', role: 'MANAGER', status: 'active', date: '2024-01-15' },
-  { name: 'Nərmin Qasımova', email: 'nermin@example.com', role: 'CASHIER', status: 'active', date: '2024-01-14' },
-  { name: 'Tural Hüseynov', email: 'tural@example.com', role: 'VIEWER', status: 'active', date: '2024-01-13' },
-  { name: 'Aygün Quliyeva', email: 'aygun@example.com', role: 'CASHIER', status: 'inactive', date: '2024-01-12' },
-  { name: 'Rəşad Əliyev', email: 'reshad@example.com', role: 'MANAGER', status: 'active', date: '2024-01-11' },
-];
+
+
+
+
+
 
 const roleLabels = {
   SUPER_ADMIN: 'Super Admin',
@@ -129,7 +94,72 @@ export default function UsersReportsPage() {
   const [period, setPeriod] = useState('monthly');
   const [isLoading, setIsLoading] = useState(false);
 
-  const filteredUsers = recentUsers.filter((user) => {
+
+
+  const handleExport = (format: string) => {
+    if (format === 'csv') {
+      let csvContent = 'data:text/csv;charset=utf-8,';
+      csvContent += 'Ad,Email,Rol,Status,Tarix\n';
+      filteredUsers.forEach(user => {
+        csvContent += `${user.name},${user.email},${user.role},${user.status},${user.date}\n`;
+      });
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', 'istifadeci_hesabati.csv');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: '📥 CSV ixrac edildi',
+        description: 'İstifadəçi hesabatı uğurla yükləndi',
+      });
+    } else {
+      toast({
+        title: `📥 ${format.toUpperCase()} ixrac edilir`,
+        description: 'Bu format tezliklə əlavə ediləcək',
+      });
+    }
+  };
+
+  
+  const [userStats, setUserStats] = useState<any>({ total: 0, active: 0, inactive: 0, suspended: 0, admins: 0, managers: 0, cashiers: 0, viewers: 0, newThisWeek: 0, growth: 0 });
+  const [roleDistribution, setRoleDistribution] = useState<any[]>([]);
+  const [userActivityData, setUserActivityData] = useState<any[]>([]);
+  const [userGrowthData, setUserGrowthData] = useState<any[]>([]);
+  const [recentUsers, setRecentUsers] = useState<any[]>([]);
+  
+  const fetchData = async (showToast = false) => {
+    setIsLoading(true);
+    try {
+      const [statsRes, growthRes, recentRes] = await Promise.all([
+        reportsApi.getUserDetailedStats(),
+        reportsApi.getUserDetailedGrowth(),
+        reportsApi.getRecentUsers()
+      ]);
+      
+      setUserStats(statsRes.data.data.stats);
+      setRoleDistribution(statsRes.data.data.roleDistribution);
+      setUserActivityData(statsRes.data.data.userActivityData);
+      setUserGrowthData(growthRes.data.data);
+      setRecentUsers(recentRes.data.data);
+      
+      if (showToast) {
+        toast({ title: '✅ Hesabat yeniləndi', description: 'Ən son məlumatlar yükləndi' });
+      }
+    } catch (error: any) {
+      toast({ title: '❌ Xəta', description: error.response?.data?.message || 'Məlumatları yükləmək mümkün olmadı', variant: 'destructive' });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const filteredUsers = recentUsers.filter((user: any) => {
     const matchesSearch = user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           user.email.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesRole = selectedRole === 'all' || user.role === selectedRole;
@@ -137,22 +167,8 @@ export default function UsersReportsPage() {
     return matchesSearch && matchesRole && matchesStatus;
   });
 
-  const handleExport = (format: string) => {
-    toast({
-      title: `📥 ${format.toUpperCase()} ixrac edilir`,
-      description: 'İstifadəçi hesabatı yüklənir...',
-    });
-  };
-
   const handleRefresh = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      toast({
-        title: '✅ Hesabat yeniləndi',
-        description: 'Ən son məlumatlar yükləndi',
-      });
-    }, 1500);
+    fetchData(true);
   };
 
   return (

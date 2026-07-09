@@ -19,5 +19,8 @@ router.get('/system/users', authenticate, ReportController.getSuperAdminUserGrow
 router.get('/system/health', authenticate, ReportController.getSuperAdminSystemHealth);
 router.get('/system/stores/performance', authenticate, ReportController.getSuperAdminStorePerformance);
 router.get('/system/stores/trends', authenticate, ReportController.getSuperAdminStoreTrends);
+router.get('/system/users/stats', authenticate, ReportController.getSuperAdminUserDetailedStats);
+router.get('/system/users/growth', authenticate, ReportController.getSuperAdminUserDetailedGrowth);
+router.get('/system/users/recent', authenticate, ReportController.getSuperAdminRecentUsers);
 
 export default router;

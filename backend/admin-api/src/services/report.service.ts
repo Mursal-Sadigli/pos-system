@@ -486,4 +486,117 @@ export class ReportService {
     // Return sorted array based on month order
     return monthsOrder.map(month => transformed[month]);
   }
+
+  /**
+   * Detallı İstifadəçi Statistikası
+   */
+  static async getDetailedUserStats() {
+    const queryStr = `
+      SELECT 
+        COUNT(id) as total,
+        COUNT(CASE WHEN is_active = true THEN id END) as active,
+        COUNT(CASE WHEN is_active = false THEN id END) as inactive,
+        COUNT(CASE WHEN role IN ('ADMIN', 'SUPER_ADMIN') THEN id END) as admins,
+        COUNT(CASE WHEN role = 'MANAGER' THEN id END) as managers,
+        COUNT(CASE WHEN role = 'CASHIER' THEN id END) as cashiers,
+        COUNT(CASE WHEN role = 'VIEWER' THEN id END) as viewers,
+        COUNT(CASE WHEN created_at >= NOW() - INTERVAL '7 days' THEN id END) as new_this_week,
+        COUNT(CASE WHEN created_at >= DATE_TRUNC('month', CURRENT_DATE) THEN id END) as curr_month,
+        COUNT(CASE WHEN created_at >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '1 month' AND created_at < DATE_TRUNC('month', CURRENT_DATE) THEN id END) as last_month
+      FROM "${schemaQualified.replace(/"/g, '')}".users
+    `;
+    const result = await query(queryStr);
+    const row = result.rows[0] || {};
+
+    const curr = Number(row.curr_month || 0);
+    const last = Number(row.last_month || 0);
+    const growth = last > 0 ? Math.round(((curr - last) / last) * 100) : (curr > 0 ? 100 : 0);
+
+    const stats = {
+      total: Number(row.total || 0),
+      active: Number(row.active || 0),
+      inactive: Number(row.inactive || 0),
+      suspended: 0,
+      admins: Number(row.admins || 0),
+      managers: Number(row.managers || 0),
+      cashiers: Number(row.cashiers || 0),
+      viewers: Number(row.viewers || 0),
+      newThisWeek: Number(row.new_this_week || 0),
+      growth
+    };
+
+    const roleDistribution = [
+      { name: 'Admin', value: stats.admins, color: '#7C3AED' },
+      { name: 'Manager', value: stats.managers, color: '#4F46E5' },
+      { name: 'Cashier', value: stats.cashiers, color: '#10B981' },
+      { name: 'Viewer', value: stats.viewers, color: '#F59E0B' },
+    ];
+
+    // Mock activity for now
+    const userActivityData = [
+      { name: 'B.e', active: 45, new: 2 },
+      { name: 'Ç.a', active: 52, new: 3 },
+      { name: 'Ç', active: 48, new: 1 },
+      { name: 'C.a', active: 58, new: 4 },
+      { name: 'C', active: 62, new: 5 },
+      { name: 'Ş', active: 55, new: 2 },
+      { name: 'B', active: 50, new: 1 },
+    ];
+
+    return { stats, roleDistribution, userActivityData };
+  }
+
+  /**
+   * İstifadəçi artımı (Detallı)
+   */
+  static async getDetailedUserGrowth() {
+    const growthQuery = `
+      SELECT 
+        TO_CHAR(DATE_TRUNC('month', created_at), 'Mon') as name,
+        DATE_TRUNC('month', created_at) as month_date,
+        COUNT(id) as users,
+        COUNT(CASE WHEN role IN ('ADMIN', 'SUPER_ADMIN') THEN 1 END) as admins,
+        COUNT(CASE WHEN role = 'MANAGER' THEN 1 END) as managers,
+        COUNT(CASE WHEN role = 'CASHIER' THEN 1 END) as cashiers
+      FROM "${schemaQualified.replace(/"/g, '')}".users
+      WHERE created_at >= NOW() - INTERVAL '6 months'
+      GROUP BY DATE_TRUNC('month', created_at), TO_CHAR(DATE_TRUNC('month', created_at), 'Mon')
+      ORDER BY month_date ASC
+    `;
+    const result = await query(growthQuery);
+    return result.rows.map(row => ({
+      name: row.name,
+      users: Number(row.users),
+      admins: Number(row.admins),
+      managers: Number(row.managers),
+      cashiers: Number(row.cashiers)
+    }));
+  }
+
+  /**
+   * Ən son qeydiyyatdan keçən istifadəçilər
+   */
+  static async getRecentUsers() {
+    const recentQuery = `
+      SELECT 
+        id,
+        name,
+        email,
+        role,
+        is_active,
+        TO_CHAR(created_at, 'YYYY-MM-DD') as date
+      FROM "${schemaQualified.replace(/"/g, '')}".users
+      ORDER BY created_at DESC
+      LIMIT 50
+    `;
+    const result = await query(recentQuery);
+    return result.rows.map(row => ({
+      id: row.id,
+      name: row.name,
+      email: row.email,
+      role: row.role,
+      status: row.is_active ? 'active' : 'inactive',
+      date: row.date
+    }));
+  }
 }

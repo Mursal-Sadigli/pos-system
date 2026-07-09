@@ -231,4 +231,34 @@ export class ReportController {
       return errorResponse(res, error.message || 'Mağazaların aylıq trendi gətirilə bilmədi', 500);
     }
   }
+
+  static async getSuperAdminUserDetailedStats(req: AuthRequest, res: Response) {
+    try {
+      if (req.user?.role !== 'SUPER_ADMIN') return errorResponse(res, 'İcazəniz yoxdur', 403);
+      const result = await ReportService.getDetailedUserStats();
+      return successResponse(res, result, 'İstifadəçi statistikası gətirildi');
+    } catch (error: any) {
+      return errorResponse(res, error.message || 'İstifadəçi statistikası gətirilə bilmədi', 500);
+    }
+  }
+
+  static async getSuperAdminUserDetailedGrowth(req: AuthRequest, res: Response) {
+    try {
+      if (req.user?.role !== 'SUPER_ADMIN') return errorResponse(res, 'İcazəniz yoxdur', 403);
+      const result = await ReportService.getDetailedUserGrowth();
+      return successResponse(res, result, 'İstifadəçi artımı qrafiki gətirildi');
+    } catch (error: any) {
+      return errorResponse(res, error.message || 'İstifadəçi artımı gətirilə bilmədi', 500);
+    }
+  }
+
+  static async getSuperAdminRecentUsers(req: AuthRequest, res: Response) {
+    try {
+      if (req.user?.role !== 'SUPER_ADMIN') return errorResponse(res, 'İcazəniz yoxdur', 403);
+      const result = await ReportService.getRecentUsers();
+      return successResponse(res, result, 'Ən son istifadəçilər gətirildi');
+    } catch (error: any) {
+      return errorResponse(res, error.message || 'Ən son istifadəçilər gətirilə bilmədi', 500);
+    }
+  }
 }
