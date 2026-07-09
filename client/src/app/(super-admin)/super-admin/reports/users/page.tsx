@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import {
   Download,
   RefreshCw,
@@ -497,9 +498,11 @@ export default function UsersReportsPage() {
                       </td>
                       <td className="px-4 py-3 text-sm text-muted-foreground">{user.date}</td>
                       <td className="px-4 py-3 text-center">
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <Eye className="h-4 w-4" />
-                        </Button>
+                        <Link href={`/super-admin/users/${user.id}`}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </Link>
                       </td>
                     </tr>
                   ))
