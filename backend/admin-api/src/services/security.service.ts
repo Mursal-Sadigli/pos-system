@@ -124,10 +124,8 @@ export class SecurityService {
 
   static async getAuditLogs(userId: string, limit = 20) {
     const result = await query(
-      // created_at is TIMESTAMP WITHOUT TIME ZONE stored in server local time (Baku UTC+4).
-      // We cast to text to prevent the pg driver from incorrectly shifting it as if it were UTC.
       `SELECT id, action, description, ip_address, user_agent,
-              to_char(created_at, 'DD/MM/YYYY, HH24:MI') AS created_at
+              to_char(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Baku', 'DD/MM/YYYY, HH24:MI') AS created_at
        FROM ${schemaQualified}.audit_logs
        WHERE user_id = $1
        ORDER BY created_at DESC
@@ -141,7 +139,7 @@ export class SecurityService {
     const params: any[] = [storeId];
     let queryStr = `
        SELECT l.id, l.action, l.description, l.ip_address, l.user_agent,
-              to_char(l.created_at, 'DD/MM/YYYY HH24:MI') AS timestamp,
+              to_char(l.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Baku', 'DD/MM/YYYY HH24:MI') AS timestamp,
               u.first_name, u.last_name, u.role
        FROM ${schemaQualified}.audit_logs l
        JOIN ${schemaQualified}.users u ON l.user_id = u.id

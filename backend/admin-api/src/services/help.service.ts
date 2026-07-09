@@ -17,7 +17,7 @@ export class HelpService {
     const result = await query(
       `INSERT INTO ${schemaQualified}.support_tickets (store_id, user_id, subject, message, status)
        VALUES ($1, $2, $3, $4, 'open')
-       RETURNING id, subject, status, to_char(created_at, 'DD/MM/YYYY HH24:MI') as created_at`,
+       RETURNING id, subject, status, to_char(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Baku', 'DD/MM/YYYY HH24:MI') as created_at`,
       [storeId, userId, subject, message]
     );
     return result.rows[0];
@@ -26,7 +26,7 @@ export class HelpService {
   static async getTickets(storeId: string, userId: string) {
     const result = await query(
       `SELECT id, subject, message, status, 
-              to_char(created_at, 'DD/MM/YYYY HH24:MI') as created_at
+              to_char(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Baku', 'DD/MM/YYYY HH24:MI') as created_at
        FROM ${schemaQualified}.support_tickets
        WHERE store_id = $1 AND user_id = $2
        ORDER BY created_at DESC`,
