@@ -533,38 +533,34 @@ export default function UsersReportsPage() {
             </DialogDescription>
           </DialogHeader>
           {selectedUserForModal && (
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <span className="font-medium text-right text-muted-foreground">Ad:</span>
-                <span className="col-span-3 font-semibold">{selectedUserForModal.name}</span>
+            <div className="flex flex-col gap-0 py-2">
+              <div className="flex justify-between items-center py-3 border-b">
+                <span className="font-medium text-muted-foreground">Ad:</span>
+                <span className="font-semibold">{selectedUserForModal.name}</span>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <span className="font-medium text-right text-muted-foreground">Email:</span>
-                <span className="col-span-3">{selectedUserForModal.email}</span>
+              <div className="flex justify-between items-center py-3 border-b">
+                <span className="font-medium text-muted-foreground">Email:</span>
+                <span>{selectedUserForModal.email}</span>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <span className="font-medium text-right text-muted-foreground">Rol:</span>
-                <span className="col-span-3">
-                  <Badge variant={selectedUserForModal.role === 'ADMIN' ? 'default' : selectedUserForModal.role === 'MANAGER' ? 'secondary' : 'outline'}>
-                    {roleLabels[selectedUserForModal.role as keyof typeof roleLabels]}
-                  </Badge>
-                </span>
+              <div className="flex justify-between items-center py-3 border-b">
+                <span className="font-medium text-muted-foreground">Rol:</span>
+                <Badge variant={selectedUserForModal.role === 'ADMIN' ? 'default' : selectedUserForModal.role === 'MANAGER' ? 'secondary' : 'outline'}>
+                  {roleLabels[selectedUserForModal.role as keyof typeof roleLabels]}
+                </Badge>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <span className="font-medium text-right text-muted-foreground">Status:</span>
-                <span className="col-span-3">
-                  <Badge variant={selectedUserForModal.status === 'active' ? 'success' : 'secondary'}>
-                    {statusLabels[selectedUserForModal.status as keyof typeof statusLabels]}
-                  </Badge>
-                </span>
+              <div className="flex justify-between items-center py-3 border-b">
+                <span className="font-medium text-muted-foreground">Status:</span>
+                <Badge variant={selectedUserForModal.status === 'active' ? 'success' : 'secondary'}>
+                  {statusLabels[selectedUserForModal.status as keyof typeof statusLabels]}
+                </Badge>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <span className="font-medium text-right text-muted-foreground">Tarix:</span>
-                <span className="col-span-3">{selectedUserForModal.date}</span>
+              <div className="flex justify-between items-center py-3 border-b">
+                <span className="font-medium text-muted-foreground">Qeydiyyat:</span>
+                <span className="text-sm">{selectedUserForModal.created_at_detailed}</span>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <span className="font-medium text-right text-muted-foreground">ID:</span>
-                <span className="col-span-3 text-xs text-muted-foreground break-all">{selectedUserForModal.id}</span>
+              <div className="flex justify-between items-center py-3">
+                <span className="font-medium text-muted-foreground">Son Giriş:</span>
+                <span className="text-sm">{selectedUserForModal.last_login_detailed}</span>
               </div>
             </div>
           )}

@@ -584,7 +584,9 @@ export class ReportService {
         email,
         role,
         is_active,
-        TO_CHAR(created_at, 'YYYY-MM-DD') as date
+        TO_CHAR(created_at, 'YYYY-MM-DD') as date,
+        TO_CHAR(created_at, 'DD TMMon YYYY, HH24:MI:SS') as created_at_detailed,
+        TO_CHAR(last_login, 'DD TMMon YYYY, HH24:MI:SS') as last_login_detailed
       FROM "${schemaQualified.replace(/"/g, '')}".users
       ORDER BY created_at DESC
       LIMIT 50
@@ -596,7 +598,9 @@ export class ReportService {
       email: row.email,
       role: row.role,
       status: row.is_active ? 'active' : 'inactive',
-      date: row.date
+      date: row.date,
+      created_at_detailed: row.created_at_detailed,
+      last_login_detailed: row.last_login_detailed || 'Heç vaxt daxil olmayıb'
     }));
   }
 }
