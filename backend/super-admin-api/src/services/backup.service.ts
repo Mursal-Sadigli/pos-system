@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { query } from '../lib/db';
+import { query } from '../config/database';
 import { BackupModel } from '../models/Backup.model';
 
 const BACKUP_DIR = path.join(process.cwd(), 'backups');
