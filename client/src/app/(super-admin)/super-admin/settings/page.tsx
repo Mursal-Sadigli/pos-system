@@ -28,6 +28,8 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/useToast';
+import { settingsApi } from '@/lib/api';
+import { useEffect } from 'react';
 
 export default function SuperAdminSettingsPage() {
   const { toast } = useToast();
@@ -56,15 +58,61 @@ export default function SuperAdminSettingsPage() {
     requirePasswordChange: 30,
   });
 
-  const handleSave = () => {
-    setIsLoading(true);
-    setTimeout(() => {
+  const fetchSettings = async () => {
+    try {
+      setIsLoading(true);
+      const res = await settingsApi.getSecuritySettings();
+      if (res.data?.data) {
+        const dbSettings = res.data.data;
+        setSecuritySettings({
+          twoFactorAuth: dbSettings.twoFactorAuth,
+          sessionTimeout: dbSettings.sessionTimeout?.toString() || '30',
+          maxLoginAttempts: dbSettings.maxLoginAttempts?.toString() || '5',
+          ipWhitelist: '192.168.1.1, 10.0.0.1', // Mocked for now
+          enableAuditLog: true,
+          passwordPolicy: dbSettings.passwordComplexity ? 'strong' : 'basic',
+          requirePasswordChange: 30,
+        });
+      }
+    } catch (error) {
+      console.error('Parametrləri yükləmək mümkün olmadı', error);
+      toast({
+        title: 'Xəta',
+        description: 'Təhlükəsizlik parametrləri yüklənə bilmədi',
+        variant: 'destructive',
+      });
+    } finally {
       setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const handleSave = async () => {
+    setIsLoading(true);
+    try {
+      await settingsApi.updateSecuritySettings({
+        twoFactorAuth: securitySettings.twoFactorAuth,
+        passwordComplexity: securitySettings.passwordPolicy === 'strong',
+        sessionTimeout: parseInt(securitySettings.sessionTimeout),
+        maxLoginAttempts: parseInt(securitySettings.maxLoginAttempts),
+      });
       toast({
         title: '✅ Parametrlər saxlanıldı',
-        description: 'Bütün dəyişikliklər uğurla tətbiq edildi',
+        description: 'Təhlükəsizlik parametrləri uğurla yeniləndi',
       });
-    }, 1500);
+    } catch (error) {
+      console.error('Parametrlər saxlanıla bilmədi', error);
+      toast({
+        title: 'Xəta',
+        description: 'Parametrlər saxlanıla bilmədi',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleBackup = () => {

@@ -265,4 +265,10 @@ export const backupApi = {
   downloadBackupUrl: (id: string) => `${baseURL}/super-admin/settings/backups/${id}/download`,
 };
 
+// ==================== SETTINGS API ====================
+export const settingsApi = {
+  getSecuritySettings: () => api.get('/super-admin/settings/security'),
+  updateSecuritySettings: (payload: any) => api.put('/super-admin/settings/security', payload),
+};
+
 export default api;

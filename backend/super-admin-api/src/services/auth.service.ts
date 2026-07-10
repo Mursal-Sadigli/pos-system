@@ -4,7 +4,22 @@ import { generateToken, generateRefreshToken, verifyRefreshToken, verifyToken } 
 import { InvitationService } from './invitation.service';
 import { EmailService } from './email.service';
 
+import { query } from '../config/database';
+
 export class AuthService {
+  private static async validatePassword(password: string) {
+    const res = await query('SELECT password_complexity FROM public.security_settings LIMIT 1');
+    const complexityEnabled = res.rows[0]?.password_complexity;
+    if (complexityEnabled) {
+      const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+      if (!regex.test(password)) {
+        throw new Error('Şifrə ən azı 8 simvol olmalı, tərkibində ən azı bir böyük hərf, bir kiçik hərf, bir rəqəm və bir xüsusi simvol (!@#$%^&*) olmalıdır.');
+      }
+    } else if (password.length < 6) {
+      throw new Error('Şifrə ən azı 6 simvoldan ibarət olmalıdır.');
+    }
+  }
+
   static async login(email: string, password: string) {
     const userByEmail = await UserModel.findByEmail(email);
     if (!userByEmail) {
@@ -68,6 +83,8 @@ export class AuthService {
   }
 
   static async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    await this.validatePassword(newPassword);
+    
     const user = await UserModel.findById(userId);
     if (!user) {
       throw new Error('User not found');
@@ -109,6 +126,8 @@ export class AuthService {
   }
 
   static async resetPassword(token: string, newPassword: string) {
+    await this.validatePassword(newPassword);
+    
     const decoded = verifyToken(token);
     if (!decoded) {
       throw new Error('Şifrə sıfırlama tokeni etibarsızdır və ya müddəti bitib.');
