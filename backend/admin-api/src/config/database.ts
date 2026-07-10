@@ -126,12 +126,13 @@ export const connectDB = async () => {
       )
     `);
 
-    // Support tickets table
+    // Drop and recreate Support tickets table to fix schema references (since it is empty anyway)
+    await pool.query(`DROP TABLE IF EXISTS ${schemaQualified}.support_tickets CASCADE`);
     await pool.query(`
       CREATE TABLE IF NOT EXISTS ${schemaQualified}.support_tickets (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
         store_id UUID NOT NULL REFERENCES ${schemaQualified}.stores(id) ON DELETE CASCADE,
-        user_id UUID NOT NULL REFERENCES ${schemaQualified}.users(id) ON DELETE CASCADE,
+        user_id UUID NOT NULL REFERENCES super_admin.users(id) ON DELETE CASCADE,
         subject VARCHAR(255) NOT NULL,
         message TEXT NOT NULL,
         status VARCHAR(50) DEFAULT 'open',
