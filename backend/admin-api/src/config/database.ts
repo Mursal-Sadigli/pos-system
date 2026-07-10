@@ -5,13 +5,9 @@ import { logger } from './logger';
 dotenv.config();
 
 const databaseUrl = process.env.DATABASE_URL || '';
-export const dbSchema = (() => {
-  if (!databaseUrl) return 'public';
-  const match = databaseUrl.match(/[?&]schema=([^&]+)/);
-  return match ? decodeURIComponent(match[1]) : 'public';
-})();
+export const dbSchema = 'public';
 
-export const schemaQualified = `"${dbSchema.replace(/"/g, '""')}"`;
+export const schemaQualified = `"${dbSchema}"`;
 
 // Remove ?schema=... from connectionString for Neon compatibility
 const cleanConnectionString = (url: string) => url.replace(/[?&]schema=[^&]*/g, '').replace(/[?&]$/, '');
