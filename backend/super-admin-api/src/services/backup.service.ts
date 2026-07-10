@@ -29,21 +29,37 @@ export class BackupService {
             const tables = tablesResult.rows.map(r => r.table_name);
             const backupData: Record<string, any[]> = {};
 
-            // 2. Fetch data from each table
+            // 2. Fetch data from each table and build CSV content
+            let csvContent = '';
             for (const table of tables) {
                 const dataResult = await query(`SELECT * FROM ${table}`);
-                backupData[table] = dataResult.rows;
+                const rows = dataResult.rows;
+                
+                csvContent += `--- CƏDVƏL: ${table} ---\n`;
+                if (rows.length > 0) {
+                    const headers = Object.keys(rows[0]).join(',');
+                    csvContent += headers + '\n';
+                    for (const row of rows) {
+                        csvContent += Object.values(row).map(val => {
+                            if (val === null || val === undefined) return '""';
+                            const strVal = String(val);
+                            return `"${strVal.replace(/"/g, '""')}"`;
+                        }).join(',') + '\n';
+                    }
+                } else {
+                    csvContent += 'MƏLUMAT YOXDUR\n';
+                }
+                csvContent += '\n';
             }
 
-            // 3. Convert to JSON and save to file
+            // 3. Save to CSV file
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-            const filename = `backup-${timestamp}.json`;
+            const filename = `backup-${timestamp}.csv`;
             const filepath = path.join(BACKUP_DIR, filename);
             
-            const jsonString = JSON.stringify(backupData, null, 2);
-            const sizeBytes = Buffer.byteLength(jsonString, 'utf8');
+            const sizeBytes = Buffer.byteLength(csvContent, 'utf8');
 
-            fs.writeFileSync(filepath, jsonString, 'utf8');
+            fs.writeFileSync(filepath, csvContent, 'utf8');
 
             // 4. Save record to database
             const backupRecord = await BackupModel.create(filename, sizeBytes, 'COMPLETED');

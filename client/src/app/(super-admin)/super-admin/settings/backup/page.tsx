@@ -94,7 +94,7 @@ export default function BackupSettingsPage() {
       const a = document.createElement('a');
       a.href = downloadUrl;
       const backup = backups.find(b => b.id === id);
-      a.download = backup ? backup.filename : 'backup.json';
+      a.download = backup ? backup.filename : 'backup.csv';
       document.body.appendChild(a);
       a.click();
       a.remove();
